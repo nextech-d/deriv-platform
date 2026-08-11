@@ -1,0 +1,10 @@
+[
+  {
+    "id": "e2e-fixture-agent",
+    "name": "E2E Fixture Agent",
+    "country": "KE",
+    "methods": ["M-Pesa"],
+    "active": true,
+    "website": "https://example.com"
+  }
+]

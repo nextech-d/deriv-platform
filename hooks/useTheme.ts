@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   applyTheme,
+  DEFAULT_THEME,
   readStoredTheme,
   resolveTheme,
   THEME_DESCRIPTIONS,
@@ -13,12 +14,11 @@ import {
 } from "@/lib/theme/settings";
 
 export function useTheme() {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    typeof window === "undefined" ? "dark" : readStoredTheme(),
-  );
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
-    typeof window === "undefined" ? "dark" : resolveTheme(readStoredTheme()),
-  );
+  const [preference, setPreferenceState] =
+    useState<ThemePreference>(DEFAULT_THEME);
+  const [resolvedTheme, setResolvedTheme] =
+    useState<ResolvedTheme>(DEFAULT_THEME);
+  const [hydrated, setHydrated] = useState(false);
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);
@@ -34,6 +34,7 @@ export function useTheme() {
     setPreferenceState(stored);
     setResolvedTheme(resolved);
     applyTheme(resolved);
+    setHydrated(true);
 
     if (stored !== "system") return;
 
@@ -51,6 +52,7 @@ export function useTheme() {
   return {
     preference,
     resolvedTheme,
+    hydrated,
     setPreference,
     labels: THEME_LABELS,
     descriptions: THEME_DESCRIPTIONS,

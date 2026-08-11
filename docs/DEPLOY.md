@@ -62,7 +62,7 @@ The image uses Next.js `standalone` output (`output: "standalone"` in `next.conf
 1. Push image to ECR in `af-south-1`
 2. Create ECS cluster + Fargate service behind an ALB
 3. Task definition: 512 CPU / 1024 MB minimum; scale on CPU / request count
-4. Health check: `GET /api/health` → 200 (or `GET /api/auth/status` for auth probe)
+4. Health check: `GET /api/health` → 200 with `{ ok: true, version }` (or `GET /api/auth/status` for auth probe)
 5. Store env vars in Secrets Manager; inject via task definition
 6. Enable ALB access logs + CloudWatch container logs
 
@@ -90,10 +90,12 @@ Security headers are set in `next.config.ts` (X-Frame-Options, nosniff, Referrer
 ```bash
 npm run lint
 npm run build
-npm run test:e2e
+npm run test:e2e:ci
+# or full gate:
+npm run pre-deploy
 ```
 
-Playwright runs in demo mode (`NEXT_PUBLIC_DEMO_MODE=true`) for reliable CI without OAuth.
+Playwright runs in demo mode (`NEXT_PUBLIC_DEMO_MODE=true`) for reliable CI without OAuth. The E2E dev server uses `scripts/dev-e2e.mjs` so local `.env.local` cannot disable demo mode during tests.
 
 Manual chaos pass: see `docs/CHAOS.md`. Full go-live checklist: `docs/PRE-LAUNCH.md`.
 

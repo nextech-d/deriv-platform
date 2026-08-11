@@ -17,8 +17,8 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ variant = "icon", className }: ThemeToggleProps) {
-  const { preference, setPreference } = useThemeContext();
-  const Icon = ICONS[preference];
+  const { preference, resolvedTheme, hydrated, setPreference } = useThemeContext();
+  const Icon = ICONS[hydrated ? preference : resolvedTheme];
 
   function cycleTheme() {
     const order: ThemePreference[] = ["dark", "light", "system"];

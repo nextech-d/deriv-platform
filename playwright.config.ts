@@ -3,6 +3,7 @@ import path from "node:path";
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -14,7 +15,7 @@ export default defineConfig({
     channel: "chrome",
   },
   webServer: {
-    command: "npm run dev",
+    command: "node scripts/dev-e2e.mjs",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

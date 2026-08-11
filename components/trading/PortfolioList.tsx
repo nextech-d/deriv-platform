@@ -70,7 +70,11 @@ export function PortfolioList({
   embedded = false,
   bare = false,
 }: PortfolioListProps) {
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(loadSourceFilter);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+
+  useEffect(() => {
+    setSourceFilter(loadSourceFilter());
+  }, []);
 
   useEffect(() => {
     try {

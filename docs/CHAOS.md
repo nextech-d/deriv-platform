@@ -13,6 +13,8 @@ Manual tests for Phase C exit criteria. Run in **Google Chrome** with DevTools o
 3. Open DevTools → **Network** tab
 4. Settings → **WebSocket metrics** — reset counters before each scenario
 
+For **live OAuth** staging, set `NEXT_PUBLIC_DEMO_MODE=false` and sign in first. Demo mode is fine for scenarios 1–3, 5–7.
+
 ---
 
 ## Scenario 1 — Slow 3G reconnect
@@ -73,6 +75,66 @@ Manual tests for Phase C exit criteria. Run in **Google Chrome** with DevTools o
 
 ---
 
+## Scenario 6 — Double-click buy guard
+
+1. Trade view → wait for live quote (Rise button enabled).
+2. Rapidly double-click **Rise** (or use DevTools to replay two clicks within 200 ms).
+
+**Pass:** Exactly **one** open contract · ticket shows “Trade already in progress” or single “Demo Rise opened” notice · no duplicate rows in portfolio.
+
+---
+
+## Scenario 7 — Hard refresh with open positions
+
+1. Open a demo Rise trade (5t duration).
+2. Confirm **1 open** in session stats.
+3. Hard refresh (`Cmd+Shift+R` / `Ctrl+Shift+R`).
+
+**Pass:** IndexedDB hydrates · open position reappears within 10 s · P/L updates on ticks · no console hydration errors.
+
+---
+
+## Scenario 8 — Copy → portfolio badge
+
+1. Copy view → **Follow** first provider.
+2. Wait for a signal card (≤ 90 s on live feed).
+3. Click **Copy trade** → confirm success notice.
+4. Portfolio view → open row shows **Copy** source badge.
+
+**Pass:** Badge visible before contract expires · copy history lists the signal · no “Wait for live ticks” rejection.
+
+---
+
+## Scenario 9 — Admin persistence (Docker)
+
+1. `docker build -t deriv-platform .`
+2. Run with data volume (see `docs/DEPLOY.md`):
+   ```bash
+   docker run -p 3000:3000 \
+     -v deriv-admin-data:/app/data \
+     -e ADMIN_SECRET=your-admin-token \
+     -e SESSION_SECRET=your-32-char-minimum-secret \
+     -e NEXT_PUBLIC_DEMO_MODE=true \
+     -e NEXT_PUBLIC_DERIV_APP_ID=000000 \
+     deriv-platform
+   ```
+3. Open `/admin` and `/admin/copy` → paste `ADMIN_SECRET`.
+4. Save a partner agent and a copy provider (mark active).
+5. Stop container · start again with same volume.
+
+**Pass:** Saved listings survive restart · public `/api/copy/providers` and `/api/payments/agents` reflect edits.
+
+---
+
+## Scenario 10 — Wallet Cashier & PWA
+
+1. Wallet view → **Open Cashier** (or deposit CTA) opens Deriv deposit flow in a new tab.
+2. Install PWA (Chrome → Install app) · switch theme in Settings · reload.
+
+**Pass:** Cashier URL is valid Deriv domain · theme preference persists · no flash of wrong theme on load.
+
+---
+
 ## Recording results
 
 | Scenario | Pass/Fail | Reconnect OK % | Notes |
@@ -82,13 +144,18 @@ Manual tests for Phase C exit criteria. Run in **Google Chrome** with DevTools o
 | 3 Tab background | | | |
 | 4 Pending intent | | | |
 | 5 Risk lockout | | | |
+| 6 Double-click buy | | | |
+| 7 Hard refresh | | | |
+| 8 Copy badge | | | |
+| 9 Admin Docker | | | |
+| 10 Wallet / PWA | | | |
 
 Export WS metrics from Settings before ending the session (screenshot or copy reconnect counts).
 
 ---
 
-## Automated follow-up (Phase C+)
+## Automated follow-up
 
 - Playwright E2E with network interception
 - Mock WS server (see `ARCHITECTURE.md` §12.3)
-- CI job with throttled headless Chrome
+- CI job with throttled headless Chrome (`npm run test:e2e:ci`)

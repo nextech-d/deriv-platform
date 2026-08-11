@@ -15,10 +15,14 @@ Use this before pointing production traffic at the platform. Items marked **code
 - [x] GitHub Actions CI — lint, build, Playwright (demo mode)
 - [x] Docker standalone image + data volume docs (`docs/DEPLOY.md`)
 - [x] E2E — smoke, admin, copy flows
+- [x] E2E fixtures + global setup (isolated admin JSON per run)
+- [x] SSR hydration fixes (theme, display currency, portfolio filter)
+- [x] Pre-deploy script (`npm run pre-deploy`)
+- [x] Health probe includes version + demo flag
 
 ## Manual QA (Chrome)
 
-Run from `docs/CHAOS.md` on staging before go-live:
+Run from `docs/CHAOS.md` on staging before go-live (scenarios 1–10):
 
 1. Slow 3G reconnect — ticks resume, no duplicate contracts
 2. Offline burst (10×) — bot/copy recover without duplicate buys

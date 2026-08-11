@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ci": "CI=true playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "pre-deploy": "bash scripts/pre-deploy.sh"
   },
   "dependencies": {
     "idb": "^8.0.3",

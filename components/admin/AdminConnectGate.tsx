@@ -110,7 +110,9 @@ export function AdminConnectGate({
             </Button>
           </div>
           {error ? (
-            <p className="admin-connect-error">{error}</p>
+            <p className="admin-connect-error" role="alert" aria-live="polite">
+              {error}
+            </p>
           ) : null}
         </div>
       </main>

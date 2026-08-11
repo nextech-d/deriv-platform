@@ -159,6 +159,16 @@ test.describe("Admin copy UI", () => {
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByPlaceholder("Paste token")).toBeVisible();
   });
+
+  test("token unlocks copy studio desk", async ({ page }) => {
+    await page.goto("/admin/copy");
+    await page.getByPlaceholder("Paste token").fill(ADMIN_SECRET);
+    await page.getByRole("button", { name: "Enter" }).click();
+    await expect(page.getByRole("heading", { name: "E2E Test Provider" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("button", { name: /^Save$/i })).toBeVisible();
+  });
 });
 
 test.describe("Wallet partner disclosure", () => {

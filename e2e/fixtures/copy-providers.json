@@ -1,0 +1,15 @@
+[
+  {
+    "id": "public-copy-provider",
+    "name": "E2E Test Provider",
+    "country": "KE",
+    "bio": "E2E copy provider listing",
+    "style": "momentum",
+    "symbols": ["R_10"],
+    "demoWinRate": 55,
+    "demoSignals30d": 12,
+    "verified": false,
+    "riskLabel": "low",
+    "active": true
+  }
+]
