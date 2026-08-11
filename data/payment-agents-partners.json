@@ -1,0 +1,30 @@
+[
+  {
+    "id": "agent-nairobi-alpha",
+    "name": "Nairobi Alpha Exchange",
+    "country": "KE",
+    "methods": ["M-Pesa", "Bank"],
+    "phone": "+254700000001",
+    "website": "https://deriv.com/payment-agent",
+    "note": "Sample partner listing — replace via admin dashboard",
+    "active": true
+  },
+  {
+    "id": "agent-kampala-bridge",
+    "name": "Kampala Bridge FX",
+    "country": "UG",
+    "methods": ["MTN MoMo", "Airtel Money"],
+    "phone": "+256700000002",
+    "note": "UGX ↔ USD agent — verify on Deriv.com",
+    "active": true
+  },
+  {
+    "id": "agent-dar-harbor",
+    "name": "Dar Harbor Payments",
+    "country": "TZ",
+    "methods": ["M-Pesa Vodacom", "Tigo Pesa"],
+    "phone": "+255700000003",
+    "note": "TZS settlements — business hours EAT",
+    "active": false
+  }
+]

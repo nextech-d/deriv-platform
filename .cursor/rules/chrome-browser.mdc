@@ -1,0 +1,16 @@
+---
+description: Use Google Chrome as the project browser for dev, testing, and debugging
+alwaysApply: true
+---
+
+# Browser: Google Chrome
+
+Use **Google Chrome** for all browser-related work in this project.
+
+- Manual testing and QA: Chrome only (not Safari, Firefox, or Edge)
+- Dev server: open `http://localhost:3000` in Chrome
+- Debugging: use the VS Code/Cursor "Next.js: debug in Chrome" launch config
+- E2E / automation (Playwright, Puppeteer, etc.): use Chromium with `channel: 'chrome'`, or launch Google Chrome directly — never Firefox or WebKit
+- Browser-specific fixes: target Chrome; do not add polyfills or workarounds for other browsers unless explicitly requested
+
+On macOS, Chrome path: `/Applications/Google Chrome.app`

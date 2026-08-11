@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      SESSION_SECRET: ci-session-secret-minimum-32-chars!!
+      ADMIN_SECRET: ci-admin-secret-minimum-32-chars!!
+      NEXT_PUBLIC_DERIV_APP_ID: "000000"
+      NEXT_PUBLIC_DEMO_MODE: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - run: npx playwright install --with-deps chrome
+
+      - run: npm run test:e2e
+        env:
+          CI: true
