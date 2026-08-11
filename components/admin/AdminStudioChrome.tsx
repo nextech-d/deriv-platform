@@ -102,7 +102,7 @@ export function AdminStudioChrome({
               className={cn(
                 "admin-topbar-sync hidden sm:block",
                 dirty && "admin-topbar-sync-dirty",
-                savedAt && !dirty && "admin-topbar-sync-saved",
+                savedAt != null && !dirty && "admin-topbar-sync-saved",
               )}
               aria-live="polite"
             >
