@@ -16,8 +16,7 @@ import {
 export function useTheme() {
   const [preference, setPreferenceState] =
     useState<ThemePreference>(DEFAULT_THEME);
-  const [resolvedTheme, setResolvedTheme] =
-    useState<ResolvedTheme>(DEFAULT_THEME);
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("dark");
   const [hydrated, setHydrated] = useState(false);
 
   const setPreference = useCallback((next: ThemePreference) => {

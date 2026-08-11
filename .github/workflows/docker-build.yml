@@ -1,0 +1,66 @@
+name: Docker build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "package.json"
+      - "package-lock.json"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "hooks/**"
+      - "workers/**"
+      - "public/**"
+      - "next.config.ts"
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'af-south-1' }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY || 'deriv-platform' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Dockerfile build (no push)
+        if: ${{ secrets.AWS_ACCESS_KEY_ID == '' }}
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_DEMO_MODE=true \
+            --build-arg NEXT_PUBLIC_DERIV_APP_ID=000000 \
+            -t deriv-platform:ci .
+
+      - name: Configure AWS credentials
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          APP_ID: ${{ secrets.NEXT_PUBLIC_DERIV_APP_ID || '000000' }}
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_DEMO_MODE=false \
+            --build-arg NEXT_PUBLIC_DERIV_APP_ID="$APP_ID" \
+            -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            -t "$REGISTRY/$ECR_REPOSITORY:latest" \
+            .
+          docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$ECR_REPOSITORY:latest"

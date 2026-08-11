@@ -7,6 +7,7 @@ import type { ResolvedTheme, ThemePreference } from "@/lib/theme/settings";
 interface ThemeContextValue {
   preference: ThemePreference;
   resolvedTheme: ResolvedTheme;
+  hydrated: boolean;
   setPreference: (next: ThemePreference) => void;
   labels: Record<ThemePreference, string>;
   descriptions: Record<ThemePreference, string>;

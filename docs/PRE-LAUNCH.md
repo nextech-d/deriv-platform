@@ -22,7 +22,18 @@ Use this before pointing production traffic at the platform. Items marked **code
 
 ## Manual QA (Chrome)
 
-Run from `docs/CHAOS.md` on staging before go-live (scenarios 1–10):
+**Without Docker** — use the dev server:
+
+```bash
+npm run dev:restart
+# Open http://localhost:3000/dashboard in Google Chrome
+```
+
+Run scenarios from `docs/CHAOS.md` (1–8, 10). Skip scenario 9 unless you have Docker or a cloud staging environment.
+
+**With Docker** (optional): `npm run staging:up && npm run staging:smoke`, then all scenarios including 9.
+
+Checklist:
 
 1. Slow 3G reconnect — ticks resume, no duplicate contracts
 2. Offline burst (10×) — bot/copy recover without duplicate buys
@@ -52,12 +63,18 @@ Do **not** set `DERIV_API_TOKEN` in production.
 
 ## Infra (external)
 
-Staging on your laptop first:
+Staging on your laptop (pick one):
 
 ```bash
+# No Docker
+npm run dev:restart
+# → http://localhost:3000 — CHAOS scenarios 1–8, 10 in Chrome
+
+# With Docker (optional)
 npm run staging:up && npm run staging:smoke
-# Manual: docs/CHAOS.md scenarios 1–10 in Chrome
 ```
+
+Deploy image build runs in GitHub Actions (`.github/workflows/docker-build.yml`) — no local Docker required. See `infra/README.md`.
 
 Then in AWS:
 

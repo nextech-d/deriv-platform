@@ -1,0 +1,84 @@
+{
+  "family": "deriv-platform",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/derivPlatformTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/deriv-platform:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3000" },
+        { "name": "HOSTNAME", "value": "0.0.0.0" },
+        { "name": "NEXT_PUBLIC_DEMO_MODE", "value": "false" },
+        {
+          "name": "PARTNER_AGENTS_DATA_PATH",
+          "value": "/app/data/payment-agents-partners.json"
+        },
+        {
+          "name": "COPY_PROVIDERS_DATA_PATH",
+          "value": "/app/data/copy-providers.json"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SESSION_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:deriv-platform/SESSION_SECRET"
+        },
+        {
+          "name": "ADMIN_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:deriv-platform/ADMIN_SECRET"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "deriv-admin-data",
+          "containerPath": "/app/data",
+          "readOnly": false
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/deriv-platform",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "app"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "deriv-admin-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-REPLACE",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-REPLACE",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ]
+}
