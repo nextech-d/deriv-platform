@@ -14,10 +14,8 @@ import { WorkspaceModal } from "@/components/ui/workspace-modal";
 import { MomoGuide } from "@/components/trading/MomoGuide";
 import { AgentCard } from "@/components/payments/AgentCard";
 import { cn } from "@/lib/utils/cn";
-import {
-  buildCashierUrl,
-  type PaymentAgent,
-} from "@/lib/payments/config";
+import { openDerivCashier } from "@/lib/payments/open-cashier";
+import { type PaymentAgent } from "@/lib/payments/config";
 import {
   directoryHasPartnerListings,
   formatAgentDirectorySource,
@@ -34,6 +32,8 @@ export function WalletPanel({ demoMode = false }: WalletPanelProps) {
   const [agentSource, setAgentSource] = useState<string>("fallback");
   const [loadingAgents, setLoadingAgents] = useState(false);
   const [showWithdrawWizard, setShowWithdrawWizard] = useState(false);
+  const [cashierNotice, setCashierNotice] = useState<string | null>(null);
+  const [cashierOpening, setCashierOpening] = useState(false);
 
   const loadAgents = useCallback(async (code: string) => {
     setLoadingAgents(true);
@@ -65,12 +65,21 @@ export function WalletPanel({ demoMode = false }: WalletPanelProps) {
     void loadAgents(country);
   }, [country, loadAgents]);
 
-  function openCashier() {
-    const returnUrl =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/dashboard`
-        : "https://localhost:3000/dashboard";
-    window.open(buildCashierUrl(returnUrl), "_blank", "noopener");
+  async function openCashier() {
+    setCashierOpening(true);
+    setCashierNotice(null);
+    try {
+      const link = await openDerivCashier();
+      if (link.notice) {
+        setCashierNotice(link.notice);
+      }
+    } catch {
+      setCashierNotice(
+        "Could not open Cashier. Try Deriv.com → Cashier, or switch network if you see a security block.",
+      );
+    } finally {
+      setCashierOpening(false);
+    }
   }
 
   const activeCountry = WALLET_COUNTRIES.find((c) => c.code === country);
@@ -93,10 +102,11 @@ export function WalletPanel({ demoMode = false }: WalletPanelProps) {
                 <Button
                   className="interactive gap-2"
                   size="sm"
-                  onClick={openCashier}
+                  disabled={cashierOpening}
+                  onClick={() => void openCashier()}
                 >
                   <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
-                  Open Deriv Cashier
+                  {cashierOpening ? "Opening…" : "Open Deriv Cashier"}
                 </Button>
                 <Button
                   variant="secondary"
@@ -111,9 +121,15 @@ export function WalletPanel({ demoMode = false }: WalletPanelProps) {
             <p className="workspace-inline-alert text-[10px] text-muted">
               Verify agent credentials on Deriv.com before sending funds.
             </p>
+            {cashierNotice ? (
+              <p className="workspace-inline-alert workspace-inline-alert-warn text-[10px] leading-relaxed">
+                {cashierNotice}
+              </p>
+            ) : null}
             {demoMode ? (
               <p className="workspace-inline-alert workspace-inline-alert-demo text-[10px]">
-                Demo session — funding flows open Cashier in a new tab
+                Demo session — opens Deriv.com Cashier (sign in there to deposit).
+                Localhost return URLs are blocked by Deriv security.
               </p>
             ) : null}
           </div>

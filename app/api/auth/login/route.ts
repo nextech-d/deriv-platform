@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const redirectUri = getAppRedirectUri(request.nextUrl.origin);
 
   const params = new URLSearchParams({
-    scope: "trade account_manage",
+    scope: "trade account_manage payments",
     response_type: "code",
     client_id: derivConfig.oauthClientId,
     redirect_uri: redirectUri,

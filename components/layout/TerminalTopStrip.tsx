@@ -9,6 +9,7 @@ import {
   WorkspaceModal,
   WorkspaceModalFrame,
 } from "@/components/ui/workspace-modal";
+import { PlatformNavRail } from "@/components/navigation/PlatformNavRail";
 import type { AppView } from "@/components/layout/AppShell";
 import type { LucideIcon } from "lucide-react";
 import type { ConnectionState } from "@/lib/ws/protocol";
@@ -35,6 +36,8 @@ type TickerMode = "balance" | "balance-open" | "none";
 
 function tickerModeForView(view: AppView): TickerMode {
   switch (view) {
+    case "home":
+      return "balance-open";
     case "trade":
     case "auto":
     case "copy":
@@ -65,7 +68,6 @@ interface TerminalTopStripProps {
   activeView: AppView;
   viewSection: string;
   viewTitle: string;
-  navGroups: TerminalNavGroup[];
   onViewChange: (view: AppView) => void;
   accounts: DerivAccount[];
   activeAccountId?: string;
@@ -79,7 +81,6 @@ export function TerminalTopStrip({
   activeView,
   viewSection,
   viewTitle,
-  navGroups,
   onViewChange,
   accounts,
   activeAccountId,
@@ -95,7 +96,6 @@ export function TerminalTopStrip({
     onReconnect,
     balance,
     onRefreshBalance,
-    sessionPnl = 0,
     openCount = 0,
     tradingLocked,
     onOpenSettings,
@@ -128,41 +128,47 @@ export function TerminalTopStrip({
     <header className="terminal-command-bar terminal-command-bar-locked shrink-0">
       <div className="command-bar-outer mx-auto max-w-[1240px] px-3 pt-2.5 md:px-4 md:pt-3">
         <div className="shell-float command-bar-panel">
-          <div className="command-bar-main flex items-center gap-4">
-            <div className="flex min-w-0 shrink-0 items-baseline gap-2 md:min-w-[9rem] md:flex-col md:items-start md:justify-center md:gap-0">
+          <div className="command-bar-main">
+            <div className="command-bar-context">
               <p className="command-bar-eyebrow">{viewSection}</p>
-              <div className="flex min-w-0 items-baseline gap-2">
-                <h1 className="truncate text-sm font-semibold tracking-tight md:text-[15px]">
-                  {viewTitle}
-                </h1>
+              <div className="command-bar-title-row">
+                <h1 className="command-bar-title">{viewTitle}</h1>
                 {symbol ? (
-                  <span className="command-symbol shrink-0 font-mono text-[11px] text-muted">
+                  <span className="command-symbol font-mono text-[11px] text-muted">
                     {symbol}
                   </span>
                 ) : null}
               </div>
             </div>
 
-          {tickerMode !== "none" ? (
-            <div className="command-ticker hidden min-w-0 flex-1 items-center justify-center md:flex">
-              <div className="command-ticker-pill">
-                <p className="truncate font-mono text-[13px] tabular-nums tracking-tight text-foreground/90">
-                  <TickerPart label="Bal">{balanceText}</TickerPart>
-                  {tickerMode === "balance-open" ? (
-                    <>
-                      <TickerSep />
-                      <TickerPart label="Open">{openCount}</TickerPart>
-                    </>
-                  ) : null}
-                </p>
-              </div>
+            <div className="command-bar-nav command-bar-nav-desktop">
+              <PlatformNavRail
+                activeId={activeView}
+                variant="terminal"
+                onNavigate={onViewChange}
+              />
             </div>
-          ) : (
-            <div className="hidden flex-1 md:block" aria-hidden />
-          )}
 
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <div className="command-actions flex items-center gap-0.5">
+            {tickerMode !== "none" ? (
+              <div className="command-ticker command-ticker-desktop">
+                <div className="command-ticker-pill">
+                  <p className="truncate font-mono text-[13px] tabular-nums tracking-tight text-foreground/90">
+                    <TickerPart label="Bal">{balanceText}</TickerPart>
+                    {tickerMode === "balance-open" ? (
+                      <>
+                        <TickerSep />
+                        <TickerPart label="Open">{openCount}</TickerPart>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="command-ticker-spacer" aria-hidden />
+            )}
+
+            <div className="command-bar-actions">
+              <div className="command-actions">
                 {onRefreshBalance ? (
                   <CommandIcon icon={RefreshCw} label="Refresh balance" onClick={onRefreshBalance} />
                 ) : null}
@@ -177,7 +183,7 @@ export function TerminalTopStrip({
                 <ThemeToggle variant="icon" className="command-icon-btn" />
               </div>
 
-              <div className="command-session flex items-center gap-0.5 border-l border-border-subtle pl-2">
+              <div className="command-session">
                 <StripAccount
                   accounts={accounts}
                   activeAccountId={activeAccountId}
@@ -191,25 +197,16 @@ export function TerminalTopStrip({
             </div>
           </div>
 
-          <nav className="command-nav-band command-nav-mobile md:hidden" aria-label="Terminal views">
-            <div className="command-nav-inner">
-              {navGroups.flatMap((g) => g.items).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-current={activeView === item.id ? "page" : undefined}
-                  data-active={activeView === item.id}
-                  onClick={() => onViewChange(item.id)}
-                  className="command-nav-tab workspace-tab interactive"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </nav>
+          <div className="command-bar-nav command-bar-nav-mobile">
+            <PlatformNavRail
+              activeId={activeView}
+              variant="terminal"
+              onNavigate={onViewChange}
+            />
+          </div>
 
           {tickerMode !== "none" ? (
-            <div className="command-ticker-mobile md:hidden">
+            <div className="command-ticker-mobile">
               <p className="truncate font-mono text-[11px] tabular-nums text-muted">
                 {balanceText}
                 {tickerMode === "balance-open" ? (
@@ -218,14 +215,8 @@ export function TerminalTopStrip({
                     {openCount} open
                   </>
                 ) : null}
-                {activeView === "trade" ? (
-                  <>
-                    <span className="mx-2 text-border">·</span>
-                    <span className="text-[10px] text-muted">P/L in session panel</span>
-                  </>
-                ) : null}
-                </p>
-              </div>
+              </p>
+            </div>
           ) : null}
         </div>
       </div>

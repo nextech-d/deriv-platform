@@ -1,15 +1,10 @@
 "use client";
 
-import {
-  Bot,
-  Copy,
-  LayoutList,
-  Settings,
-  TrendingUp,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import {
+  PLATFORM_NAV_GROUPS,
+  type PlatformNavId,
+} from "@/lib/navigation/platform-nav";
 import {
   TerminalTopStrip,
   type TerminalNavGroup,
@@ -18,34 +13,22 @@ import {
 import type { DerivAccount } from "@/lib/session/types";
 import type { DisplayCurrency } from "@/hooks/useDisplayCurrency";
 
-export type AppView =
-  | "trade"
-  | "auto"
-  | "copy"
-  | "portfolio"
-  | "wallet"
-  | "settings";
+export type AppView = PlatformNavId;
 
-export const NAV_GROUPS: TerminalNavGroup[] = [
-  {
-    label: "Trading",
-    items: [
-      { id: "trade", label: "Trade", desc: "Markets & ticket", icon: TrendingUp },
-      { id: "auto", label: "Auto", desc: "Bot strategies", icon: Bot },
-      { id: "copy", label: "Copy", desc: "Signal providers", icon: Copy },
-      { id: "portfolio", label: "Portfolio", desc: "Open positions", icon: LayoutList },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { id: "wallet", label: "Wallet", desc: "Deposit & agents", icon: Wallet },
-      { id: "settings", label: "Settings", desc: "Risk & prefs", icon: Settings },
-    ],
-  },
-];
+export const NAV_GROUPS: TerminalNavGroup[] = PLATFORM_NAV_GROUPS.map(
+  (group) => ({
+    label: group.label,
+    items: group.items.map(({ id, label, desc, icon }) => ({
+      id,
+      label,
+      desc,
+      icon,
+    })),
+  }),
+);
 
 const VIEW_META: Record<AppView, { section: string; title: string }> = {
+  home: { section: "Overview", title: "Home" },
   trade: { section: "Live terminal", title: "Trade" },
   auto: { section: "Automation", title: "Trading bot" },
   copy: { section: "Social", title: "Copy trading" },
@@ -87,7 +70,7 @@ export function AppShell({
     toolbar.connectionState === "reconnecting";
 
   return (
-    <div className="terminal-shell relative flex h-dvh overflow-hidden bg-grid bg-background">
+    <div className="terminal-shell relative flex h-dvh overflow-hidden bg-canvas bg-background">
       <div className="page-accent-wash pointer-events-none absolute inset-0" aria-hidden />
       <div
         className="page-accent-orb pointer-events-none absolute -right-24 top-0 h-[28rem] w-[28rem] rounded-full blur-3xl"
@@ -96,7 +79,12 @@ export function AppShell({
 
       <aside className="terminal-sidebar relative z-10 hidden min-h-0 w-52 shrink-0 flex-col md:flex">
         <div className="sidebar-brand-panel">
-          <div className="shell-float shell-float-brand sidebar-brand-inner">
+          <button
+            type="button"
+            onClick={() => onViewChange("home")}
+            className="shell-float shell-float-brand sidebar-brand-inner interactive w-full text-left"
+            aria-current={activeView === "home" ? "page" : undefined}
+          >
             <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted">
               Deriv EA
             </p>
@@ -113,7 +101,7 @@ export function AppShell({
                 aria-hidden
               />
             </div>
-          </div>
+          </button>
         </div>
 
         <div className="shell-float sidebar-stack-panel">
@@ -198,7 +186,6 @@ export function AppShell({
           activeView={activeView}
           viewSection={viewMeta.section}
           viewTitle={viewMeta.title}
-          navGroups={NAV_GROUPS}
           onViewChange={onViewChange}
           accounts={accounts}
           activeAccountId={activeAccountId}

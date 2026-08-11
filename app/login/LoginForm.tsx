@@ -79,7 +79,7 @@ export function LoginForm() {
   const error = errorParam ? mapLoginError(decodeURIComponent(errorParam)) : null;
 
   return (
-    <div className="login-shell relative flex min-h-dvh overflow-hidden bg-grid">
+    <div className="login-shell relative flex min-h-dvh overflow-hidden bg-canvas">
       <div className="page-accent-wash pointer-events-none absolute inset-0" aria-hidden />
 
       <div className="login-aside hidden w-[min(50%,28rem)] shrink-0 p-4 pl-5 pt-5 lg:flex lg:flex-col">

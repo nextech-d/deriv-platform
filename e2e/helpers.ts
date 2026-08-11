@@ -44,6 +44,14 @@ export async function waitForMarketTicks(page: Page) {
   ).toBeVisible({ timeout: 30_000 });
 }
 
+export async function openHomeView(page: Page) {
+  await waitForLiveConnection(page);
+  await openSidebarView(page, "Home Terminal overview");
+  await expect(
+    workspaceMain(page).getByRole("heading", { name: /Demo desk|Live desk|Command center/ }),
+  ).toBeVisible();
+}
+
 export async function openTradeView(page: Page) {
   await waitForLiveConnection(page);
   await openSidebarView(page, "Trade Markets & ticket");

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { chipClassName } from "@/components/ui/input";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { WorkspaceModalFrame } from "@/components/ui/workspace-modal";
-import { buildCashierUrl } from "@/lib/payments/config";
+import { openDerivCashier } from "@/lib/payments/open-cashier";
 import { cn } from "@/lib/utils/cn";
 
 const COUNTRIES = [
@@ -34,11 +34,7 @@ export function WithdrawalWizard({ onClose }: WithdrawalWizardProps) {
 
   function handleConfirm() {
     if (method === "cashier") {
-      const returnUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/dashboard`
-          : "https://localhost:3000/dashboard";
-      window.open(buildCashierUrl(returnUrl), "_blank", "noopener");
+      void openDerivCashier();
     }
     onClose();
   }

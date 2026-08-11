@@ -53,9 +53,5 @@ export const PAYMENT_AGENTS_FALLBACK: PaymentAgent[] = [
   },
 ];
 
-export function buildCashierUrl(returnUrl: string): string {
-  const params = new URLSearchParams({
-    redirect_url: returnUrl,
-  });
-  return `https://cashier.deriv.com/?${params.toString()}`;
-}
+export { buildCashierLink, buildCashierUrl, resolveCashierReturnUrl } from "@/lib/payments/cashier-url";
+export type { BuildCashierUrlInput, CashierLink, CashierLinkMode } from "@/lib/payments/cashier-url";

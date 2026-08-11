@@ -4,14 +4,14 @@ import { getSessionOrDefault } from "@/lib/session";
 import { redirect } from "next/navigation";
 
 export default async function HomePage() {
-  if (isDemoMode) {
-    redirect("/dashboard");
-  }
-
   const session = await getSessionOrDefault();
-  if (session.isLoggedIn) {
+  const demoMode = isDemoMode;
+
+  if (!demoMode && session.isLoggedIn) {
     redirect("/dashboard");
   }
 
-  return <LandingPage />;
+  return (
+    <LandingPage demoMode={demoMode} isLoggedIn={session.isLoggedIn} />
+  );
 }

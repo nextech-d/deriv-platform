@@ -17,6 +17,7 @@ import { CopySessionStats } from "@/components/trading/CopySessionStats";
 import { BotPanel } from "@/components/trading/BotPanel";
 import { WalletPanel } from "@/components/trading/WalletPanel";
 import { SettingsPanel } from "@/components/trading/SettingsPanel";
+import { TerminalHomeView } from "@/components/trading/TerminalHomeView";
 import { useDisplayCurrency } from "@/hooks/useDisplayCurrency";
 import { useDerivWorker } from "@/hooks/useDerivWorker";
 import { useTradingBot } from "@/hooks/useTradingBot";
@@ -45,6 +46,11 @@ import {
   mergeWatchSymbols,
   symbolsForFollowedProviders,
 } from "@/lib/copy/watch-symbols";
+import { buildHomeOnboardingSteps } from "@/lib/terminal/home-onboarding";
+import {
+  readLastWorkspace,
+  writeLastWorkspace,
+} from "@/lib/terminal/last-workspace";
 
 interface DashboardClientProps {
   accounts: DerivAccount[];
@@ -58,7 +64,7 @@ export function DashboardClient({
   demoMode = false,
 }: DashboardClientProps) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState<AppView>("trade");
+  const [activeView, setActiveView] = useState<AppView>("home");
   const [activeAccountId, setActiveAccountId] = useState(
     initialAccountId ?? accounts[0]?.accountId,
   );
@@ -67,6 +73,7 @@ export function DashboardClient({
   const [duration, setDuration] = useState(5);
   const [riskNotice, setRiskNotice] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<number | null>(null);
+  const [lastWorkspace, setLastWorkspace] = useState<AppView | null>(null);
 
   const { currency, setCurrency, formatLocal, labels, fxSource, fxUpdatedAt } =
     useDisplayCurrency();
@@ -145,6 +152,31 @@ export function DashboardClient({
   const openPnl = contracts
     .filter((c) => !c.isSold)
     .reduce((sum, c) => sum + (c.profit ?? 0), 0);
+  const activeAccount = accounts.find((a) => a.accountId === activeAccountId);
+  const balanceUsd = balance?.amount ?? null;
+
+  const recentContracts = useMemo(
+    () =>
+      [...contracts]
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, 3),
+    [contracts],
+  );
+
+  const hasTraded = useMemo(
+    () =>
+      openCount > 0 ||
+      contracts.some((contract) => contract.isSold) ||
+      Math.abs(sessionPnl) > 0.001,
+    [contracts, openCount, sessionPnl],
+  );
+
+  const showFundingCta =
+    !demoMode &&
+    activeAccount != null &&
+    !activeAccount.isDemo &&
+    balanceUsd != null &&
+    balanceUsd < 10;
 
   const handleAccountChange = useCallback(
     async (accountId: string) => {
@@ -164,6 +196,20 @@ export function DashboardClient({
   );
 
   const openSettings = useCallback(() => setActiveView("settings"), []);
+
+  useEffect(() => {
+    setLastWorkspace(readLastWorkspace());
+  }, []);
+
+  useEffect(() => {
+    if (activeView === "home") return;
+    writeLastWorkspace(activeView);
+    setLastWorkspace(activeView);
+  }, [activeView]);
+
+  useEffect(() => {
+    document.querySelector(".terminal-workspace")?.scrollTo({ top: 0, behavior: "instant" });
+  }, [activeView]);
 
   const botPlaceTrade = useCallback(
     (request: TradeRequest) => {
@@ -235,6 +281,24 @@ export function DashboardClient({
     copyRiskLocked,
     placeTrade: copyPlaceTrade,
   });
+
+  const homeOnboardingSteps = useMemo(
+    () =>
+      buildHomeOnboardingSteps({
+        demoMode,
+        hasTraded,
+        hasFunded: balanceUsd != null && balanceUsd >= 10,
+        settings,
+        followedProviders: copy.follow.followedIds.length,
+      }),
+    [
+      balanceUsd,
+      copy.follow.followedIds.length,
+      demoMode,
+      hasTraded,
+      settings,
+    ],
+  );
 
   useEffect(() => {
     botTickRef.current = bot.handleTick;
@@ -315,6 +379,38 @@ export function DashboardClient({
     );
 
     switch (activeView) {
+      case "home":
+        return (
+          <TerminalViewLayout stats={sessionStats}>
+            <TerminalHomeView
+              demoMode={demoMode}
+              connectionState={connectionState}
+              activeAccount={activeAccount}
+              balance={balance}
+              sessionPnl={sessionPnl}
+              openCount={openCount}
+              openPnl={openPnl}
+              symbol={symbol}
+              lastQuote={lastTick?.quote ?? null}
+              formatLocal={formatLocal}
+              displayCurrency={currency}
+              copyProviderCount={copy.providers.length}
+              followedProviderCount={copy.follow.followedIds.length}
+              tradingLocked={tradingLocked}
+              sessionLoss={stats.sessionLoss}
+              sessionStopLoss={settings.sessionStopLoss}
+              dailyLoss={stats.dailyLoss}
+              dailyMaxDrawdown={settings.dailyMaxDrawdown}
+              lastWorkspace={lastWorkspace}
+              recentContracts={recentContracts}
+              onboardingSteps={homeOnboardingSteps}
+              showFundingCta={showFundingCta}
+              onSymbolChange={setSymbol}
+              onNavigate={setActiveView}
+            />
+          </TerminalViewLayout>
+        );
+
       case "trade":
         return (
           <TerminalViewLayout stats={sessionStats}>

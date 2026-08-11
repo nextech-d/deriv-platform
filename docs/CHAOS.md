@@ -133,6 +133,8 @@ For **live OAuth** staging, set `NEXT_PUBLIC_DEMO_MODE=false` and sign in first.
 
 **Pass:** Cashier URL is valid Deriv domain · theme preference persists · no flash of wrong theme on load.
 
+**Local dev note:** `redirect_url=http://localhost:…` triggers Deriv Cloudflare WAF (“unusual activity”). The app opens `deriv.com/account/cashier` in demo mode, or authenticated Cashier with an HTTPS return URL on live OAuth. Full return-to-app flow requires a deployed HTTPS domain (or `DERIV_CASHIER_REDIRECT_URL` pointing at ngrok).
+
 ---
 
 ## Recording results
