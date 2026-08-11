@@ -1,0 +1,18 @@
+{
+  "name": "Deriv EA Trading Platform",
+  "short_name": "Deriv EA",
+  "description": "Resilient Deriv trading shell for East Africa",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#ff444f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

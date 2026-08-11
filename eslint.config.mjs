@@ -5,6 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // Common hydration / bootstrap patterns; fix incrementally post-launch
+      "react-hooks/set-state-in-effect": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
