@@ -7,7 +7,9 @@ export function workspaceMain(page: Page) {
 
 /** Dashboard shell ready and WS connected (no Offline / Connecting banner). */
 export async function waitForLiveConnection(page: Page) {
-  await page.goto("/dashboard");
+  if (!page.url().includes("/dashboard")) {
+    await page.goto("/dashboard");
+  }
   await expect(
     page.getByRole("button", { name: "Trade Markets & ticket" }),
   ).toBeVisible({ timeout: 20_000 });
@@ -33,9 +35,19 @@ export async function openCopyView(page: Page) {
   await expect(workspaceMain(page).getByText("Copy controls")).toBeVisible();
 }
 
+/** At least one live tick received (quote numeric, not placeholder). */
+export async function waitForMarketTicks(page: Page) {
+  await expect(
+    workspaceMain(page).locator(".market-quote-value").filter({
+      hasText: /^\d+\.\d{4}$/,
+    }),
+  ).toBeVisible({ timeout: 30_000 });
+}
+
 export async function openTradeView(page: Page) {
   await waitForLiveConnection(page);
   await openSidebarView(page, "Trade Markets & ticket");
+  await waitForMarketTicks(page);
 }
 
 export async function openPortfolioView(page: Page) {

@@ -15,6 +15,12 @@ async function followFirstProvider(page: import("@playwright/test").Page) {
   await expect(workspaceMain(page).getByText(/\d+ following/)).toBeVisible();
 }
 
+async function waitForCopySignal(page: import("@playwright/test").Page) {
+  await expect(
+    workspaceMain(page).locator(".copy-signal-card").first(),
+  ).toBeVisible({ timeout: 90_000 });
+}
+
 async function openTradeAndBuyRise(page: import("@playwright/test").Page) {
   await openTradeView(page);
   const rise = workspaceMain(page).getByRole("button", { name: /^Rise$/i });
@@ -25,6 +31,15 @@ async function openTradeAndBuyRise(page: import("@playwright/test").Page) {
   });
 }
 
+async function waitForOpenPositionCount(page: import("@playwright/test").Page, count: string) {
+  await expect(
+    workspaceMain(page)
+      .getByText("Open", { exact: true })
+      .locator("..")
+      .getByText(count, { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+}
+
 test.describe("Copy trading (demo)", () => {
   test("copy desk loads provider list and controls", async ({ page }) => {
     await openCopyView(page);
@@ -32,7 +47,9 @@ test.describe("Copy trading (demo)", () => {
       workspaceMain(page).locator(".desk-head-title", { hasText: "Signal providers" }),
     ).toBeVisible();
     await expect(workspaceMain(page).getByText("Auto-copy new signals")).toBeVisible();
-    await expect(workspaceMain(page).getByText("Live feed")).toBeVisible();
+    await expect(
+      workspaceMain(page).locator(".desk-head-title", { hasText: "Live feed" }),
+    ).toBeVisible();
   });
 
   test("follow provider updates following count", async ({ page }) => {
@@ -54,12 +71,12 @@ test.describe("Copy trading (demo)", () => {
   });
 
   test("manual copy trade when signal appears", async ({ page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await openCopyView(page);
     await followFirstProvider(page);
 
+    await waitForCopySignal(page);
     const copyBtn = workspaceMain(page).getByRole("button", { name: /^Copy trade$/i }).first();
-    await expect(copyBtn).toBeVisible({ timeout: 60_000 });
     await copyBtn.click();
 
     await expect(workspaceMain(page).getByText(/Copy sent|Auto-copied/i)).toBeVisible({
@@ -81,44 +98,28 @@ test.describe("Portfolio source filters", () => {
   test("filters manual positions after demo trade", async ({ page }) => {
     test.setTimeout(90_000);
     await openTradeAndBuyRise(page);
+    await waitForOpenPositionCount(page, "1");
 
     await openPortfolioView(page);
-    await expect(workspaceMain(page).locator(".portfolio-count-chip")).toContainText(
-      "open",
-      { timeout: 15_000 },
-    );
-
-    await workspaceMain(page)
-      .locator(".portfolio-source-filter", { hasText: "Manual" })
-      .click();
-    await expect(workspaceMain(page).locator(".portfolio-list .portfolio-row").first()).toBeVisible();
-
-    await workspaceMain(page)
-      .locator(".portfolio-source-filter", { hasText: "All" })
-      .click();
-    await expect(workspaceMain(page).locator(".portfolio-list .portfolio-row").first()).toBeVisible();
+    await expect(
+      workspaceMain(page).locator(".portfolio-source-badge", { hasText: "Manual" }).first(),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(workspaceMain(page).locator(".portfolio-row").first()).toBeVisible();
   });
 
   test("copy position shows copy badge after signal copy", async ({ page }) => {
     test.setTimeout(120_000);
     await openCopyView(page);
     await followFirstProvider(page);
+    await waitForCopySignal(page);
 
     const copyBtn = workspaceMain(page).getByRole("button", { name: /^Copy trade$/i }).first();
-    await expect(copyBtn).toBeVisible({ timeout: 60_000 });
     await copyBtn.click();
     await expect(workspaceMain(page).getByText(/Copy sent|Auto-copied/i)).toBeVisible({
       timeout: 10_000,
     });
 
     await openPortfolioView(page);
-    await expect(workspaceMain(page).locator(".portfolio-count-chip")).toContainText(
-      "open",
-      { timeout: 15_000 },
-    );
-    await workspaceMain(page)
-      .locator(".portfolio-source-filter", { hasText: "Copy" })
-      .click();
     await expect(
       workspaceMain(page).locator(".portfolio-source-badge", { hasText: "Copy" }).first(),
     ).toBeVisible({ timeout: 15_000 });

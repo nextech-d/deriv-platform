@@ -15,6 +15,7 @@ interface TradeTicketProps {
   stake: number;
   duration: number;
   tradeNotice: string | null;
+  hasLiveQuote?: boolean;
   tradingLocked?: boolean;
   onStakeChange: (value: number) => void;
   onDurationChange: (value: number) => void;
@@ -31,6 +32,7 @@ export function TradeTicket({
   stake,
   duration,
   tradeNotice,
+  hasLiveQuote = true,
   tradingLocked = false,
   onStakeChange,
   onDurationChange,
@@ -40,7 +42,11 @@ export function TradeTicket({
 }: TradeTicketProps) {
   const presets = [0.35, 1, 5, 10, 25];
   const durations = [1, 3, 5, 10];
-  const canTrade = isConnected && !isTrading && !tradingLocked;
+  const canTrade =
+    isConnected &&
+    !isTrading &&
+    !tradingLocked &&
+    (!demoMode || hasLiveQuote);
 
   const body = (
     <div className={cn("trade-ticket", embedded && "trade-ticket--desk")}>

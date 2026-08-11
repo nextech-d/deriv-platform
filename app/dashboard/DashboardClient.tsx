@@ -206,6 +206,12 @@ export function DashboardClient({
       if (!isConnected) {
         return { ok: false as const, reason: "Market feed offline — reconnect to copy." };
       }
+      if (demoMode && lastTick?.quote == null) {
+        return {
+          ok: false as const,
+          reason: "Wait for live ticks before copying.",
+        };
+      }
       recordCopyAttempt();
       placeTrade({ ...request, source: "copy" });
       return { ok: true as const };
@@ -216,6 +222,8 @@ export function DashboardClient({
       copyRiskStats,
       settings,
       isConnected,
+      demoMode,
+      lastTick?.quote,
       placeTrade,
       recordCopyAttempt,
     ],
@@ -353,6 +361,7 @@ export function DashboardClient({
                   stake={stake}
                   duration={duration}
                   tradeNotice={riskNotice ?? tradeNotice}
+                  hasLiveQuote={lastTick?.quote != null}
                   tradingLocked={tradingLocked}
                   onStakeChange={setStake}
                   onDurationChange={setDuration}
