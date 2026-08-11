@@ -1,5 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 
+/** Main workspace column — avoids sidebar duplicate labels. */
+export function workspaceMain(page: Page) {
+  return page.locator("main");
+}
+
 /** Dashboard shell ready and WS connected (no Offline / Connecting banner). */
 export async function waitForLiveConnection(page: Page) {
   await page.goto("/dashboard");
@@ -25,7 +30,7 @@ export async function openSettings(page: Page) {
 export async function openCopyView(page: Page) {
   await waitForLiveConnection(page);
   await openSidebarView(page, "Copy Signal providers");
-  await expect(page.getByText("Copy controls")).toBeVisible();
+  await expect(workspaceMain(page).getByText("Copy controls")).toBeVisible();
 }
 
 export async function openTradeView(page: Page) {
@@ -34,6 +39,7 @@ export async function openTradeView(page: Page) {
 }
 
 export async function openPortfolioView(page: Page) {
+  await waitForLiveConnection(page);
   await openSidebarView(page, "Portfolio Open positions");
 }
 

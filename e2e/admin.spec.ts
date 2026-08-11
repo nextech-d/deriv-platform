@@ -78,8 +78,11 @@ test.describe("Admin API", () => {
 test.describe("Admin UI", () => {
   test("connect gate renders", async ({ page }) => {
     await page.goto("/admin");
-    await expect(page.getByText("Partner agent studio")).toBeVisible();
-    await expect(page.getByPlaceholder("Paste ADMIN_SECRET value")).toBeVisible();
+    await expect(page.getByText("Partner studio")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Payment agent catalog" }),
+    ).toBeVisible();
+    await expect(page.getByPlaceholder("Paste token")).toBeVisible();
   });
 });
 
@@ -150,10 +153,11 @@ test.describe("Admin copy providers API", () => {
 test.describe("Admin copy UI", () => {
   test("connect gate renders", async ({ page }) => {
     await page.goto("/admin/copy");
+    await expect(page.getByText("Copy studio")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Curate signal desks" }),
+      page.getByRole("heading", { name: "Signal provider catalog" }),
     ).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByPlaceholder("Paste ADMIN_SECRET value")).toBeVisible();
+    await expect(page.getByPlaceholder("Paste token")).toBeVisible();
   });
 });
 
