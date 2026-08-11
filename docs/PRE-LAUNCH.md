@@ -52,6 +52,15 @@ Do **not** set `DERIV_API_TOKEN` in production.
 
 ## Infra (external)
 
+Staging on your laptop first:
+
+```bash
+npm run staging:up && npm run staging:smoke
+# Manual: docs/CHAOS.md scenarios 1–10 in Chrome
+```
+
+Then in AWS:
+
 - [ ] ECS/Fargate in `af-south-1` — see `docs/DEPLOY.md`
 - [ ] ALB health check: `GET /api/health` or `GET /api/auth/status`
 - [ ] Persistent volume at `/app/data` for admin JSON files

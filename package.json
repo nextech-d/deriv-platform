@@ -12,7 +12,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ci": "CI=true playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "pre-deploy": "bash scripts/pre-deploy.sh"
+    "pre-deploy": "bash scripts/pre-deploy.sh",
+    "staging:up": "bash scripts/staging-up.sh",
+    "staging:down": "bash scripts/staging-down.sh",
+    "staging:smoke": "bash scripts/staging-smoke.sh"
   },
   "dependencies": {
     "idb": "^8.0.3",

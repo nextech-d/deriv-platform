@@ -1,0 +1,37 @@
+# Local staging — mirrors production layout (standalone image + /app/data volume).
+# Usage: npm run staging:up && npm run staging:smoke
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_DEMO_MODE: "true"
+        NEXT_PUBLIC_DERIV_APP_ID: "000000"
+    image: deriv-platform:staging
+    ports:
+      - "3000:3000"
+    environment:
+      SESSION_SECRET: staging-session-secret-minimum-32-chars!
+      ADMIN_SECRET: staging-admin-secret-minimum-32-chars!
+      NEXT_PUBLIC_DEMO_MODE: "true"
+      NEXT_PUBLIC_DERIV_APP_ID: "000000"
+      PARTNER_AGENTS_DATA_PATH: /app/data/payment-agents-partners.json
+      COPY_PROVIDERS_DATA_PATH: /app/data/copy-providers.json
+    volumes:
+      - deriv-admin-data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+volumes:
+  deriv-admin-data:

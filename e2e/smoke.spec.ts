@@ -1,6 +1,21 @@
 import { expect, test } from "@playwright/test";
 import { openSettings, waitForLiveConnection } from "./helpers";
 
+test.describe("API probes", () => {
+  test("health returns ok and version", async ({ request }) => {
+    const response = await request.get("/api/health");
+    expect(response.ok()).toBeTruthy();
+    const json = (await response.json()) as {
+      ok: boolean;
+      version: string;
+      demoMode: boolean;
+    };
+    expect(json.ok).toBe(true);
+    expect(json.version).toBeTruthy();
+    expect(json.demoMode).toBe(true);
+  });
+});
+
 test.describe("Marketing", () => {
   test("root redirects to dashboard in demo mode", async ({ page }) => {
     await page.goto("/");

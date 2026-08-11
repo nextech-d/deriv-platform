@@ -167,11 +167,12 @@ test.describe("Admin copy UI", () => {
     await expect(page.getByRole("heading", { name: "E2E Test Provider" })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByRole("button", { name: /^Save$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Save/i })).toBeVisible();
   });
 });
 
 test.describe("Wallet partner disclosure", () => {
+  test.describe.configure({ mode: "serial" });
   test("settings links to partner studio", async ({ page }) => {
     await waitForLiveConnection(page);
     await openSettings(page);

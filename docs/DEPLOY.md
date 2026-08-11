@@ -55,6 +55,27 @@ docker run -p 3000:3000 \
   deriv-platform
 ```
 
+Build-time public env (baked into client bundle):
+
+```bash
+docker build -t deriv-platform \
+  --build-arg NEXT_PUBLIC_DEMO_MODE=false \
+  --build-arg NEXT_PUBLIC_DERIV_APP_ID=your_app_id \
+  .
+```
+
+### Local staging (Compose)
+
+Mirrors production layout — standalone image, `/app/data` volume, health probe:
+
+```bash
+npm run staging:up      # build + start on :3000
+npm run staging:smoke   # curl health + admin registry round-trip
+npm run staging:down    # tear down
+```
+
+Then run CHAOS scenarios 6–10 from `docs/CHAOS.md` against http://localhost:3000 in Chrome.
+
 The image uses Next.js `standalone` output (`output: "standalone"` in `next.config.ts`).
 
 ## AWS ECS (Fargate) — recommended
