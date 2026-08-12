@@ -52,7 +52,7 @@ export function MarketingLiveFeedPanel() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) return;
 
-    let flashTimer: ReturnType<typeof setTimeout> | undefined;
+    let flashTimer: number | undefined;
 
     const tickTimer = window.setInterval(() => {
       const { value, direction } = nextQuote(quoteRef.current);
