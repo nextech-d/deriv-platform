@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Menu, TrendingUp, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Menu, TrendingUp, X } from "lucide-react";
+import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
 import { PlatformNavRail } from "@/components/navigation/PlatformNavRail";
 import { ThemeToggle } from "@/components/trading/ThemeToggle";
 import {
@@ -14,15 +14,11 @@ import { setNavScrollOffset } from "@/lib/navigation/scroll-to-section";
 import { cn } from "@/lib/utils/cn";
 
 interface MarketingNavbarProps {
-  demoMode?: boolean;
-  isLoggedIn?: boolean;
   activeId: PlatformNavId;
   onNavigate: (sectionId: string, id: PlatformNavId) => void;
 }
 
 export function MarketingNavbar({
-  demoMode = false,
-  isLoggedIn = false,
   activeId,
   onNavigate,
 }: MarketingNavbarProps) {
@@ -81,13 +77,6 @@ export function MarketingNavbar({
     handleSectionNavigate("overview", "home");
   }
 
-  const launchHref = isLoggedIn || demoMode ? "/dashboard" : "/login";
-  const launchLabel = isLoggedIn
-    ? "Open terminal"
-    : demoMode
-      ? "Launch demo"
-      : "Get started";
-
   return (
     <>
       <header
@@ -127,17 +116,7 @@ export function MarketingNavbar({
 
             <div className="marketing-nav-actions">
               <ThemeToggle variant="icon" className="marketing-nav-icon-btn" />
-              {!isLoggedIn ? (
-                <Link href="/login" className="marketing-nav-signin hidden xl:block">
-                  Sign in
-                </Link>
-              ) : null}
-              <Link href={launchHref} className="marketing-nav-cta-link hidden sm:block">
-                <span className="marketing-nav-cta">
-                  {launchLabel}
-                  <ArrowUpRight className="h-4 w-4" strokeWidth={2} />
-                </span>
-              </Link>
+              <MarketingAuthButtons size="nav" className="hidden sm:flex" />
               <button
                 type="button"
                 className="marketing-nav-icon-btn marketing-nav-menu-btn lg:hidden"
@@ -176,19 +155,7 @@ export function MarketingNavbar({
               onSectionNavigate={handleSectionNavigate}
             />
             <div className="marketing-nav-sheet-cta">
-              {!isLoggedIn ? (
-                <Link href="/login" onClick={closeMobile}>
-                  <Button variant="secondary" size="sm" className="interactive w-full">
-                    Sign in
-                  </Button>
-                </Link>
-              ) : null}
-              <Link href={launchHref} onClick={closeMobile}>
-                <Button size="sm" className="interactive w-full gap-2">
-                  {launchLabel}
-                  <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.25} />
-                </Button>
-              </Link>
+              <MarketingAuthButtons size="lg" layout="stack" onAction={closeMobile} />
             </div>
           </div>
         </div>

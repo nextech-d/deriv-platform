@@ -40,7 +40,7 @@ import type { OpenContractRecord } from "@/lib/state/types";
 import { cn } from "@/lib/utils/cn";
 import { clearTradingDb } from "@/lib/state/db";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TickEvent } from "@/lib/ws/protocol";
 import {
   mergeWatchSymbols,
@@ -51,6 +51,10 @@ import {
   readLastWorkspace,
   writeLastWorkspace,
 } from "@/lib/terminal/last-workspace";
+import {
+  dashboardScrollKey,
+  usePageScrollRestoration,
+} from "@/lib/navigation/scroll-restoration";
 
 interface DashboardClientProps {
   accounts: DerivAccount[];
@@ -65,6 +69,7 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const router = useRouter();
   const [activeView, setActiveView] = useState<AppView>("home");
+  const [scrollReady, setScrollReady] = useState(false);
   const [activeAccountId, setActiveAccountId] = useState(
     initialAccountId ?? accounts[0]?.accountId,
   );
@@ -74,6 +79,17 @@ export function DashboardClient({
   const [riskNotice, setRiskNotice] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<number | null>(null);
   const [lastWorkspace, setLastWorkspace] = useState<AppView | null>(null);
+  const viewChangeRef = useRef(false);
+
+  const getTerminalWorkspace = useCallback(
+    () => document.querySelector<HTMLElement>(".terminal-workspace"),
+    [],
+  );
+
+  const { scrollToTop } = usePageScrollRestoration(dashboardScrollKey(activeView), {
+    getContainer: getTerminalWorkspace,
+    enabled: scrollReady,
+  });
 
   const { currency, setCurrency, formatLocal, labels, fxSource, fxUpdatedAt } =
     useDisplayCurrency();
@@ -195,7 +211,17 @@ export function DashboardClient({
     [demoMode],
   );
 
-  const openSettings = useCallback(() => setActiveView("settings"), []);
+  const handleViewChange = useCallback((view: AppView) => {
+    viewChangeRef.current = true;
+    setActiveView(view);
+  }, []);
+
+  const openSettings = useCallback(() => handleViewChange("settings"), [handleViewChange]);
+
+  useLayoutEffect(() => {
+    setActiveView(readLastWorkspace() ?? "home");
+    setScrollReady(true);
+  }, []);
 
   useEffect(() => {
     setLastWorkspace(readLastWorkspace());
@@ -208,8 +234,12 @@ export function DashboardClient({
   }, [activeView]);
 
   useEffect(() => {
-    document.querySelector(".terminal-workspace")?.scrollTo({ top: 0, behavior: "instant" });
-  }, [activeView]);
+    if (!viewChangeRef.current) {
+      viewChangeRef.current = true;
+      return;
+    }
+    scrollToTop(getTerminalWorkspace());
+  }, [activeView, getTerminalWorkspace, scrollToTop]);
 
   const botPlaceTrade = useCallback(
     (request: TradeRequest) => {
@@ -406,7 +436,7 @@ export function DashboardClient({
               onboardingSteps={homeOnboardingSteps}
               showFundingCta={showFundingCta}
               onSymbolChange={setSymbol}
-              onNavigate={setActiveView}
+              onNavigate={handleViewChange}
             />
           </TerminalViewLayout>
         );
@@ -609,7 +639,7 @@ export function DashboardClient({
             copyRisk={copyRiskSettings}
             onCopyRiskChange={setCopyRiskSettings}
             onResetCopySession={resetCopySession}
-            onOpenCopy={() => setActiveView("copy")}
+            onOpenCopy={() => handleViewChange("copy")}
           />
         );
     }
@@ -619,7 +649,7 @@ export function DashboardClient({
     <ErrorBoundary>
       <AppShell
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleViewChange}
         accounts={accounts}
         activeAccountId={activeAccountId}
         onAccountChange={handleAccountChange}

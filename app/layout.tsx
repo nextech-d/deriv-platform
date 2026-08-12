@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { WindowScrollRestoration } from "@/components/navigation/WindowScrollRestoration";
 import { PwaRegister } from "@/components/PwaRegister";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeScript } from "@/components/ThemeScript";
@@ -14,6 +15,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-marketing-display",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -43,14 +50,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-theme="dark"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
         <ThemeScript />
       </head>
       <body className="min-h-full flex flex-col font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <WindowScrollRestoration />
+          {children}
+        </ThemeProvider>
         <PwaRegister />
       </body>
     </html>

@@ -1,17 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHomeSection } from "@/components/marketing/MarketingHomeSection";
 import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingPlatformPanel } from "@/components/marketing/MarketingPlatformPanel";
+import { HOME_CTA } from "@/lib/marketing/home-content";
 import {
   platformNavIdFromSectionId,
   platformSectionHref,
   PLATFORM_NAV_ORDER,
   type PlatformNavId,
 } from "@/lib/navigation/platform-nav";
+import {
+  marketingScrollKey,
+  usePageScrollRestoration,
+} from "@/lib/navigation/scroll-restoration";
 import { readSectionIdFromHash } from "@/lib/navigation/scroll-to-section";
 import { cn } from "@/lib/utils/cn";
 
@@ -38,27 +43,50 @@ function directionBetween(from: PlatformNavId, to: PlatformNavId): PanelDirectio
 export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPageProps) {
   const [activeId, setActiveId] = useState<PlatformNavId>("home");
   const [panelDirection, setPanelDirection] = useState<PanelDirection>("none");
+  const [scrollReady, setScrollReady] = useState(false);
   const prevActiveRef = useRef<PlatformNavId>("home");
-  const launchHref = isLoggedIn || demoMode ? "/dashboard" : "/login";
+  const userNavigatedRef = useRef(false);
 
-  const activatePanel = useCallback((id: PlatformNavId) => {
-    setPanelDirection(directionBetween(prevActiveRef.current, id));
-    prevActiveRef.current = id;
-    setActiveId(id);
-    window.scrollTo({ top: 0, behavior: "instant" });
+  const { scrollToTop } = usePageScrollRestoration(marketingScrollKey(activeId), {
+    enabled: scrollReady,
+  });
+
+  const activatePanel = useCallback(
+    (id: PlatformNavId, options?: { scrollToTop?: boolean }) => {
+      setPanelDirection(directionBetween(prevActiveRef.current, id));
+      prevActiveRef.current = id;
+      setActiveId(id);
+
+      if (options?.scrollToTop) {
+        scrollToTop(window);
+      }
+    },
+    [scrollToTop],
+  );
+
+  useLayoutEffect(() => {
+    const fromHash = resolveActiveIdFromHash();
+    prevActiveRef.current = fromHash;
+    setActiveId(fromHash);
+    setScrollReady(true);
   }, []);
 
   useEffect(() => {
-    const syncFromHash = () => activatePanel(resolveActiveIdFromHash());
+    const syncFromHash = () => {
+      activatePanel(resolveActiveIdFromHash(), {
+        scrollToTop: userNavigatedRef.current,
+      });
+      userNavigatedRef.current = false;
+    };
 
-    syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
     return () => window.removeEventListener("hashchange", syncFromHash);
   }, [activatePanel]);
 
   const handleNavigate = useCallback(
     (sectionId: string, id: PlatformNavId) => {
-      activatePanel(id);
+      userNavigatedRef.current = true;
+      activatePanel(id, { scrollToTop: true });
       window.history.replaceState(null, "", platformSectionHref(sectionId));
     },
     [activatePanel],
@@ -73,8 +101,6 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
       />
 
       <MarketingNavbar
-        demoMode={demoMode}
-        isLoggedIn={isLoggedIn}
         activeId={activeId}
         onNavigate={handleNavigate}
       />
@@ -97,7 +123,7 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
                 onNavigate={handleNavigate}
               />
             ) : (
-              <MarketingPlatformPanel navId={activeId} terminalHref={launchHref} />
+              <MarketingPlatformPanel navId={activeId} />
             )}
           </div>
         </div>
@@ -105,31 +131,16 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
         {activeId === "home" ? (
           <section className="marketing-cta">
             <div className="marketing-cta-copy">
-              <p className="marketing-eyebrow">Ready to trade</p>
-              <h2 className="marketing-cta-title">Open the desk</h2>
+              <h2 className="marketing-cta-title">{HOME_CTA.title}</h2>
               <p className="marketing-cta-body">
-                {demoMode
-                  ? "Demo mode is on — launch the terminal, land on Home, and trade Volatility or Boom/Crash with live ticks."
-                  : "Sign in with Deriv, fund via Cashier or local agents, and trade from Home — manual, Auto, or Copy."}
+                {demoMode ? HOME_CTA.bodyDemo : HOME_CTA.bodyLive}
               </p>
             </div>
-            <Link href={launchHref}>
-              <Button size="lg" className="interactive">
-                {isLoggedIn ? "Open terminal" : demoMode ? "Launch demo" : "Sign in"}
-              </Button>
-            </Link>
+            <MarketingAuthButtons size="lg" className="marketing-cta-actions" />
           </section>
         ) : null}
 
-        <footer className="marketing-footer">
-          <p className="marketing-footer-label">Risk disclosure</p>
-          <p className="marketing-footer-body">
-            Synthetic indices and leveraged products carry high risk. This platform
-            is a third-party app using the Deriv API — not affiliated with Deriv.Com
-            Limited. Not regulated by Kenya&apos;s CMA. Never trade money you cannot
-            afford to lose.
-          </p>
-        </footer>
+        <MarketingFooter onNavigate={handleNavigate} />
       </main>
     </div>
   );
