@@ -9,8 +9,8 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     env:
-      SESSION_SECRET: ci-session-secret-minimum-32-chars!!
-      ADMIN_SECRET: ci-admin-secret-minimum-32-chars!!
+      SESSION_SECRET: e2e-test-session-secret-min-32-chars!!
+      ADMIN_SECRET: e2e-test-admin-secret-min-32-chars!!
       NEXT_PUBLIC_DERIV_APP_ID: "000000"
       NEXT_PUBLIC_DEMO_MODE: "true"
 

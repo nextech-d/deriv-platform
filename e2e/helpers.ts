@@ -5,13 +5,18 @@ export function workspaceMain(page: Page) {
   return page.locator("main");
 }
 
+/** Desktop sidebar nav — Home workspace tiles reuse the same accessible names. */
+export function workspaceSidebar(page: Page) {
+  return page.getByRole("complementary");
+}
+
 /** Dashboard shell ready and WS connected (no Offline / Connecting banner). */
 export async function waitForLiveConnection(page: Page) {
   if (!page.url().includes("/dashboard")) {
     await page.goto("/dashboard");
   }
   await expect(
-    page.getByRole("button", { name: "Trade Markets & ticket" }),
+    workspaceSidebar(page).getByRole("button", { name: "Trade Markets & ticket" }),
   ).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Connecting", { exact: true })).toHaveCount(0, {
     timeout: 30_000,
@@ -22,7 +27,7 @@ export async function waitForLiveConnection(page: Page) {
 }
 
 export async function openSidebarView(page: Page, name: RegExp | string) {
-  await page.getByRole("button", { name }).click();
+  await workspaceSidebar(page).getByRole("button", { name }).click();
 }
 
 export async function openSettings(page: Page) {

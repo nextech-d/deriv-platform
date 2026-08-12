@@ -19,10 +19,11 @@ test.describe("API probes", () => {
 test.describe("Marketing", () => {
   test("root shows pro landing with aligned nav", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Platform navigation" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Home" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Trade" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+    const nav = page.getByRole("navigation", { name: "Platform navigation" });
+    await expect(nav).toBeVisible();
+    await expect(nav.getByRole("button", { name: "Home" })).toBeVisible();
+    await expect(nav.getByRole("button", { name: "Trade" })).toBeVisible();
+    await expect(nav.getByRole("button", { name: "Settings" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       "Synthetics trading",
     );
@@ -30,15 +31,16 @@ test.describe("Marketing", () => {
 
   test("nav switches workspace panels independently", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Trade" }).click();
+    const nav = page.getByRole("navigation", { name: "Platform navigation" });
+    await nav.getByRole("button", { name: "Trade" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Rise/Fall on a resilient market feed",
+      "Rise/Fall tickets on the synthetic rail",
     );
     await expect(page.getByRole("heading", { level: 1 })).not.toContainText(
-      "Your desk starts at Home",
+      "Synthetics trading",
     );
 
-    await page.getByRole("button", { name: "Home" }).click();
+    await nav.getByRole("button", { name: "Home" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       "Synthetics trading",
     );
@@ -56,7 +58,9 @@ test.describe("Dashboard (demo mode)", () => {
   test("terminal loads with live connection", async ({ page }) => {
     await waitForLiveConnection(page);
     await expect(
-      page.getByRole("button", { name: "Copy Signal providers" }),
+      page.getByRole("complementary").getByRole("button", {
+        name: "Copy Signal providers",
+      }),
     ).toBeVisible();
   });
 
