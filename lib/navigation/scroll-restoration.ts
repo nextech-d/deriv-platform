@@ -64,11 +64,6 @@ export function usePageScrollRestoration(
 ) {
   const { enabled = true, getContainer = getWindowContainer } = options;
   const restoredRef = useRef(false);
-  const pageKeyRef = useRef(pageKey);
-  const getContainerRef = useRef(getContainer);
-
-  pageKeyRef.current = pageKey;
-  getContainerRef.current = getContainer;
 
   useEffect(() => {
     disableNativeScrollRestoration();
@@ -82,7 +77,7 @@ export function usePageScrollRestoration(
     let attempts = 0;
 
     const tryRestore = () => {
-      const container = getContainerRef.current();
+      const container = getContainer();
       if (!container) {
         if (attempts < 12) {
           attempts += 1;
@@ -104,7 +99,7 @@ export function usePageScrollRestoration(
     return () => {
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [enabled, pageKey]);
+  }, [enabled, getContainer, pageKey]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -134,12 +129,16 @@ export function usePageScrollRestoration(
     };
   }, [enabled, getContainer, pageKey]);
 
-  const scrollToTop = useCallback((container?: ScrollContainer | null) => {
-    const target = container ?? getContainerRef.current();
-    if (!target) return;
-    applyScrollPosition(target, 0);
-    saveScrollPosition(pageKeyRef.current, target);
-  }, []);
+  /** Stable unless pageKey/getContainer change — avoids scroll reset on tick re-renders. */
+  const scrollToTop = useCallback(
+    (container?: ScrollContainer | null) => {
+      const target = container ?? getContainer();
+      if (!target) return;
+      applyScrollPosition(target, 0);
+      saveScrollPosition(pageKey, target);
+    },
+    [getContainer, pageKey],
+  );
 
   return {
     scrollToTop,
