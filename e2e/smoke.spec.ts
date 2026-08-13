@@ -89,4 +89,13 @@ test.describe("Dashboard (demo mode)", () => {
     const after = await toggle.getAttribute("aria-label");
     expect(before).not.toBe(after);
   });
+
+  test("sidebar brand returns to marketing website", async ({ page }) => {
+    await waitForLiveConnection(page);
+    await workspaceSidebar(page).getByRole("link", { name: "Back to website" }).click();
+    await expect(page).toHaveURL(/\/(?:$|\?)/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Synthetics trading",
+    );
+  });
 });

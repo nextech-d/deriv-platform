@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import {
   PLATFORM_NAV_GROUPS,
@@ -82,11 +83,11 @@ export function AppShell({
         aria-label="Terminal navigation"
       >
         <div className="sidebar-brand-panel">
-          <button
-            type="button"
-            onClick={() => onViewChange("home")}
+          <Link
+            href="/"
             className="sidebar-brand interactive w-full text-left"
-            aria-current={activeView === "home" ? "page" : undefined}
+            title="Back to website"
+            aria-label="Back to website"
           >
             <div className="sidebar-brand-mark">
               <span className="sidebar-brand-name">Deriv EA</span>
@@ -107,8 +108,8 @@ export function AppShell({
                 aria-hidden
               />
             </div>
-            <p className="sidebar-brand-sub">Trading terminal</p>
-          </button>
+            <p className="sidebar-brand-sub">Back to website</p>
+          </Link>
         </div>
 
         <nav className="sidebar-nav flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-y-contain scrollbar-thin">

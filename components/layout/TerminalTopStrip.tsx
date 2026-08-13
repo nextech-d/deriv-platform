@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, LogOut, RefreshCw, Settings } from "lucide-react";
+import Link from "next/link";
+import {
+  Check,
+  ChevronDown,
+  ExternalLink,
+  LogOut,
+  RefreshCw,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { ThemeToggle } from "@/components/trading/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -159,6 +167,14 @@ export function TerminalTopStrip({
 
             <div className="command-bar-actions">
               <div className="command-actions">
+                <Link
+                  href="/"
+                  title="Back to website"
+                  aria-label="Back to website"
+                  className="command-icon-btn command-website-link interactive flex h-8 w-8 items-center justify-center rounded-md text-muted hover:text-foreground md:hidden"
+                >
+                  <ExternalLink className="h-[15px] w-[15px]" strokeWidth={1.75} />
+                </Link>
                 {onRefreshBalance ? (
                   <CommandIcon icon={RefreshCw} label="Refresh balance" onClick={onRefreshBalance} />
                 ) : null}
