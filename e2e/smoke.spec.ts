@@ -50,17 +50,21 @@ test.describe("Marketing", () => {
 test.describe("Dashboard (demo mode)", () => {
   test("terminal opens on home command center", async ({ page }) => {
     await waitForLiveConnection(page);
-    await expect(workspaceMain(page).getByText("Home", { exact: true }).first()).toBeVisible();
-    await expect(workspaceMain(page).getByRole("heading", { name: /Demo desk|Live desk|Command center/ })).toBeVisible();
+    await expect(
+      workspaceMain(page).getByRole("heading", {
+        name: /Demo desk|Live desk|Your desk/,
+      }),
+    ).toBeVisible();
     await expect(workspaceMain(page).getByText("Market pulse")).toBeVisible();
   });
 
   test("terminal loads with live connection", async ({ page }) => {
     await waitForLiveConnection(page);
     await expect(
-      page.getByRole("complementary").getByRole("button", {
-        name: "Copy Signal providers",
-      }),
+      page.getByRole("complementary", { name: "Terminal navigation" }).getByRole(
+        "button",
+        { name: "Copy Follow providers" },
+      ),
     ).toBeVisible();
   });
 

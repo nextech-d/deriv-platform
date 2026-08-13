@@ -233,11 +233,10 @@ export function DashboardClient({
     setLastWorkspace(activeView);
   }, [activeView]);
 
-  useEffect(() => {
-    if (!viewChangeRef.current) {
-      viewChangeRef.current = true;
-      return;
-    }
+  /** Only jump to top on intentional nav — never on tick/balance re-renders. */
+  useLayoutEffect(() => {
+    if (!viewChangeRef.current) return;
+    viewChangeRef.current = false;
     scrollToTop(getTerminalWorkspace());
   }, [activeView, getTerminalWorkspace, scrollToTop]);
 
@@ -445,11 +444,11 @@ export function DashboardClient({
         return (
           <TerminalViewLayout stats={sessionStats}>
             <TerminalSplitPanel
-              secondaryLabel="Order ticket"
+              secondaryLabel="Ticket"
               secondaryHint={`${symbol} · Rise / Fall`}
               primarySections={[
                 {
-                  label: "Market feed",
+                  label: "Market",
                   content: (
                     <MarketTicker
                       symbol={symbol}
@@ -463,7 +462,7 @@ export function DashboardClient({
                   ),
                 },
                 {
-                  label: "Open positions",
+                  label: "Open book",
                   description:
                     openCount > 0 ? `${openCount} active` : "None open",
                   content: (
@@ -504,7 +503,7 @@ export function DashboardClient({
         return (
           <TerminalViewLayout stats={sessionStats}>
             <TerminalSplitPanel
-              secondaryLabel="Auto-trader"
+              secondaryLabel="Bot"
               secondaryHint={`${symbol} · MA cross & RSI`}
               primary={
                 <MarketTicker
@@ -577,8 +576,8 @@ export function DashboardClient({
         return (
           <TerminalViewLayout stats={sessionStats}>
             <TerminalPanel
-              label="Open positions"
-              hint="Live P/L · persisted locally"
+              label="Open book"
+              hint="Live P/L · kept on this device"
               bodyClassName="p-0"
               action={
                 openCount > 0 ? (

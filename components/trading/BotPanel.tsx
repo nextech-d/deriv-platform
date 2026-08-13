@@ -3,7 +3,7 @@
 import { Bot, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Input, inputClassName } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { deskActionPane, workspacePane } from "@/components/layout/TerminalViewLayout";
 import { DEMO_RUNTIME_REQUIRED_MS } from "@/lib/bot/settings";
 import type { BotConfig, BotHeartbeat } from "@/lib/bot/types";
@@ -179,25 +179,30 @@ export function BotPanel({
         </p>
       ) : null}
 
-      <div className="bot-fields space-y-4">
+      <div className="bot-fields space-y-3.5">
         <div className="trade-field-group">
-          <label className="trade-field-label" htmlFor="bot-strategy">
-            Strategy
-          </label>
-          <select
-            id="bot-strategy"
-            value={config.strategy}
-            disabled={isRunning}
-            onChange={(e) =>
-              patch({
-                strategy: e.target.value as BotConfig["strategy"],
-              })
-            }
-            className={inputClassName("h-10 disabled:opacity-50")}
-          >
-            <option value="ma_cross">MA cross (fast/slow)</option>
-            <option value="rsi_threshold">RSI threshold</option>
-          </select>
+          <p className="trade-field-label">Strategy</p>
+          <div className="bot-strategy-row">
+            {(
+              [
+                { id: "ma_cross" as const, label: "MA cross" },
+                { id: "rsi_threshold" as const, label: "RSI" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                disabled={isRunning}
+                onClick={() => patch({ strategy: option.id })}
+                className={cn(
+                  "bot-strategy-chip interactive",
+                  config.strategy === option.id && "bot-strategy-chip-active",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="bot-field-grid">

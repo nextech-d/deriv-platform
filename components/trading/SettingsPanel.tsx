@@ -78,12 +78,12 @@ export function SettingsPanel({
   return (
     <TerminalViewLayout>
       <TerminalSplitPanel
-        secondaryLabel="Trading & partners"
-        secondaryHint="Risk gates and partner studio"
+        secondaryLabel="Risk & studios"
+        secondaryHint="Gates, copy limits, partner links"
         primarySections={[
           {
             label: "Appearance",
-            description: "Theme preference",
+            description: "Theme for this desk",
             content: (
               <div className={cn(deskContentPane, "prefs-section")}>
                 <ThemePicker
@@ -128,7 +128,7 @@ export function SettingsPanel({
                 <div>
                   <p className="settings-section-title">Trading gates</p>
                   <p className="settings-section-copy">
-                    Client-side limits enforced before every order
+                    Enforced before every manual order
                   </p>
                 </div>
                 <label className="copy-toggle shrink-0">

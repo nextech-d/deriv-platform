@@ -122,8 +122,8 @@ export function CopyTradingPanel({
     <div className="copy-desk">
       {!embedded ? (
         <CardHeader
-          title="Curated signal providers"
-          subtitle="Vetted desks only — no Telegram/XML import (Phase D)"
+          title="Providers"
+          subtitle="Curated signal desks for this terminal"
         />
       ) : null}
 
@@ -148,7 +148,7 @@ export function CopyTradingPanel({
                 : "Sign in at /login to enable live copy trading."}
           </div>
 
-          <div className="copy-settings-bar desk-tile">
+          <div className="copy-settings-bar">
             <label className="copy-toggle">
               <input
                 type="checkbox"
@@ -194,7 +194,7 @@ export function CopyTradingPanel({
         </div>
 
         {suggestedProvider ? (
-          <div className="copy-suggested-banner desk-tile">
+          <div className="copy-suggested-banner">
             <div className="copy-suggested-banner-main">
               <Sparkles className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.75} />
               <div className="min-w-0">
@@ -346,13 +346,13 @@ export function CopyTradingPanel({
           }}
         />
         <TerminalSplitPanel
-          primaryLabel="Signal providers"
-          primaryHint="Curated desks · vetted manually"
+          primaryLabel="Providers"
+          primaryHint="Follow desks to receive signals"
           primaryTrailing={
             <CopyProvidersHeadChip count={followingCount} />
           }
-          secondaryLabel="Live feed"
-          secondaryHint="Recent copy signals"
+          secondaryLabel="Feed"
+          secondaryHint="60s TTL · copy or auto-copy"
           secondaryTrailing={
             <CopySignalsHeadChip
               count={signals.length}
@@ -459,7 +459,7 @@ const ProviderCard = memo(function ProviderCard({
   return (
     <article
       className={cn(
-        "copy-provider-card desk-tile",
+        "copy-provider-card",
         isFollowing && "copy-provider-card-active",
         isSuggested && "copy-provider-card-suggested",
       )}

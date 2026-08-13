@@ -44,11 +44,11 @@ test.describe("Copy trading (demo)", () => {
   test("copy desk loads provider list and controls", async ({ page }) => {
     await openCopyView(page);
     await expect(
-      workspaceMain(page).locator(".desk-head-title", { hasText: "Signal providers" }),
+      workspaceMain(page).locator(".desk-head-title", { hasText: "Providers" }),
     ).toBeVisible();
     await expect(workspaceMain(page).getByText("Auto-copy new signals")).toBeVisible();
     await expect(
-      workspaceMain(page).locator(".desk-head-title", { hasText: "Live feed" }),
+      workspaceMain(page).locator(".desk-head-title", { hasText: "Feed" }),
     ).toBeVisible();
   });
 

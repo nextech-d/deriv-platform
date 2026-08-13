@@ -126,33 +126,23 @@ export function TerminalTopStrip({
 
   return (
     <header className="terminal-command-bar terminal-command-bar-locked shrink-0">
-      <div className="command-bar-outer mx-auto max-w-[1240px] px-3 pt-2.5 md:px-4 md:pt-3">
-        <div className="shell-float command-bar-panel">
+      <div className="command-bar-outer mx-auto max-w-[1240px] px-3 pt-2 md:px-5 md:pt-2.5">
+        <div className="command-bar-panel">
           <div className="command-bar-main">
             <div className="command-bar-context">
               <p className="command-bar-eyebrow">{viewSection}</p>
               <div className="command-bar-title-row">
                 <h1 className="command-bar-title">{viewTitle}</h1>
                 {symbol ? (
-                  <span className="command-symbol font-mono text-[11px] text-muted">
-                    {symbol}
-                  </span>
+                  <span className="command-symbol font-mono">{symbol}</span>
                 ) : null}
               </div>
             </div>
 
-            <div className="command-bar-nav command-bar-nav-desktop">
-              <PlatformNavRail
-                activeId={activeView}
-                variant="terminal"
-                onNavigate={onViewChange}
-              />
-            </div>
-
             {tickerMode !== "none" ? (
-              <div className="command-ticker command-ticker-desktop">
+              <div className="command-ticker command-ticker-desktop" aria-label="Session ticker">
                 <div className="command-ticker-pill">
-                  <p className="truncate font-mono text-[13px] tabular-nums tracking-tight text-foreground/90">
+                  <p className="command-ticker-line font-mono tabular-nums">
                     <TickerPart label="Bal">{balanceText}</TickerPart>
                     {tickerMode === "balance-open" ? (
                       <>
@@ -222,7 +212,7 @@ export function TerminalTopStrip({
       </div>
 
       {alert ? (
-        <div className="command-alert-outer mx-auto max-w-[1240px] px-3 md:px-4">
+        <div className="command-alert-outer mx-auto max-w-[1240px] px-3 md:px-5">
           <div
             className={cn(
               "command-alert command-alert-panel text-xs",
@@ -403,7 +393,7 @@ function StripAccount({
               </span>
             </p>
             <p className="truncate text-[10px] text-muted">
-              {active.currency} wallet · {displayCurrency} view
+              {active.currency} · {displayCurrency}
             </p>
           </div>
           {canSwitch ? (

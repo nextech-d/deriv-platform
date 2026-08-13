@@ -40,12 +40,16 @@ export function PlatformNavRail({
       if (track.scrollWidth <= track.clientWidth + 1) return;
 
       event.preventDefault();
+      if (isTerminal) {
+        track.scrollLeft += event.deltaY;
+        return;
+      }
       window.scrollBy({ top: event.deltaY, behavior: "auto" });
     };
 
     track.addEventListener("wheel", onWheel, { passive: false });
     return () => track.removeEventListener("wheel", onWheel);
-  }, [variant, className]);
+  }, [variant, className, isTerminal]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;

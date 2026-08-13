@@ -56,7 +56,7 @@ export function SessionStats({
     <DeskPanel variant="metrics" className="session-desk view-in" aria-label="Session metrics">
       <DeskPanelHead
         title="Session"
-        hint="P/L and risk limits"
+        hint="P/L and risk"
         trailing={
           <div
             className="session-status-chip"
@@ -162,7 +162,7 @@ function SessionGaugeMetric({
         </div>
       </div>
       <p className="session-metric-sub">
-        {critical ? "Limit reached" : warn ? "Near stop threshold" : "Of configured limit"}
+        {critical ? "Limit reached" : warn ? "Near stop" : "Of limit"}
       </p>
     </div>
   );

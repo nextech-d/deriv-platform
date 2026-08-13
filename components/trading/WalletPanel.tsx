@@ -88,8 +88,9 @@ export function WalletPanel({ demoMode = false }: WalletPanelProps) {
     <div className="space-y-3">
       <TerminalSplitPanel
         primaryLabel="Cashier"
+        primaryHint="Deposit and withdraw via Deriv"
         secondaryLabel="Agents"
-        secondaryHint="Mobile money listings by country"
+        secondaryHint="Local payment partners"
         primary={
           <div className={cn(deskContentPane, "wallet-desk")}>
             <div className="wallet-deposit-card">

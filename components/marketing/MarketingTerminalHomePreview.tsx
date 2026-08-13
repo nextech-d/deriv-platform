@@ -1,7 +1,10 @@
 import {
   ArrowRight,
+  Bot,
+  Copy,
   LayoutList,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 import {
   DeskPanel,
@@ -9,13 +12,18 @@ import {
 } from "@/components/layout/TerminalViewLayout";
 import { ConnectionPill } from "@/components/trading/ConnectionPill";
 import { Button } from "@/components/ui/button";
-import {
-  PLATFORM_NAV_GROUPS,
-} from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils/cn";
 
 const PREVIEW_SYMBOL = "R_10";
 const PREVIEW_QUOTE = 5432.184;
+
+const QUICK_LAUNCH = [
+  { label: "Trade", desc: "Open a Rise/Fall ticket", icon: TrendingUp },
+  { label: "Auto", desc: "Run a bot on the feed", icon: Bot },
+  { label: "Copy", desc: "Follow signal providers", icon: Copy },
+  { label: "Portfolio", desc: "Review the open book", icon: LayoutList },
+  { label: "Wallet", desc: "Cashier and agents", icon: Wallet },
+];
 
 /**
  * Static mirror of TerminalHomeView for the marketing hero — same structure
@@ -25,11 +33,14 @@ export function MarketingTerminalHomePreview() {
   return (
     <div className="marketing-terminal-preview" aria-hidden inert>
       <div className="terminal-home">
-        <header className="terminal-home-command shell-float">
+        <header className="terminal-home-command">
           <div className="terminal-home-command-main">
-            <p className="trade-field-label">Home</p>
-            <h2 className="terminal-home-title">Demo desk · VRT1000000</h2>
-            <p className="terminal-home-sub">All systems ready</p>
+            <p className="terminal-home-kicker">Command center</p>
+            <h2 className="terminal-home-title">
+              Demo desk
+              <span className="terminal-home-title-id font-mono">VRT1000000</span>
+            </h2>
+            <p className="terminal-home-sub">Desk ready — feed connected</p>
           </div>
           <div className="terminal-home-command-actions">
             <ConnectionPill state="connected" />
@@ -69,9 +80,9 @@ export function MarketingTerminalHomePreview() {
           <DeskPanel variant="metrics" className="terminal-home-market">
             <DeskPanelHead
               title="Market pulse"
-              hint="Market feed live"
+              hint="Feed live"
               trailing={
-                <span className="copy-count-chip pointer-events-none">
+                <span className="terminal-home-inline-link pointer-events-none">
                   Open trade
                 </span>
               }
@@ -103,33 +114,33 @@ export function MarketingTerminalHomePreview() {
           </DeskPanel>
         </div>
 
-        <div className="terminal-home-actions">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="pointer-events-none gap-1.5"
-            tabIndex={-1}
-          >
-            <LayoutList className="h-3.5 w-3.5" strokeWidth={2} />
-            Portfolio (3)
-          </Button>
-          <Button variant="secondary" size="sm" className="pointer-events-none" tabIndex={-1}>
-            Wallet
-          </Button>
-          <Button variant="ghost" size="sm" className="pointer-events-none" tabIndex={-1}>
-            Risk settings
-          </Button>
+        <div className="terminal-home-launch marketing-terminal-preview-launch">
+          {QUICK_LAUNCH.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="terminal-home-launch-tile text-left">
+                <span className="terminal-home-launch-icon">
+                  <Icon className="h-4 w-4" strokeWidth={2} />
+                </span>
+                <span className="terminal-home-launch-copy">
+                  <span className="terminal-home-launch-label">{item.label}</span>
+                  <span className="terminal-home-launch-desc">{item.desc}</span>
+                </span>
+                <ArrowRight className="terminal-home-launch-arrow h-3.5 w-3.5" strokeWidth={2} />
+              </div>
+            );
+          })}
         </div>
 
         <div className="terminal-home-secondary-grid marketing-terminal-preview-secondary">
           <DeskPanel className="terminal-home-watchlist">
-            <DeskPanelHead title="Watchlist" hint="Tap symbol to trade" />
+            <DeskPanelHead title="Watchlist" hint="Tap a symbol to trade" />
             <div className="terminal-home-watchlist-rail">
               {["R_10", "R_100", "BOOM1000", "CRASH1000"].map((item) => (
                 <div
                   key={item}
                   className={cn(
-                    "terminal-home-watch-chip desk-tile text-left",
+                    "terminal-home-watch-chip text-left",
                     item === PREVIEW_SYMBOL && "terminal-home-watch-chip-active",
                   )}
                 >
@@ -143,41 +154,6 @@ export function MarketingTerminalHomePreview() {
               ))}
             </div>
           </DeskPanel>
-        </div>
-
-        <div className="terminal-home-workspaces marketing-terminal-preview-workspaces">
-          {PLATFORM_NAV_GROUPS.map((group) => (
-            <DeskPanel key={group.label} className="terminal-home-workspace-group">
-              <DeskPanelHead title={group.label} hint="Launch workspace" />
-              <div className="terminal-home-workspace-grid">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const isHome = item.id === "home";
-                  return (
-                    <div
-                      key={item.id}
-                      className={cn(
-                        "terminal-home-workspace-tile desk-tile text-left",
-                        isHome && "terminal-home-workspace-tile-active",
-                      )}
-                    >
-                      <span className="terminal-home-workspace-icon">
-                        <Icon className="h-4 w-4" strokeWidth={2} />
-                      </span>
-                      <span className="terminal-home-workspace-label">{item.label}</span>
-                      <span className="terminal-home-workspace-desc">{item.desc}</span>
-                      {!isHome ? (
-                        <ArrowRight
-                          className="terminal-home-workspace-arrow h-3.5 w-3.5"
-                          strokeWidth={2}
-                        />
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </DeskPanel>
-          ))}
         </div>
       </div>
     </div>

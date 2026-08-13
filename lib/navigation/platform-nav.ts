@@ -34,45 +34,45 @@ export interface PlatformNavGroup {
 
 export const PLATFORM_NAV_GROUPS: PlatformNavGroup[] = [
   {
-    label: "Overview",
+    label: "Desk",
     items: [
       {
         id: "home",
         label: "Home",
-        desc: "Terminal overview",
+        desc: "Balance & pulse",
         icon: LayoutDashboard,
         sectionId: "overview",
       },
     ],
   },
   {
-    label: "Trading",
+    label: "Trade",
     items: [
       {
         id: "trade",
         label: "Trade",
-        desc: "Markets & ticket",
+        desc: "Rise/Fall ticket",
         icon: TrendingUp,
         sectionId: "trade",
       },
       {
         id: "auto",
         label: "Auto",
-        desc: "Bot strategies",
+        desc: "Bots on the feed",
         icon: Bot,
         sectionId: "auto",
       },
       {
         id: "copy",
         label: "Copy",
-        desc: "Signal providers",
+        desc: "Follow providers",
         icon: Copy,
         sectionId: "copy",
       },
       {
         id: "portfolio",
         label: "Portfolio",
-        desc: "Open positions",
+        desc: "Open book",
         icon: LayoutList,
         sectionId: "portfolio",
       },
@@ -84,14 +84,14 @@ export const PLATFORM_NAV_GROUPS: PlatformNavGroup[] = [
       {
         id: "wallet",
         label: "Wallet",
-        desc: "Deposit & agents",
+        desc: "Cashier & agents",
         icon: Wallet,
         sectionId: "wallet",
       },
       {
         id: "settings",
         label: "Settings",
-        desc: "Risk & prefs",
+        desc: "Risk & theme",
         icon: Settings,
         sectionId: "settings",
       },

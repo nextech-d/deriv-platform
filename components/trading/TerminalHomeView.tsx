@@ -2,8 +2,11 @@
 
 import {
   ArrowRight,
+  Bot,
+  Copy,
   LayoutList,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 import type { AppView } from "@/components/layout/AppShell";
 import {
@@ -14,9 +17,7 @@ import { POPULAR_SYMBOLS } from "@/components/trading/MarketTicker";
 import { ConnectionPill } from "@/components/trading/ConnectionPill";
 import { Button } from "@/components/ui/button";
 import {
-  PLATFORM_NAV_GROUPS,
   PLATFORM_NAV_ITEMS,
-  type PlatformNavId,
 } from "@/lib/navigation/platform-nav";
 import type { HomeOnboardingStep } from "@/lib/terminal/home-onboarding";
 import { onboardingIncomplete } from "@/lib/terminal/home-onboarding";
@@ -54,9 +55,9 @@ interface TerminalHomeViewProps {
 }
 
 function connectionLabel(state: ConnectionState): string {
-  if (state === "connected") return "Market feed live";
-  if (state === "connecting" || state === "reconnecting") return "Connecting to feed…";
-  return "Market feed offline";
+  if (state === "connected") return "Feed live";
+  if (state === "connecting" || state === "reconnecting") return "Connecting…";
+  return "Feed offline";
 }
 
 function workspaceLabel(view: AppView): string {
@@ -68,6 +69,14 @@ function sourceLabel(source?: OpenContractRecord["source"]): string {
   if (source === "bot") return "Auto";
   return "Manual";
 }
+
+const QUICK_LAUNCH = [
+  { id: "trade" as const, label: "Trade", desc: "Open a Rise/Fall ticket", icon: TrendingUp },
+  { id: "auto" as const, label: "Auto", desc: "Run a bot on the feed", icon: Bot },
+  { id: "copy" as const, label: "Copy", desc: "Follow signal providers", icon: Copy },
+  { id: "portfolio" as const, label: "Portfolio", desc: "Review the open book", icon: LayoutList },
+  { id: "wallet" as const, label: "Wallet", desc: "Cashier and agents", icon: Wallet },
+];
 
 export function TerminalHomeView({
   demoMode = false,
@@ -104,11 +113,11 @@ export function TerminalHomeView({
   const showOnboarding = onboardingIncomplete(onboardingSteps);
 
   const statusLine = tradingLocked
-    ? "Trading locked — review risk limits"
+    ? "Trading locked — review risk limits in Settings"
     : sessionPct >= 80 || dailyPct >= 80
-      ? "Approaching session or daily limit"
+      ? "Approaching session or daily risk limit"
       : feedLive
-        ? "All systems ready"
+        ? "Desk ready — feed connected"
         : "Waiting for market feed";
 
   function openSymbol(nextSymbol: string) {
@@ -119,7 +128,7 @@ export function TerminalHomeView({
   return (
     <div className="terminal-home view-in">
       {showFundingCta ? (
-        <div className="terminal-home-funding-banner shell-float">
+        <div className="terminal-home-funding-banner">
           <div>
             <p className="terminal-home-funding-title">Low balance</p>
             <p className="terminal-home-funding-sub">
@@ -136,14 +145,19 @@ export function TerminalHomeView({
         </div>
       ) : null}
 
-      <header className="terminal-home-command shell-float">
+      <header className="terminal-home-command">
         <div className="terminal-home-command-main">
-          <p className="trade-field-label">Home</p>
-          <h1 className="terminal-home-title">
+          <p className="terminal-home-kicker">Command center</p>
+          <h2 className="terminal-home-title">
             {activeAccount
-              ? `${activeAccount.isDemo ? "Demo" : "Live"} desk · ${activeAccount.loginid}`
-              : "Command center"}
-          </h1>
+              ? `${activeAccount.isDemo ? "Demo" : "Live"} desk`
+              : "Your desk"}
+            {activeAccount ? (
+              <span className="terminal-home-title-id font-mono">
+                {activeAccount.loginid}
+              </span>
+            ) : null}
+          </h2>
           <p className="terminal-home-sub">{statusLine}</p>
         </div>
         <div className="terminal-home-command-actions">
@@ -216,7 +230,7 @@ export function TerminalHomeView({
             trailing={
               <button
                 type="button"
-                className="copy-count-chip interactive"
+                className="terminal-home-inline-link interactive"
                 onClick={() => onNavigate("trade")}
               >
                 Open trade
@@ -260,38 +274,32 @@ export function TerminalHomeView({
         </DeskPanel>
       </div>
 
-      <div className="terminal-home-actions">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="interactive gap-1.5"
-          disabled={openCount === 0}
-          onClick={() => onNavigate("portfolio")}
-        >
-          <LayoutList className="h-3.5 w-3.5" strokeWidth={2} />
-          Portfolio{openCount > 0 ? ` (${openCount})` : ""}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="interactive"
-          onClick={() => onNavigate("wallet")}
-        >
-          Wallet
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="interactive"
-          onClick={() => onNavigate("settings")}
-        >
-          Risk settings
-        </Button>
+      <div className="terminal-home-launch" aria-label="Quick launch">
+        {QUICK_LAUNCH.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="terminal-home-launch-tile interactive text-left"
+              onClick={() => onNavigate(item.id)}
+            >
+              <span className="terminal-home-launch-icon">
+                <Icon className="h-4 w-4" strokeWidth={2} />
+              </span>
+              <span className="terminal-home-launch-copy">
+                <span className="terminal-home-launch-label">{item.label}</span>
+                <span className="terminal-home-launch-desc">{item.desc}</span>
+              </span>
+              <ArrowRight className="terminal-home-launch-arrow h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+          );
+        })}
       </div>
 
       {showOnboarding ? (
         <DeskPanel className="terminal-home-onboarding">
-          <DeskPanelHead title="Getting started" hint="Complete your desk setup" />
+          <DeskPanelHead title="Getting started" hint="Three steps to a live desk" />
           <ul className="terminal-home-onboarding-list">
             {onboardingSteps.map((step) => (
               <li key={step.id}>
@@ -323,7 +331,7 @@ export function TerminalHomeView({
 
       <div className="terminal-home-secondary-grid">
         <DeskPanel className="terminal-home-watchlist">
-          <DeskPanelHead title="Watchlist" hint="Tap symbol to trade" />
+          <DeskPanelHead title="Watchlist" hint="Tap a symbol to trade" />
           <div className="terminal-home-watchlist-rail">
             {POPULAR_SYMBOLS.map((item) => {
               const isActive = item.id === symbol;
@@ -332,7 +340,7 @@ export function TerminalHomeView({
                   key={item.id}
                   type="button"
                   className={cn(
-                    "terminal-home-watch-chip interactive desk-tile text-left",
+                    "terminal-home-watch-chip interactive text-left",
                     isActive && "terminal-home-watch-chip-active",
                   )}
                   onClick={() => openSymbol(item.id)}
@@ -358,7 +366,7 @@ export function TerminalHomeView({
               trailing={
                 <button
                   type="button"
-                  className="copy-count-chip interactive"
+                  className="terminal-home-inline-link interactive"
                   onClick={() => onNavigate("portfolio")}
                 >
                   View all
@@ -403,42 +411,6 @@ export function TerminalHomeView({
             </ul>
           </DeskPanel>
         ) : null}
-      </div>
-
-      <div className="terminal-home-workspaces">
-        {PLATFORM_NAV_GROUPS.map((group) => (
-          <DeskPanel key={group.label} className="terminal-home-workspace-group">
-            <DeskPanelHead title={group.label} hint="Launch workspace" />
-            <div className="terminal-home-workspace-grid">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isHome = item.id === "home";
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    disabled={isHome}
-                    aria-current={isHome ? "page" : undefined}
-                    className={cn(
-                      "terminal-home-workspace-tile interactive desk-tile text-left",
-                      isHome && "terminal-home-workspace-tile-active",
-                    )}
-                    onClick={() => onNavigate(item.id as PlatformNavId)}
-                  >
-                    <span className="terminal-home-workspace-icon">
-                      <Icon className="h-4 w-4" strokeWidth={2} />
-                    </span>
-                    <span className="terminal-home-workspace-label">{item.label}</span>
-                    <span className="terminal-home-workspace-desc">{item.desc}</span>
-                    {!isHome ? (
-                      <ArrowRight className="terminal-home-workspace-arrow h-3.5 w-3.5" strokeWidth={2} />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </DeskPanel>
-        ))}
       </div>
     </div>
   );

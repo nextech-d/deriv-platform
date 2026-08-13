@@ -28,13 +28,13 @@ export const NAV_GROUPS: TerminalNavGroup[] = PLATFORM_NAV_GROUPS.map(
 );
 
 const VIEW_META: Record<AppView, { section: string; title: string }> = {
-  home: { section: "Overview", title: "Home" },
-  trade: { section: "Live terminal", title: "Trade" },
-  auto: { section: "Automation", title: "Trading bot" },
-  copy: { section: "Social", title: "Copy trading" },
-  portfolio: { section: "Positions", title: "Portfolio" },
-  wallet: { section: "Funding", title: "Wallet" },
-  settings: { section: "Preferences", title: "Settings" },
+  home: { section: "Desk", title: "Home" },
+  trade: { section: "Trade", title: "Rise / Fall" },
+  auto: { section: "Trade", title: "Auto" },
+  copy: { section: "Trade", title: "Copy" },
+  portfolio: { section: "Trade", title: "Portfolio" },
+  wallet: { section: "Account", title: "Wallet" },
+  settings: { section: "Account", title: "Settings" },
 };
 
 const SYMBOL_VIEWS: AppView[] = ["trade", "auto", "copy"];
@@ -77,108 +77,114 @@ export function AppShell({
         aria-hidden
       />
 
-      <aside className="terminal-sidebar relative z-10 hidden min-h-0 w-52 shrink-0 flex-col md:flex">
+      <aside
+        className="terminal-sidebar relative z-10 hidden min-h-0 w-[14rem] shrink-0 flex-col md:flex"
+        aria-label="Terminal navigation"
+      >
         <div className="sidebar-brand-panel">
           <button
             type="button"
             onClick={() => onViewChange("home")}
-            className="shell-float shell-float-brand sidebar-brand-inner interactive w-full text-left"
+            className="sidebar-brand interactive w-full text-left"
             aria-current={activeView === "home" ? "page" : undefined}
           >
-            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted">
-              Deriv EA
-            </p>
-            <div className="mt-1 flex items-center gap-2">
-              <p className="text-sm font-semibold tracking-tight">Terminal</p>
+            <div className="sidebar-brand-mark">
+              <span className="sidebar-brand-name">Deriv EA</span>
               <span
                 className={cn(
-                  "command-feed-dot h-1.5 w-1.5 rounded-full",
-                  feedLive && "bg-positive",
-                  feedPending && "animate-pulse-dot bg-warning",
-                  !feedLive && !feedPending && "bg-negative",
+                  "sidebar-feed-dot",
+                  feedLive && "sidebar-feed-dot-live",
+                  feedPending && "sidebar-feed-dot-pending",
+                  !feedLive && !feedPending && "sidebar-feed-dot-offline",
                 )}
-                title={feedLive ? "Feed live" : feedPending ? "Connecting" : "Feed offline"}
+                title={
+                  feedLive
+                    ? "Feed live"
+                    : feedPending
+                      ? "Connecting"
+                      : "Feed offline"
+                }
                 aria-hidden
               />
             </div>
+            <p className="sidebar-brand-sub">Trading terminal</p>
           </button>
         </div>
 
-        <div className="shell-float sidebar-stack-panel">
-          <nav className="sidebar-nav flex flex-1 flex-col gap-4 overflow-y-auto scrollbar-thin">
-            {NAV_GROUPS.map((group) => (
-              <div key={group.label}>
-                <p className="sidebar-group-label mb-1.5 px-1">{group.label}</p>
-                <ul className="space-y-1">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeView === item.id;
-                    return (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          data-active={isActive}
-                          onClick={() => onViewChange(item.id)}
-                          aria-current={isActive ? "page" : undefined}
-                          className="sidebar-nav-row interactive w-full px-2.5 py-2 text-left"
+        <nav className="sidebar-nav flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-y-contain scrollbar-thin">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="sidebar-nav-group">
+              <p className="sidebar-group-label">{group.label}</p>
+              <ul className="sidebar-nav-list">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeView === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        data-active={isActive}
+                        title={`${item.label} — ${item.desc}`}
+                        onClick={() => onViewChange(item.id)}
+                        aria-current={isActive ? "page" : undefined}
+                        className="sidebar-nav-row interactive w-full text-left"
+                      >
+                        <span
+                          className={cn(
+                            "sidebar-nav-icon-wrap",
+                            isActive && "sidebar-nav-icon-wrap-active",
+                          )}
                         >
-                          <div className="flex items-start gap-2.5">
-                            <span
-                              className={cn(
-                                "sidebar-nav-icon-wrap",
-                                isActive && "sidebar-nav-icon-wrap-active",
-                              )}
-                            >
-                              <Icon
-                                className={cn(
-                                  "h-4 w-4",
-                                  isActive ? "text-accent" : "text-muted",
-                                )}
-                                strokeWidth={isActive ? 2.25 : 2}
-                              />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className={cn(
-                                  "text-sm font-medium leading-tight",
-                                  isActive ? "text-foreground" : "text-muted",
-                                )}
-                              >
-                                {item.label}
-                              </p>
-                              <p className="mt-0.5 truncate text-[10px] leading-tight text-muted">
-                                {item.desc}
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </nav>
-
-          {activeAccount ? (
-            <div className="sidebar-session">
-              <p className="sidebar-group-label">Session</p>
-              <p className="mt-1 truncate font-mono text-xs font-medium">
-                {activeAccount.loginid}
-              </p>
-              <p className="mt-0.5 text-[10px] text-muted">
-                <span
-                  className={cn(
-                    "mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle",
-                    activeAccount.isDemo ? "bg-warning" : "bg-positive",
-                  )}
-                  aria-hidden
-                />
-                {activeAccount.isDemo ? "Demo" : "Live"} · {displayCurrency}
-              </p>
+                          <Icon
+                            className={cn(
+                              "h-3.5 w-3.5",
+                              isActive ? "text-accent" : "text-muted",
+                            )}
+                            strokeWidth={isActive ? 2.4 : 2}
+                          />
+                        </span>
+                        <span className="sidebar-nav-copy">
+                          <span
+                            className={cn(
+                              "sidebar-nav-label",
+                              isActive ? "text-foreground" : "text-muted",
+                            )}
+                          >
+                            {item.label}
+                          </span>
+                          <span className="sidebar-nav-desc">{item.desc}</span>
+                        </span>
+                        {isActive ? (
+                          <span className="sidebar-nav-active-mark" aria-hidden />
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          ) : null}
-        </div>
+          ))}
+        </nav>
+
+        {activeAccount ? (
+          <div className="sidebar-session">
+            <div className="sidebar-session-row">
+              <p className="sidebar-group-label">Session</p>
+              <span
+                className={cn(
+                  "sidebar-session-badge",
+                  activeAccount.isDemo
+                    ? "sidebar-session-badge-demo"
+                    : "sidebar-session-badge-live",
+                )}
+              >
+                {activeAccount.isDemo ? "Demo" : "Live"}
+              </span>
+            </div>
+            <p className="sidebar-session-id font-mono">{activeAccount.loginid}</p>
+            <p className="sidebar-session-meta">{displayCurrency} display</p>
+          </div>
+        ) : null}
       </aside>
 
       <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -199,7 +205,7 @@ export function AppShell({
         />
 
         <main className="terminal-workspace relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain scrollbar-thin">
-          <div className="terminal-workspace-inner mx-auto max-w-[1240px] px-3 pb-4 pt-2 md:px-4 md:pt-2.5">
+          <div className="terminal-workspace-inner mx-auto max-w-[1240px] px-3 pb-6 pt-3 md:px-5 md:pt-3.5">
             {children}
           </div>
         </main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 const STORAGE_PREFIX = "deriv-platform:scroll:";
 
@@ -64,6 +64,11 @@ export function usePageScrollRestoration(
 ) {
   const { enabled = true, getContainer = getWindowContainer } = options;
   const restoredRef = useRef(false);
+  const pageKeyRef = useRef(pageKey);
+  const getContainerRef = useRef(getContainer);
+
+  pageKeyRef.current = pageKey;
+  getContainerRef.current = getContainer;
 
   useEffect(() => {
     disableNativeScrollRestoration();
@@ -77,7 +82,7 @@ export function usePageScrollRestoration(
     let attempts = 0;
 
     const tryRestore = () => {
-      const container = getContainer();
+      const container = getContainerRef.current();
       if (!container) {
         if (attempts < 12) {
           attempts += 1;
@@ -99,7 +104,7 @@ export function usePageScrollRestoration(
     return () => {
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [enabled, getContainer, pageKey]);
+  }, [enabled, pageKey]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -129,13 +134,15 @@ export function usePageScrollRestoration(
     };
   }, [enabled, getContainer, pageKey]);
 
+  const scrollToTop = useCallback((container?: ScrollContainer | null) => {
+    const target = container ?? getContainerRef.current();
+    if (!target) return;
+    applyScrollPosition(target, 0);
+    saveScrollPosition(pageKeyRef.current, target);
+  }, []);
+
   return {
-    scrollToTop(container?: ScrollContainer | null) {
-      const target = container ?? getContainer();
-      if (!target) return;
-      applyScrollPosition(target, 0);
-      saveScrollPosition(pageKey, target);
-    },
+    scrollToTop,
     didRestore: () => restoredRef.current,
   };
 }
