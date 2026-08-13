@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { openSettings, waitForLiveConnection, workspaceMain } from "./helpers";
+import {
+  openSettings,
+  waitForLiveConnection,
+  workspaceMain,
+  workspaceSidebar,
+} from "./helpers";
 
 test.describe("API probes", () => {
   test("health returns ok and version", async ({ request }) => {
