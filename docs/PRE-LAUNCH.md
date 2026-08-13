@@ -20,6 +20,15 @@ Use this before pointing production traffic at the platform. Items marked **code
 - [x] Pre-deploy script (`npm run pre-deploy`)
 - [x] Health probe includes version + demo flag
 
+## Automated QA (this pass)
+
+- [x] `npm run pre-deploy` (lint + build + Playwright demo suite)
+- [x] `npm run staging:smoke` against local demo server
+- [x] Chaos e2e (`e2e/chaos.spec.ts`) — double-buy guard, stake cap, hard refresh
+- [x] Website exit — sidebar brand → `/` without logged-in redirect bounce
+
+Still **manual in Chrome** (DevTools Network): Slow 3G reconnect, offline burst ×10, tab background, pending intent on disconnect, PWA install.
+
 ## Manual QA (Chrome)
 
 **Without Docker** — use the dev server:
