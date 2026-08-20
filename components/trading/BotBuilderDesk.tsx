@@ -17,7 +17,6 @@ import {
   Square,
   Trash2,
   Undo2,
-  Workflow,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -238,6 +237,7 @@ export function BotBuilderDesk({
   const [driveOpen, setDriveOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
+  const [blocksMenuOpen, setBlocksMenuOpen] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -643,20 +643,15 @@ export function BotBuilderDesk({
       />
 
       <header className="bot-builder-toolbar">
-        <div className="bot-builder-toolbar-run">
+        <div className="bot-builder-toolbar-qs">
           <button
             type="button"
-            className={cn("bot-builder-run", running && "is-stop")}
-            data-testid="tc-builder-run"
-            aria-label={running ? "Stop bot" : "Run bot"}
-            onClick={handleRun}
+            className="bot-builder-qs-btn"
+            data-testid="tc-builder-qs"
+            onClick={() => setQuickOpen(true)}
           >
-            {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
-            {running ? "Stop" : "Run"}
+            Quick strategy
           </button>
-          <span className="bot-builder-run-state" data-testid="tc-builder-run-state">
-            {running ? "Bot is running" : "Bot is not running"}
-          </span>
         </div>
         <div className="bot-builder-toolbar-tools">
           {TOOL_GROUPS.map((group) => (
@@ -683,11 +678,29 @@ export function BotBuilderDesk({
             </div>
           ))}
         </div>
-        <div className="bot-builder-toolbar-status">
-          <p className="bot-builder-notice">{notice}</p>
-          <span className="bot-builder-status-chip">{snapshot.sourceLabel}</span>
+        <div className="bot-builder-toolbar-run">
+          <button
+            type="button"
+            className={cn("bot-builder-run", running && "is-stop")}
+            data-testid="tc-builder-run"
+            aria-label={running ? "Stop bot" : "Run bot"}
+            onClick={handleRun}
+          >
+            {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
+            {running ? "Stop" : "Run"}
+          </button>
+          <div className="bot-builder-toolbar-run-meta">
+            <span className="bot-builder-run-state" data-testid="tc-builder-run-state">
+              {running ? "Bot is running" : "Bot is not running"}
+            </span>
+            <span className="bot-builder-status-chip">{snapshot.sourceLabel}</span>
+          </div>
         </div>
       </header>
+
+      <p className="bot-builder-live" role="status">
+        {notice}
+      </p>
 
       {flash ? (
         <p
@@ -702,34 +715,36 @@ export function BotBuilderDesk({
       <div className="bot-builder-shell">
         <aside className="bot-builder-menu">
           <div className="bot-builder-menu-head">
-            <button
-              type="button"
-              className="bot-builder-qs-btn"
-              data-testid="tc-builder-qs"
-              onClick={() => setQuickOpen(true)}
-            >
-              <Workflow strokeWidth={2} />
-              Quick strategy
-            </button>
             {onOpenAiBot ? (
               <button type="button" className="bot-builder-ai-btn" onClick={onOpenAiBot}>
                 <Sparkles strokeWidth={2} />
                 AI Bot Generator
               </button>
             ) : null}
-            <p className="bot-builder-menu-title">Blocks menu</p>
-            <label className="bot-builder-search">
-              <Search strokeWidth={2} />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search"
-                aria-label="Search blocks"
-              />
-            </label>
+            <button
+              type="button"
+              className="bot-builder-menu-title"
+              aria-expanded={blocksMenuOpen}
+              onClick={() => setBlocksMenuOpen((open) => !open)}
+            >
+              Blocks menu
+              {blocksMenuOpen ? <ChevronUp strokeWidth={2} /> : <ChevronDown strokeWidth={2} />}
+            </button>
+            {blocksMenuOpen ? (
+              <label className="bot-builder-search">
+                <Search strokeWidth={2} />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search"
+                  aria-label="Search blocks"
+                />
+              </label>
+            ) : null}
           </div>
 
-          <ul className="bot-builder-menu-list" data-scroll-pane>
+          {blocksMenuOpen ? (
+            <ul className="bot-builder-menu-list" data-scroll-pane>
             {categories.map((item) => {
               const isExp = expandedCategories.has(item.id);
               const isAct = activeCategory === item.id;
@@ -828,7 +843,8 @@ export function BotBuilderDesk({
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          ) : null}
 
           {openGroup ? (
             <div className="bot-builder-flyout">
