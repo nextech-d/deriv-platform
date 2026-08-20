@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { KeyRound, Shield, TrendingUp } from "lucide-react";
+import { KeyRound, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/trading/ThemeToggle";
-import { isDemoMode } from "@/lib/config/demo";
+import { BrandMark, BrandWord } from "@/components/navigation/BrandLockup";
+import {
+  AUTH_DASHBOARD_PATH,
+  AUTH_OAUTH_PATH,
+  DERIV_EXTERNAL_LINK,
+  getDerivSignupUrl,
+} from "@/lib/auth/auth-links";
 import { cn } from "@/lib/utils/cn";
 
 interface AuthStatus {
@@ -86,15 +92,18 @@ export function LoginForm() {
         <div className="shell-float login-aside-panel flex flex-1 flex-col justify-between p-10">
           <div>
             <div className="flex items-center gap-2.5">
-              <TrendingUp className="h-4 w-4 text-accent" strokeWidth={2} />
-              <p className="workspace-eyebrow text-accent">Deriv EA Platform</p>
+              <Link href="/" className="tc-brand">
+                <BrandMark />
+                <BrandWord />
+              </Link>
             </div>
             <h1 className="login-aside-title">
-              Live trading via OAuth or PAT
+              Log in with your Deriv account
             </h1>
             <p className="login-aside-copy">
-              OAuth PKCE is the primary path. If Cloudflare blocks your IP, paste a
-              Personal Access Token from Deriv API settings.
+              TradeCity does not create trader accounts. Sign in with Deriv OAuth
+              to trade. If Cloudflare blocks OAuth, paste a Deriv personal access
+              token instead.
             </p>
             <ul className="login-aside-list">
               <li>
@@ -112,21 +121,26 @@ export function LoginForm() {
       </div>
 
       <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-10 md:px-6">
-        <div className="mb-4 flex w-full max-w-md justify-end lg:hidden">
+        <div className="mb-4 flex w-full max-w-md items-center justify-between lg:hidden">
+          <Link href="/" className="tc-brand">
+            <BrandMark />
+            <BrandWord />
+          </Link>
           <ThemeToggle variant="icon" className="command-icon-btn" />
         </div>
 
         <div className="desk-panel login-panel w-full max-w-md">
           <div className="desk-head">
             <div className="desk-head-main">
-              <p className="desk-head-title">Sign in</p>
-              <p className="desk-head-hint">OAuth or personal access token</p>
+              <p className="desk-head-title">Log in</p>
+              <p className="desk-head-hint">Deriv OAuth — PAT if OAuth is blocked</p>
             </div>
           </div>
 
           <div className="desk-body login-panel-body workspace-pane">
             <p className="login-panel-copy">
-              Connect your Deriv account to execute real trades via WebSocket OTP.
+              Connect your Deriv account to trade from this desk. New here? Create
+              the account at Deriv, then come back to log in.
             </p>
 
             {status ? (
@@ -191,11 +205,22 @@ export function LoginForm() {
               </p>
             ) : null}
 
-            <a href="/api/auth/login" className="login-primary-action block">
-              <Button size="lg" className="interactive w-full" disabled={status?.demoMode}>
-                Sign in with Deriv (OAuth)
-              </Button>
+            <a
+              href={AUTH_OAUTH_PATH}
+              className={cn(
+                "login-primary-action inline-flex h-12 w-full items-center justify-center rounded-lg bg-accent text-sm font-medium text-white interactive",
+                status != null && !status.configOk && "pointer-events-none opacity-40",
+              )}
+              {...DERIV_EXTERNAL_LINK}
+            >
+              Log in with Deriv
             </a>
+            <p className="login-signup">
+              Don&apos;t have a Deriv account?{" "}
+              <a href={getDerivSignupUrl()} {...DERIV_EXTERNAL_LINK}>
+                Sign up
+              </a>
+            </p>
 
             {status?.demoMode ? (
               <p className="workspace-inline-alert workspace-inline-alert-warn text-center text-[10px]">
@@ -263,13 +288,11 @@ export function LoginForm() {
               </form>
             )}
 
-            {isDemoMode ? (
-              <p className="login-demo-link text-center text-[10px] text-muted">
-                <Link href="/dashboard" className="text-accent hover:underline">
-                  Continue in demo mode →
-                </Link>
-              </p>
-            ) : null}
+            <p className="login-demo-link text-center text-[10px] text-muted">
+              <Link href={AUTH_DASHBOARD_PATH} className="text-accent hover:underline">
+                Continue without signing in →
+              </Link>
+            </p>
           </div>
         </div>
       </div>

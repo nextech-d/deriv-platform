@@ -1,7 +1,7 @@
 import { AgentAdminPanel } from "@/components/admin/AgentAdminPanel";
 
 export const metadata = {
-  title: "Agent Admin — Deriv EA",
+  title: "Agent Admin — TradeCity",
   robots: { index: false, follow: false },
 };
 

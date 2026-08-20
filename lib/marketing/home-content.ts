@@ -1,22 +1,24 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Bot,
+  ChartLine,
   Copy,
-  LayoutDashboard,
-  LayoutList,
-  Settings,
   Shield,
   Smartphone,
   TrendingUp,
   Wallet,
+  Wand2,
 } from "lucide-react";
 import type { PlatformNavId } from "@/lib/navigation/platform-nav";
+import {
+  PLATFORM_NAV_GROUPS,
+  PLATFORM_NAV_ITEMS,
+} from "@/lib/navigation/platform-nav";
 
 export const HOME_HERO = {
-  eyebrow: "Deriv EA · Synthetics terminal",
+  eyebrow: "TradeCity · Synthetics terminal",
   title: "Synthetics trading,",
   titleAccent: "one command desk.",
-  lead: "Ticket Rise/Fall, run bots, or copy providers from one terminal — balance and live quotes stay on Home.",
+  lead: "Ticket Rise/Fall, run bots, or copy providers from one terminal — balance and live quotes stay on Dashboard.",
 } as const;
 
 export const HOME_MARKETS = {
@@ -45,7 +47,7 @@ export const HOME_MARKET_GROUPS = [
 ] as const;
 
 export interface HomePillar {
-  id: Exclude<PlatformNavId, "home" | "portfolio" | "wallet" | "settings">;
+  id: Extract<PlatformNavId, "manual-trading" | "auto-trader" | "copy-trading">;
   title: string;
   tagline: string;
   body: string;
@@ -55,24 +57,24 @@ export interface HomePillar {
 
 export const HOME_PILLARS: HomePillar[] = [
   {
-    id: "trade",
-    title: "Trade",
-    tagline: "Manual Rise/Fall",
+    id: "manual-trading",
+    title: "Manual trading",
+    tagline: "Rise/Fall ticket",
     body: "Quote gate, stake, duration, and session risk on every ticket.",
     chips: ["Rise / Fall", "Quote gate", "Session risk"],
-    icon: TrendingUp,
+    icon: ChartLine,
   },
   {
-    id: "auto",
-    title: "Auto",
+    id: "auto-trader",
+    title: "Auto trader",
     tagline: "Bots on the feed",
     body: "Bots on the same WebSocket — start, pause, or stop without losing ticks.",
     chips: ["MA cross", "RSI", "Shared feed"],
-    icon: Bot,
+    icon: Wand2,
   },
   {
-    id: "copy",
-    title: "Copy",
+    id: "copy-trading",
+    title: "Copy trading",
     tagline: "Mirror providers",
     body: "Follow providers with stake caps and a book separate from manual trades.",
     chips: ["Stake caps", "Drawdown limits", "Separate book"],
@@ -95,9 +97,9 @@ export const HOME_STEPS = [
   },
   {
     step: "03",
-    title: "Start from Home",
+    title: "Start from Dashboard",
     tag: "Trade",
-    body: "Balance and watchlist first — then Trade, Auto, or Copy.",
+    body: "Balance and watchlist first — then Manual, Auto, or Copy.",
   },
 ] as const;
 
@@ -153,7 +155,7 @@ export const HOME_LIVE_FEED = {
   risk: "Clear",
 } as const;
 
-/** Illustrative desk snapshot — mirrors the in-app Home command center */
+/** Illustrative desk snapshot — mirrors the in-app Dashboard command center */
 export const HOME_DESK_SNAPSHOT: HomeSignal[] = [
   {
     label: "Balance",
@@ -183,74 +185,47 @@ export const HOME_DESK_SNAPSHOT: HomeSignal[] = [
 
 export interface HomeWorkspaceCard {
   id: PlatformNavId;
-  group: "Overview" | "Trading" | "Account";
+  group: string;
   title: string;
   body: string;
   tag: string;
   icon: LucideIcon;
 }
 
-export const HOME_WORKSPACES: HomeWorkspaceCard[] = [
-  {
-    id: "home",
-    group: "Overview",
-    title: "Home",
-    body: "Balance, P/L, watchlist, and resume last workspace.",
+const WORKSPACE_COPY: Partial<
+  Record<PlatformNavId, { body: string; tag: string }>
+> = {
+  dashboard: {
+    body: "Load Bot, Speed Bot, Premium Bots, Free bots, and Analysis tool.",
     tag: "Hub",
-    icon: LayoutDashboard,
   },
-  {
-    id: "trade",
-    group: "Trading",
-    title: "Trade",
-    body: "Rise/Fall tickets with quote gate and resilient feed.",
-    tag: "Manual",
-    icon: TrendingUp,
-  },
-  {
-    id: "auto",
-    group: "Trading",
-    title: "Auto",
-    body: "MA-cross and RSI bots with telemetry and lockouts.",
-    tag: "Bots",
-    icon: Bot,
-  },
-  {
-    id: "copy",
-    group: "Trading",
-    title: "Copy",
-    body: "Provider follows and mirrored tickets with risk caps.",
-    tag: "Mirror",
-    icon: Copy,
-  },
-  {
-    id: "portfolio",
-    group: "Trading",
-    title: "Portfolio",
-    body: "Open contracts, live P/L, and close actions across reloads.",
-    tag: "Book",
-    icon: LayoutList,
-  },
-  {
-    id: "wallet",
-    group: "Account",
-    title: "Wallet",
-    body: "Cashier deposits and country-scoped payment agents.",
-    tag: "Fund",
-    icon: Wallet,
-  },
-  {
-    id: "settings",
-    group: "Account",
-    title: "Settings",
-    body: "Stop-loss, drawdown caps, display currency, and theme.",
-    tag: "Risk",
-    icon: Settings,
-  },
-];
+  "bot-builder": { body: "Visual blocks for trade, purchase, sell, and restart conditions.", tag: "Build" },
+  "free-bots": { body: "Browse free strategies to load into Bot builder.", tag: "Free" },
+  "analysis-tool": { body: "Parity, barrier, matches, and digit frequency on the live feed.", tag: "Analyze" },
+  "ai-bot": { body: "Brief a strategy and hand it to Bot builder.", tag: "AI" },
+  "pro-ai": { body: "Jump to analysis, free bots, or builder from one assist desk.", tag: "Pro" },
+  "deriv-course": { body: "Short modules for desk basics, digits, and bot rehearsal.", tag: "Learn" },
+};
+
+const GROUP_FOR_ID: Record<PlatformNavId, string> = Object.fromEntries(
+  PLATFORM_NAV_GROUPS.flatMap((group) =>
+    group.items.map((item) => [item.id, group.label] as const),
+  ),
+) as Record<PlatformNavId, string>;
+
+export const HOME_WORKSPACES: HomeWorkspaceCard[] = PLATFORM_NAV_ITEMS.map(
+  (item) => ({
+    id: item.id,
+    group: GROUP_FOR_ID[item.id],
+    title: item.label,
+    body: WORKSPACE_COPY[item.id]?.body ?? item.desc,
+    tag: WORKSPACE_COPY[item.id]?.tag ?? item.desc,
+    icon: item.icon,
+  }),
+);
 
 export const HOME_METRICS = [
-  { value: "7", label: "Workspaces" },
+  { value: String(PLATFORM_NAV_ITEMS.length), label: "Workspaces" },
   { value: "5", label: "Display currencies" },
   { value: "24/7", label: "Synthetic hours" },
   { value: "0", label: "Installs required" },
@@ -265,12 +240,12 @@ export const HOME_SECTIONS = {
   platform: {
     eyebrow: "The full desk",
     title: "Every workspace, one sidebar",
-    lead: "Home through settings on the same rail.",
+    lead: "Dashboard through Deriv Course on the same rail.",
   },
   start: {
     eyebrow: "Get started",
     title: "From sign-up to first ticket",
-    lead: "Connect Deriv, fund or demo, then trade from Home.",
+    lead: "Connect Deriv, fund or demo, then trade from Dashboard.",
   },
   day: {
     eyebrow: "A day on the desk",
@@ -299,50 +274,52 @@ export interface HomeDayMoment {
 export const HOME_DAY_ON_DESK: HomeDayMoment[] = [
   {
     time: "08:00",
-    workspace: "Home",
-    navId: "home",
+    workspace: "Dashboard",
+    navId: "dashboard",
     title: "Open the session",
     body: "Balance, P/L, and watchlist before you pick a market.",
   },
   {
     time: "09:15",
-    workspace: "Trade",
-    navId: "trade",
+    workspace: "Manual trading",
+    navId: "manual-trading",
     title: "Ticket off the live quote",
     body: "Rise/Fall through the quote gate with risk notices on every ticket.",
   },
   {
     time: "11:00",
-    workspace: "Auto",
-    navId: "auto",
+    workspace: "Auto trader",
+    navId: "auto-trader",
     title: "Let a bot run the feed",
     body: "MA-cross or RSI on the shared feed — pause without losing ticks.",
   },
   {
     time: "14:30",
-    workspace: "Copy",
-    navId: "copy",
+    workspace: "Copy trading",
+    navId: "copy-trading",
     title: "Mirror a provider signal",
     body: "Follow a provider with copy stake caps and drawdown limits.",
   },
   {
     time: "16:00",
-    workspace: "Portfolio",
-    navId: "portfolio",
-    title: "Manage the open book",
-    body: "Live P/L, close contracts, and trace manual, bot, or copy tickets.",
+    workspace: "Chart",
+    navId: "chart",
+    title: "Read the tick tape",
+    body: "Focus the chart beside live quotes before the next entry.",
   },
   {
     time: "17:45",
-    workspace: "Wallet",
-    navId: "wallet",
-    title: "Fund before tomorrow",
-    body: "Cashier or local agents — then back to Home for the next session.",
+    workspace: "Deriv Course",
+    navId: "deriv-course",
+    title: "Review the playbook",
+    body: "Guides for risk, bots, and copy — then back to Dashboard.",
   },
 ];
 
 export const HOME_CTA = {
   title: "Create your desk",
-  bodyDemo: "Demo is on — open the terminal and ticket Volatility or Boom/Crash with live ticks.",
-  bodyLive: "Sign up with Deriv, fund via Cashier or a local agent, then trade from Home.",
+  bodyDemo:
+    "Demo is on — open the terminal and ticket Volatility or Boom/Crash with live ticks.",
+  bodyLive:
+    "Sign up with Deriv, fund via Cashier or a local agent, then trade from Dashboard.",
 } as const;

@@ -414,7 +414,7 @@ export function MarketingMarketsPanel({ onNavigate, nested = false }: MarketingM
                     <button
                       type="button"
                       className="marketing-markets-trade-link interactive"
-                      onClick={() => onNavigate("trade", "trade")}
+                      onClick={() => onNavigate("manual-trading", "manual-trading")}
                     >
                       Trade
                       <ArrowRight className="h-3 w-3" strokeWidth={2} />

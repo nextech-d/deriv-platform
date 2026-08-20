@@ -22,6 +22,8 @@ interface BotPanelProps {
   onPause: () => void;
   onStop: () => void;
   embedded?: boolean;
+  title?: string;
+  subtitle?: string;
 }
 
 function formatDuration(ms: number): string {
@@ -61,12 +63,14 @@ export function BotPanel({
   onPause,
   onStop,
   embedded = false,
+  title = "Trading bot",
+  subtitle = "MA cross & RSI rules — demo-first (RSK-05)",
 }: BotPanelProps) {
   if (!hydrated) {
     const skeleton = (
       <div className="bot-desk">
         {!embedded ? (
-          <CardHeader title="Auto-trader" subtitle="Loading bot settings…" />
+          <CardHeader title={title} subtitle="Loading bot settings…" />
         ) : null}
         <div className="bot-stat-strip">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -98,8 +102,8 @@ export function BotPanel({
     <div className={cn("bot-desk", embedded && "bot-desk--desk")}>
       {!embedded ? (
         <CardHeader
-          title="Auto-trader"
-          subtitle="MA cross & RSI rules — demo-first (RSK-05)"
+          title={title}
+          subtitle={subtitle}
           action={
             <BotStatusChip status={heartbeat.status} tone={statusTone} />
           }
@@ -187,6 +191,9 @@ export function BotPanel({
               [
                 { id: "ma_cross" as const, label: "MA cross" },
                 { id: "rsi_threshold" as const, label: "RSI" },
+                { id: "parity_bias" as const, label: "Parity" },
+                { id: "barrier_edge" as const, label: "Barrier" },
+                { id: "digit_match" as const, label: "Matches" },
               ] as const
             ).map((option) => (
               <button
@@ -216,7 +223,17 @@ export function BotPanel({
             onChange={(v) => patch({ stake: v })}
           />
           <Field
-            label="Duration (ticks)"
+            label={`Duration (${
+              config.durationUnit === "s"
+                ? "seconds"
+                : config.durationUnit === "m"
+                  ? "minutes"
+                  : config.durationUnit === "h"
+                    ? "hours"
+                    : config.durationUnit === "d"
+                      ? "days"
+                      : "ticks"
+            })`}
             type="number"
             min={1}
             value={config.duration}
@@ -244,7 +261,9 @@ export function BotPanel({
               onChange={(v) => patch({ slowPeriod: v })}
             />
           </div>
-        ) : (
+        ) : null}
+
+        {config.strategy === "rsi_threshold" ? (
           <div className="bot-field-grid bot-field-grid-3">
             <Field
               label="RSI period"
@@ -273,7 +292,60 @@ export function BotPanel({
               onChange={(v) => patch({ rsiOverbought: v })}
             />
           </div>
-        )}
+        ) : null}
+
+        {config.strategy === "barrier_edge" ? (
+          <Field
+            label="Digit barrier"
+            type="number"
+            min={0}
+            max={9}
+            value={config.barrierDigit ?? 4}
+            disabled={isRunning}
+            onChange={(v) => patch({ barrierDigit: v })}
+          />
+        ) : null}
+
+        {config.strategy === "digit_match" ? (
+          <Field
+            label="Match digit"
+            type="number"
+            min={0}
+            max={9}
+            value={config.digitTarget ?? 5}
+            disabled={isRunning}
+            onChange={(v) => patch({ digitTarget: v })}
+          />
+        ) : null}
+
+        {config.strategy === "parity_bias" ? (
+          <div className="trade-field-group">
+            <p className="trade-field-label">Prefer parity</p>
+            <div className="bot-strategy-row">
+              {(
+                [
+                  { id: "auto" as const, label: "Auto" },
+                  { id: "even" as const, label: "Even" },
+                  { id: "odd" as const, label: "Odd" },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  disabled={isRunning}
+                  onClick={() => patch({ parityPrefer: option.id })}
+                  className={cn(
+                    "bot-strategy-chip interactive",
+                    (config.parityPrefer ?? "auto") === option.id &&
+                      "bot-strategy-chip-active",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <Field
           label="Cooldown (ticks between trades)"

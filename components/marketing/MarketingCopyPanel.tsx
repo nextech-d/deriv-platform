@@ -1,6 +1,14 @@
 import type { CSSProperties } from "react";
+import { Copy, Shield, Zap, Users } from "lucide-react";
 import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
 import { COPY_PANEL, getCopyPanelProviders } from "@/lib/marketing/copy-panel";
+
+const HIGHLIGHTS = [
+  { icon: Users, label: "Curated desks", detail: "Vetted providers across East Africa" },
+  { icon: Zap, label: "60s signals", detail: "Real-time calls, not Telegram forwards" },
+  { icon: Shield, label: "Isolated risk", detail: "Copy losses stay off your manual book" },
+  { icon: Copy, label: "Auto-copy", detail: "Mirror trades hands-free or tap to confirm" },
+] as const;
 
 export function MarketingCopyPanel() {
   const providers = getCopyPanelProviders();
@@ -9,9 +17,9 @@ export function MarketingCopyPanel() {
 
   return (
     <section
-      id="copy"
+      id="copy-trading"
       className="marketing-workspace-section marketing-panel marketing-copy-panel"
-      data-panel="copy"
+      data-panel="copy-trading"
       tabIndex={-1}
     >
       <div className="marketing-stagger">
@@ -21,6 +29,23 @@ export function MarketingCopyPanel() {
           <p className="marketing-copy-hero-summary">{COPY_PANEL.summary}</p>
           <p className="marketing-copy-hero-lead">{COPY_PANEL.lead}</p>
         </header>
+
+        <div className="marketing-copy-highlights">
+          {HIGHLIGHTS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="marketing-copy-highlight">
+                <span className="marketing-copy-highlight-icon">
+                  <Icon className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="marketing-copy-highlight-label">{item.label}</p>
+                  <p className="marketing-copy-highlight-detail">{item.detail}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         <div className="marketing-copy-layout">
           <div className="marketing-copy-main">
@@ -158,10 +183,13 @@ export function MarketingCopyPanel() {
           </aside>
         </div>
 
-        <div className="marketing-panel-actions marketing-copy-actions">
-          <div className="marketing-panel-actions-copy">
-            <p className="marketing-panel-actions-title">{COPY_PANEL.ctaTitle}</p>
-            <p className="marketing-panel-actions-body">{COPY_PANEL.ctaBody}</p>
+        <div className="marketing-copy-cta-banner">
+          <div className="marketing-copy-cta-inner">
+            <Copy className="h-6 w-6 text-accent" strokeWidth={1.5} />
+            <div className="marketing-copy-cta-text">
+              <p className="marketing-panel-actions-title">{COPY_PANEL.ctaTitle}</p>
+              <p className="marketing-panel-actions-body">{COPY_PANEL.ctaBody}</p>
+            </div>
           </div>
           <MarketingAuthButtons size="lg" className="marketing-panel-actions-auth" />
         </div>

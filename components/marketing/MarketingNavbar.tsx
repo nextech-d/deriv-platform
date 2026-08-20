@@ -1,17 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Menu, TrendingUp, X } from "lucide-react";
-import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
-import { PlatformNavRail } from "@/components/navigation/PlatformNavRail";
-import { ThemeToggle } from "@/components/trading/ThemeToggle";
+import { useCallback, useEffect, useRef } from "react";
+import { ProductNavbar } from "@/components/navigation/ProductChrome";
 import {
+  platformSectionIdFromNavId,
   platformSectionHref,
   type PlatformNavId,
 } from "@/lib/navigation/platform-nav";
 import { setNavScrollOffset } from "@/lib/navigation/scroll-to-section";
-import { cn } from "@/lib/utils/cn";
+import { writeFreeBotsTier, clearBuilderHandoff } from "@/lib/terminal/desk-handoff";
 
 interface MarketingNavbarProps {
   activeId: PlatformNavId;
@@ -22,21 +19,18 @@ export function MarketingNavbar({
   activeId,
   onNavigate,
 }: MarketingNavbarProps) {
-  const headerRef = useRef<HTMLElement>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const syncNavOffset = useCallback(() => {
     const header = headerRef.current;
     if (!header) return;
-    setNavScrollOffset(header.getBoundingClientRect().bottom + 12);
+    setNavScrollOffset(header.getBoundingClientRect().height);
   }, []);
 
   useEffect(() => {
     syncNavOffset();
     const header = headerRef.current;
     if (!header) return;
-
     const ro = new ResizeObserver(() => syncNavOffset());
     ro.observe(header);
     window.addEventListener("resize", syncNavOffset);
@@ -44,122 +38,19 @@ export function MarketingNavbar({
       ro.disconnect();
       window.removeEventListener("resize", syncNavOffset);
     };
-  }, [syncNavOffset, mobileOpen]);
-
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mobileOpen]);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  function closeMobile() {
-    setMobileOpen(false);
-  }
-
-  const handleSectionNavigate = useCallback(
-    (sectionId: string, id: PlatformNavId) => {
-      closeMobile();
-      onNavigate(sectionId, id);
-    },
-    [onNavigate],
-  );
-
-  function handleBrandClick(e: React.MouseEvent) {
-    e.preventDefault();
-    handleSectionNavigate("overview", "home");
-  }
+  }, [syncNavOffset]);
 
   return (
-    <>
-      <header
-        ref={headerRef}
-        className={cn(
-          "marketing-header marketing-header-fixed",
-          scrolled && "marketing-header-scrolled",
-          mobileOpen && "marketing-header-menu-open",
-        )}
-      >
-        <div className="marketing-header-backdrop" aria-hidden />
-        <div className="marketing-nav-shell mx-auto max-w-7xl px-4 md:px-6">
-          <div className="marketing-nav-bar">
-            <Link
-              href={platformSectionHref("overview")}
-              className="marketing-nav-brand interactive"
-              onClick={handleBrandClick}
-            >
-              <TrendingUp
-                className="marketing-nav-brand-icon h-[1.125rem] w-[1.125rem]"
-                strokeWidth={2}
-              />
-              <span className="marketing-nav-brand-name">Deriv EA</span>
-              <span className="marketing-nav-brand-sep" aria-hidden>
-                /
-              </span>
-              <span className="marketing-nav-brand-tag">Terminal</span>
-            </Link>
-
-            <div className="marketing-nav-center">
-              <PlatformNavRail
-                activeId={activeId}
-                variant="marketing"
-                onSectionNavigate={handleSectionNavigate}
-              />
-            </div>
-
-            <div className="marketing-nav-actions">
-              <ThemeToggle variant="icon" className="marketing-nav-icon-btn" />
-              <MarketingAuthButtons size="nav" className="hidden sm:flex" />
-              <button
-                type="button"
-                className="marketing-nav-icon-btn marketing-nav-menu-btn lg:hidden"
-                aria-expanded={mobileOpen}
-                aria-label={mobileOpen ? "Close menu" : "Open menu"}
-                onClick={() => setMobileOpen((open) => !open)}
-              >
-                {mobileOpen ? (
-                  <X className="h-[1.125rem] w-[1.125rem]" strokeWidth={2} />
-                ) : (
-                  <Menu className="h-[1.125rem] w-[1.125rem]" strokeWidth={2} />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {mobileOpen ? (
-        <div className="marketing-nav-overlay lg:hidden" role="presentation">
-          <button
-            type="button"
-            className="marketing-nav-overlay-backdrop"
-            aria-label="Close menu"
-            onClick={closeMobile}
-          />
-          <div className="marketing-nav-sheet">
-            <div className="marketing-nav-sheet-head">
-              <p className="marketing-nav-sheet-title">Navigate</p>
-              <p className="marketing-nav-sheet-sub">Platform workspaces</p>
-            </div>
-            <PlatformNavRail
-              activeId={activeId}
-              variant="marketing"
-              className="platform-nav-rail-sheet"
-              onSectionNavigate={handleSectionNavigate}
-            />
-            <div className="marketing-nav-sheet-cta">
-              <MarketingAuthButtons size="lg" layout="stack" onAction={closeMobile} />
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </>
+    <div ref={headerRef} className="tc-chrome-fixed">
+      <ProductNavbar
+        brandHref={platformSectionHref("overview")}
+        activeId={activeId}
+        onSelect={(id) => {
+          if (id === "free-bots") writeFreeBotsTier("free");
+          if (id === "bot-builder") clearBuilderHandoff();
+          onNavigate(platformSectionIdFromNavId(id), id);
+        }}
+      />
+    </div>
   );
 }

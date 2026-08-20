@@ -36,7 +36,7 @@ export function buildHomeOnboardingSteps(input: {
         id: "trade",
         label: "Place a demo Rise/Fall trade",
         done: hasTraded,
-        view: "trade",
+        view: "manual-trading",
       },
       {
         id: "risk",
@@ -46,9 +46,9 @@ export function buildHomeOnboardingSteps(input: {
       },
       {
         id: "explore",
-        label: "Try Auto or Copy workspace",
+        label: "Try Auto trader or Copy trading",
         done: followedProviders > 0,
-        view: "copy",
+        view: "copy-trading",
       },
     ];
   }
@@ -58,7 +58,7 @@ export function buildHomeOnboardingSteps(input: {
       id: "trade",
       label: "Place your first trade",
       done: hasTraded,
-      view: "trade",
+      view: "manual-trading",
     },
     {
       id: "risk",

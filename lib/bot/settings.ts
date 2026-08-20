@@ -13,6 +13,9 @@ export const DEFAULT_BOT_CONFIG: BotConfig = {
   rsiOverbought: 70,
   cooldownTicks: 10,
   maxOpenPositions: 1,
+  digitTarget: 5,
+  barrierDigit: 4,
+  parityPrefer: "auto",
 };
 
 const CONFIG_KEY = "deriv_platform_bot_config";

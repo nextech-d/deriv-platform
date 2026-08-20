@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { AUTH_LOGIN_PATH, getDerivSignupUrl } from "@/lib/auth/auth-links";
+import {
+  AUTH_LOGIN_PATH,
+  DERIV_EXTERNAL_LINK,
+  getDerivSignupUrl,
+} from "@/lib/auth/auth-links";
 import { cn } from "@/lib/utils/cn";
 
 interface MarketingAuthButtonsProps {
@@ -34,7 +38,7 @@ export function MarketingAuthButtons({
         <a
           href={signupHref}
           className="marketing-auth-signup"
-          rel="noopener noreferrer"
+          {...DERIV_EXTERNAL_LINK}
           onClick={onAction}
         >
           Sign up

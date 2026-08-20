@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { AUTH_LOGIN_PATH } from "@/lib/auth/auth-links";
 import { EmptyState } from "@/components/ui/empty-state";
 import { deskActionPane, deskContentPane, TerminalSplitPanel } from "@/components/layout/TerminalViewLayout";
 import { CopyHistoryStrip } from "@/components/trading/CopyHistoryStrip";
@@ -113,7 +115,10 @@ export function CopyTradingPanel({
     if (embedded) return <div className={deskContentPane}>{loading}</div>;
     return (
       <Card studio>
-        <CardHeader title="Copy trading" subtitle="Loading providers…" />
+        <CardHeader
+          title="TradeCity — Copy trading"
+          subtitle="Loading providers…"
+        />
       </Card>
     );
   }
@@ -142,10 +147,17 @@ export function CopyTradingPanel({
             )}
           >
             {demoMode
-              ? "Demo mode — copy trades are simulated. Sign in for live execution."
+              ? "Demo mode — copy trades are simulated. Log in with Deriv for live execution."
               : liveCopyAllowed
                 ? "Live account — copy trades execute via Deriv OTP WebSocket."
-                : "Sign in at /login to enable live copy trading."}
+                : (
+                  <>
+                    <Link href={AUTH_LOGIN_PATH} className="font-semibold underline">
+                      Log in
+                    </Link>
+                    {" "}with Deriv to enable live copy trading.
+                  </>
+                )}
           </div>
 
           <div className="copy-settings-bar">

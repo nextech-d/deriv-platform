@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   PLATFORM_NAV_GROUPS,
+  PLATFORM_NAV_ITEMS,
+  type AppView,
   type PlatformNavId,
 } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils/cn";
@@ -10,7 +12,7 @@ import { cn } from "@/lib/utils/cn";
 export type PlatformNavRailVariant = "marketing" | "terminal";
 
 interface PlatformNavRailProps {
-  activeId: PlatformNavId;
+  activeId: AppView | PlatformNavId;
   variant?: PlatformNavRailVariant;
   onNavigate?: (id: PlatformNavId) => void;
   onSectionNavigate?: (sectionId: string, id: PlatformNavId) => void;
@@ -40,26 +42,22 @@ export function PlatformNavRail({
       if (track.scrollWidth <= track.clientWidth + 1) return;
 
       event.preventDefault();
-      if (isTerminal) {
-        track.scrollLeft += event.deltaY;
-        return;
-      }
-      window.scrollBy({ top: event.deltaY, behavior: "auto" });
+      track.scrollLeft += event.deltaY;
     };
 
     track.addEventListener("wheel", onWheel, { passive: false });
     return () => track.removeEventListener("wheel", onWheel);
-  }, [variant, className, isTerminal]);
+  }, [variant, className]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
-    const sync = () => {
+    const measure = () => {
       const active = track.querySelector<HTMLElement>('[aria-current="page"]');
       if (!active) {
         setIndicator({ width: 0, x: 0 });
-        return;
+        return null;
       }
       const trackRect = track.getBoundingClientRect();
       const activeRect = active.getBoundingClientRect();
@@ -67,15 +65,20 @@ export function PlatformNavRail({
         width: activeRect.width,
         x: activeRect.left - trackRect.left,
       });
+      return active;
     };
 
-    sync();
-    const ro = new ResizeObserver(sync);
+    const active = measure();
+    active?.scrollIntoView({ block: "nearest", inline: "nearest" });
+
+    const ro = new ResizeObserver(measure);
     ro.observe(track);
-    window.addEventListener("resize", sync);
+    track.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", sync);
+      track.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
     };
   }, [activeId, className, variant]);
 
@@ -101,33 +104,31 @@ export function PlatformNavRail({
         />
         {isMarketing ? (
           <ul className="platform-nav-rail-list platform-nav-rail-list-marketing">
-            {PLATFORM_NAV_GROUPS.flatMap((group) => group.items).map(
-              (item, index) => {
-                const isActive = activeId === item.id;
-                return (
-                  <li key={item.id} className="platform-nav-rail-marketing-item">
-                    {index > 0 ? (
-                      <span className="platform-nav-rail-sep" aria-hidden>
-                        /
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={cn(
-                        "platform-nav-rail-item interactive",
-                        isActive && "platform-nav-rail-item-active",
-                      )}
-                      aria-current={isActive ? "page" : undefined}
-                      onClick={() =>
-                        onSectionNavigate?.(item.sectionId, item.id)
-                      }
-                    >
-                      <span className="platform-nav-rail-label">{item.label}</span>
-                    </button>
-                  </li>
-                );
-              },
-            )}
+            {PLATFORM_NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeId === item.id;
+              return (
+                <li key={item.id} className="platform-nav-rail-marketing-item">
+                  <button
+                    type="button"
+                    className={cn(
+                      "platform-nav-rail-item interactive",
+                      isActive && "platform-nav-rail-item-active",
+                    )}
+                    aria-current={isActive ? "page" : undefined}
+                    title={item.label}
+                    onClick={() =>
+                      onSectionNavigate?.(item.sectionId, item.id)
+                    }
+                  >
+                    <span className="platform-nav-rail-icon-wrap" aria-hidden>
+                      <Icon className="platform-nav-rail-icon" strokeWidth={2.1} />
+                    </span>
+                    <span className="platform-nav-rail-label">{item.label}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           PLATFORM_NAV_GROUPS.map((group, groupIndex) => (
@@ -139,16 +140,14 @@ export function PlatformNavRail({
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeId === item.id;
-                  const classNames = cn(
-                    "platform-nav-rail-item interactive",
-                    isActive && "platform-nav-rail-item-active",
-                  );
-
                   return (
                     <li key={item.id}>
                       <button
                         type="button"
-                        className={classNames}
+                        className={cn(
+                          "platform-nav-rail-item interactive",
+                          isActive && "platform-nav-rail-item-active",
+                        )}
                         aria-current={isActive ? "page" : undefined}
                         onClick={() => onNavigate?.(item.id)}
                       >

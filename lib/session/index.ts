@@ -47,5 +47,17 @@ export async function requireSession() {
   if (!session.isLoggedIn || !session.accessToken) {
     throw new Error("Unauthorized");
   }
+
+  const { isTokenExpiringSoon, refreshAccessToken } = await import(
+    "@/lib/auth/session-from-token"
+  );
+  if (isTokenExpiringSoon(session.expiresAt)) {
+    const ok = await refreshAccessToken();
+    if (!ok) {
+      throw new Error("Unauthorized");
+    }
+    return getSession();
+  }
+
   return session;
 }

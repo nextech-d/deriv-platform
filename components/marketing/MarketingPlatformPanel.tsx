@@ -5,11 +5,11 @@ import type { PlatformNavId } from "@/lib/navigation/platform-nav";
 import { platformSectionIdFromNavId } from "@/lib/navigation/platform-nav";
 
 interface MarketingPlatformPanelProps {
-  navId: Exclude<PlatformNavId, "home">;
+  navId: Exclude<PlatformNavId, "dashboard">;
 }
 
 export function MarketingPlatformPanel({ navId }: MarketingPlatformPanelProps) {
-  if (navId === "copy") {
+  if (navId === "copy-trading") {
     return <MarketingCopyPanel />;
   }
 

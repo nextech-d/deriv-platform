@@ -44,16 +44,25 @@ type TickerMode = "balance" | "balance-open" | "none";
 
 function tickerModeForView(view: AppView): TickerMode {
   switch (view) {
-    case "home":
+    case "dashboard":
       return "balance-open";
-    case "trade":
-    case "auto":
-    case "copy":
+    case "manual-trading":
+    case "d-trader":
+    case "auto-trader":
+    case "trading-bot":
+    case "chart":
+    case "copy-trading":
       return "balance";
     case "portfolio":
       return "balance-open";
     case "wallet":
     case "settings":
+    case "bot-builder":
+    case "ai-bot":
+    case "analysis-tool":
+    case "pro-ai":
+    case "deriv-course":
+    case "free-bots":
       return "none";
     default:
       return "balance";

@@ -3,6 +3,7 @@
 import { ConnectionFsm, WS_TIMING } from "../lib/ws/connection-fsm";
 import { RequestRegistry } from "../lib/ws/request-registry";
 import type {
+  ChartHistorySnapshot,
   ConnectionState,
   DerivWsMessage,
   OpenContractEvent,
@@ -67,7 +68,7 @@ function sendRaw(payload: Record<string, unknown>): void {
 function sendWithReqId(
   payload: Record<string, unknown>,
   method: string,
-  timeoutMs = WS_TIMING.defaultRequestTimeoutMs,
+  timeoutMs: number = WS_TIMING.defaultRequestTimeoutMs,
 ): Promise<unknown> {
   const reqId = registry.createId();
   sendRaw({ ...payload, req_id: reqId });
@@ -137,13 +138,15 @@ function handleMessage(event: MessageEvent<string>): void {
       if (symbol) liveTickSubscriptions.add(symbol);
       return;
     }
-    emit({
-      type: "ERROR",
-      payload: {
-        code,
-        message: message.error.message ?? "Unknown WebSocket error",
-      },
-    });
+    if (!message.echo_req?.ticks_history) {
+      emit({
+        type: "ERROR",
+        payload: {
+          code,
+          message: message.error.message ?? "Unknown WebSocket error",
+        },
+      });
+    }
   }
 
   const reqId = message.req_id ?? message.echo_req?.req_id;
@@ -258,6 +261,25 @@ async function executeTrade(request: TradeRequest): Promise<void> {
         duration: request.duration,
         duration_unit: request.durationUnit,
         symbol: request.symbol,
+        ...(() => {
+          const tickPick =
+            request.contractType === "TICKHIGH" || request.contractType === "TICKLOW";
+          const barrier =
+            request.barrier !== undefined && request.barrier !== null
+              ? String(request.barrier)
+              : !tickPick && request.lastDigitPrediction !== undefined
+                ? String(request.lastDigitPrediction)
+                : undefined;
+          return {
+            ...(barrier !== undefined ? { barrier } : {}),
+            ...(request.barrier2 !== undefined && request.barrier2 !== null
+              ? { barrier2: String(request.barrier2) }
+              : {}),
+            ...(tickPick && request.lastDigitPrediction !== undefined
+              ? { selected_tick: request.lastDigitPrediction }
+              : {}),
+          };
+        })(),
       },
       "proposal",
     )) as DerivWsMessage;
@@ -471,6 +493,77 @@ function forceReconnect(reason: string): void {
   }
 }
 
+async function requestChartHistory(symbol: string, granularity: number): Promise<void> {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    emit({
+      type: "ERROR",
+      payload: { code: "chart", message: "Not connected to Deriv" },
+    });
+    return;
+  }
+
+  const ticksStyle = granularity <= 0;
+  try {
+    const message = (await sendWithReqId(
+      {
+        ticks_history: symbol,
+        end: "latest",
+        count: ticksStyle ? 800 : 300,
+        style: ticksStyle ? "ticks" : "candles",
+        adjust_start_time: 1,
+        ...(ticksStyle ? {} : { granularity }),
+      },
+      "ticks_history",
+      20_000,
+    )) as DerivWsMessage;
+
+    if (message.error) {
+      throw new Error(message.error.message ?? "ticks_history failed");
+    }
+
+    const payload: ChartHistorySnapshot = ticksStyle
+      ? {
+          symbol,
+          granularity: 0,
+          ticks: (message.history?.prices ?? []).flatMap((price, index) => {
+            const quote = Number(price);
+            const epoch = Number(message.history?.times?.[index] ?? 0);
+            if (!Number.isFinite(quote) || !Number.isFinite(epoch) || epoch <= 0) {
+              return [];
+            }
+            return [{ symbol, quote, epoch }];
+          }),
+          candles: [],
+        }
+      : {
+          symbol,
+          granularity,
+          ticks: [],
+          candles: (message.candles ?? []).flatMap((candle) => {
+            const open = Number(candle.open);
+            const high = Number(candle.high);
+            const low = Number(candle.low);
+            const close = Number(candle.close);
+            const epoch = Number(candle.epoch);
+            if (![open, high, low, close, epoch].every(Number.isFinite) || epoch <= 0) {
+              return [];
+            }
+            return [{ open, high, low, close, epoch }];
+          }),
+        };
+
+    emit({ type: "CHART_HISTORY", payload });
+  } catch (err) {
+    emit({
+      type: "ERROR",
+      payload: {
+        code: "chart",
+        message: err instanceof Error ? err.message : "Chart history failed",
+      },
+    });
+  }
+}
+
 function disconnect(): void {
   fsm.reset();
   registry.clear();
@@ -544,6 +637,10 @@ self.onmessage = (event: MessageEvent<WorkerCommand | { type: "NEED_OTP_REFRESH"
   if (command.type === "FORCE_RECONNECT") {
     forceReconnect("manual reconnect");
     return;
+  }
+
+  if (command.type === "REQUEST_CHART_HISTORY") {
+    void requestChartHistory(command.payload.symbol, command.payload.granularity);
   }
 };
 

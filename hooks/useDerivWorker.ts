@@ -26,6 +26,7 @@ import {
 import { reportClientError } from "@/lib/monitoring/report";
 import type { OpenContractRecord, PendingIntentRecord } from "@/lib/state/types";
 import type { TradeSource } from "@/lib/trading/source";
+import { demoHorizonTicks, isCallLike } from "@/lib/bot/trade-map";
 import type {
   ConnectionState,
   OpenContractEvent,
@@ -33,12 +34,17 @@ import type {
   TradeRequest,
   WorkerCommand,
   WorkerEvent,
+  ChartHistorySnapshot,
 } from "@/lib/ws/protocol";
+import {
+  applyTickToChartCandles,
+  applyTickToHistory,
+} from "@/lib/chart/candles";
 import { fetchWithTimeout } from "@/lib/utils/fetch-with-timeout";
 
 const DEFAULT_SYMBOL = "R_10";
-const MAX_TICK_HISTORY = 120;
-const MAX_TICK_HISTORY_PER_SYMBOL = 80;
+const MAX_TICK_HISTORY = 1560;
+const MAX_TICK_HISTORY_PER_SYMBOL = 120;
 
 type WorkerInbound = WorkerEvent | { type: "NEED_OTP_REFRESH" };
 
@@ -112,6 +118,7 @@ function attachTradeSource(
 export interface UseDerivWorkerOptions {
   onContractClosed?: (profit: number, contractId: number) => void;
   onTick?: (tick: TickEvent, history: TickEvent[]) => void;
+  onTradeRejected?: (reason: string) => void;
 }
 
 async function fetchOtp(accountId?: string): Promise<string> {
@@ -132,7 +139,7 @@ async function fetchOtp(accountId?: string): Promise<string> {
 }
 
 async function resolveWsUrl(accountId?: string): Promise<string> {
-  if (isDemoMode) {
+  if (isDemoMode || !accountId) {
     return getPublicWsUrl(derivConfig.appId) || PUBLIC_WS_URL;
   }
   return fetchOtp(accountId);
@@ -153,11 +160,13 @@ export function useDerivWorker(
 ) {
   const onContractClosedRef = useRef(options?.onContractClosed);
   const onTickRef = useRef(options?.onTick);
+  const onTradeRejectedRef = useRef(options?.onTradeRejected);
 
   useEffect(() => {
     onContractClosedRef.current = options?.onContractClosed;
     onTickRef.current = options?.onTick;
-  }, [options?.onContractClosed, options?.onTick]);
+    onTradeRejectedRef.current = options?.onTradeRejected;
+  }, [options?.onContractClosed, options?.onTick, options?.onTradeRejected]);
 
   const workerRef = useRef<Worker | null>(null);
   const subscriptionsRef = useRef<string[]>([]);
@@ -169,23 +178,33 @@ export function useDerivWorker(
     new WsMetricsTracker(typeof window !== "undefined" ? loadPersistedMetrics() : null),
   );
   const prevConnectionRef = useRef<ConnectionState>("disconnected");
-  const isTradingRef = useRef(false);
   const tradeInFlightRef = useRef(false);
+  const tradeQueueRef = useRef<TradeRequest[]>([]);
+  const dispatchTradeRef = useRef<(request: TradeRequest) => void>(() => {});
   const [wsMetrics, setWsMetrics] = useState<WsMetricsSnapshot>(() =>
     metricsTrackerRef.current.getSnapshot(),
   );
   const [state, setState] = useState<DerivWorkerState>(initialState);
+  const [chartHistory, setChartHistory] = useState<ChartHistorySnapshot | null>(null);
+  const [chartHistoryLoading, setChartHistoryLoading] = useState(false);
+  const chartKeyRef = useRef("");
+
+  const flushTradeQueue = useCallback(() => {
+    if (tradeInFlightRef.current) return;
+    const next = tradeQueueRef.current.shift();
+    if (next) dispatchTradeRef.current(next);
+  }, []);
 
   const releaseTradeLock = useCallback(() => {
     tradeInFlightRef.current = false;
-  }, []);
+    flushTradeQueue();
+  }, [flushTradeQueue]);
 
   useEffect(() => {
-    isTradingRef.current = state.isTrading;
     if (!state.isTrading) {
-      tradeInFlightRef.current = false;
+      releaseTradeLock();
     }
-  }, [state.isTrading]);
+  }, [state.isTrading, releaseTradeLock]);
 
   const sendCommand = useCallback((command: WorkerCommand) => {
     workerRef.current?.postMessage(command);
@@ -198,8 +217,8 @@ export function useDerivWorker(
         type: "INIT",
         payload: {
           wsUrl,
-          tradingEnabled: !isDemoMode,
-          isPublic: isDemoMode,
+          tradingEnabled: !isDemoMode && Boolean(activeAccountId),
+          isPublic: isDemoMode || !activeAccountId,
         },
       });
     } catch (err) {
@@ -280,6 +299,17 @@ export function useDerivWorker(
         return { ...prev, lastTick: tick, tickHistory: history };
       });
 
+      setChartHistory((prev) => {
+        if (!prev || prev.symbol !== tick.symbol) return prev;
+        if (prev.granularity <= 0) {
+          return { ...prev, ticks: applyTickToHistory(prev.ticks, tick) };
+        }
+        return {
+          ...prev,
+          candles: applyTickToChartCandles(prev.candles, tick, prev.granularity),
+        };
+      });
+
       if (!isDemoMode || demoContractsRef.current.size === 0) return;
 
       void (async () => {
@@ -325,11 +355,11 @@ export function useDerivWorker(
       setState((prev) => ({ ...prev, isTrading: true, tradeNotice: null }));
 
       const intentId = crypto.randomUUID();
-      const direction = request.contractType as "CALL" | "PUT";
+      const direction = isCallLike(request.contractType) ? "CALL" : "PUT";
       await persistPendingIntent({
         id: intentId,
         symbol: request.symbol,
-        contractType: direction,
+        contractType: request.contractType,
         amount: request.amount,
         status: "pending",
       });
@@ -345,7 +375,7 @@ export function useDerivWorker(
         stake: request.amount,
         symbol: request.symbol,
         ticksSeen: 0,
-        maxTicks: request.duration,
+        maxTicks: demoHorizonTicks(request.duration, request.durationUnit),
         intentId,
         source: request.source,
       });
@@ -384,16 +414,8 @@ export function useDerivWorker(
     [],
   );
 
-  const placeTrade = useCallback(
+  const dispatchTrade = useCallback(
     (request: TradeRequest) => {
-      if (tradeInFlightRef.current || isTradingRef.current) {
-        setState((prev) => ({
-          ...prev,
-          tradeNotice: "Trade already in progress — wait for confirmation",
-        }));
-        return;
-      }
-
       tradeInFlightRef.current = true;
       setState((prev) => ({ ...prev, tradeNotice: null }));
 
@@ -423,6 +445,37 @@ export function useDerivWorker(
       sendCommand({ type: "TRADE_REQUEST", payload: request });
     },
     [releaseTradeLock, sendCommand, simulateDemoTrade],
+  );
+  dispatchTradeRef.current = dispatchTrade;
+
+  const placeTrade = useCallback(
+    (request: TradeRequest) => {
+      if (tradeInFlightRef.current) {
+        setState((prev) => ({
+          ...prev,
+          tradeNotice: "Trade already in progress — wait for confirmation",
+        }));
+        return;
+      }
+      dispatchTrade(request);
+    },
+    [dispatchTrade],
+  );
+
+  const placeTradeSequence = useCallback(
+    (requests: TradeRequest[]) => {
+      const pending = requests.filter((request) => request.amount > 0);
+      if (pending.length === 0) return;
+      const [head, ...tail] = pending;
+      if (!head) return;
+      if (tradeInFlightRef.current) {
+        tradeQueueRef.current.push(...pending);
+        return;
+      }
+      tradeQueueRef.current.push(...tail);
+      dispatchTrade(head);
+    },
+    [dispatchTrade],
   );
 
   const closeContract = useCallback(
@@ -506,7 +559,6 @@ export function useDerivWorker(
 
   useEffect(() => {
     if (!state.isHydrated) return;
-    if (!isDemoMode && !activeAccountId) return;
 
     const worker = new Worker(
       new URL("../workers/deriv-ws.engine.ts", import.meta.url),
@@ -562,6 +614,14 @@ export function useDerivWorker(
           pushTick(message.payload);
           break;
 
+        case "CHART_HISTORY": {
+          const key = `${message.payload.symbol}:${message.payload.granularity}`;
+          if (key !== chartKeyRef.current) break;
+          setChartHistory(message.payload);
+          setChartHistoryLoading(false);
+          break;
+        }
+
         case "BALANCE":
           if (!isDemoMode) {
             setState((prev) => ({
@@ -609,6 +669,7 @@ export function useDerivWorker(
 
         case "TRADE_REJECTED":
           releaseTradeLock();
+          onTradeRejectedRef.current?.(message.payload.reason);
           void failStalePendingIntents(message.payload.reason).then(async () => {
             const pendingIntents = await getPendingIntents();
             setState((prev) => ({
@@ -622,6 +683,10 @@ export function useDerivWorker(
 
         case "ERROR": {
           const code = message.payload.code;
+          if (code === "chart") {
+            setChartHistoryLoading(false);
+            break;
+          }
           if (code === "AlreadySubscribed" || code === "reconnect") {
             if (code === "reconnect") {
               const snapshot = metricsTrackerRef.current.onError(
@@ -667,6 +732,18 @@ export function useDerivWorker(
     };
   }, [activeAccountId, state.isHydrated, connect, pushTick, releaseTradeLock]);
 
+  const requestChartHistory = useCallback(
+    (symbol: string, granularity: number) => {
+      chartKeyRef.current = `${symbol}:${granularity}`;
+      setChartHistoryLoading(true);
+      sendCommand({
+        type: "REQUEST_CHART_HISTORY",
+        payload: { symbol, granularity },
+      });
+    },
+    [sendCommand],
+  );
+
   const openContracts = state.contracts.filter((c) => !c.isSold);
 
   const sessionPnl = state.contracts.reduce(
@@ -681,8 +758,12 @@ export function useDerivWorker(
     subscribeTicks,
     syncTickSubscriptions,
     placeTrade,
+    placeTradeSequence,
     closeContract,
     reconnect: () => sendCommand({ type: "FORCE_RECONNECT" }),
+    requestChartHistory,
+    chartHistory,
+    chartHistoryLoading,
     requestBalance: () => {
       if (isDemoMode) {
         setState((prev) => ({ ...prev, balance: DEMO_BALANCE }));

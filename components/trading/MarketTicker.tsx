@@ -9,16 +9,17 @@ import {
 } from "@/components/trading/AdvancedChart";
 import { deskContentPane } from "@/components/layout/TerminalViewLayout";
 import { cn } from "@/lib/utils/cn";
+import {
+  DERIV_SYMBOLS,
+  SYMBOL_GROUPS,
+} from "@/lib/markets/symbols";
 import type { TickEvent } from "@/lib/ws/protocol";
 
-export const POPULAR_SYMBOLS = [
-  { id: "R_10", label: "Volatility 10", group: "Synthetics" },
-  { id: "R_25", label: "Volatility 25", group: "Synthetics" },
-  { id: "R_75", label: "Volatility 75", group: "Synthetics" },
-  { id: "R_100", label: "Volatility 100", group: "Synthetics" },
-  { id: "BOOM1000", label: "Boom 1000", group: "Crash/Boom" },
-  { id: "CRASH1000", label: "Crash 1000", group: "Crash/Boom" },
-] as const;
+export const POPULAR_SYMBOLS = DERIV_SYMBOLS.map((s) => ({
+  id: s.id,
+  label: s.shortLabel,
+  group: SYMBOL_GROUPS.find((g) => g.id === s.group)?.label ?? s.group,
+}));
 
 interface MarketTickerProps {
   symbol: string;

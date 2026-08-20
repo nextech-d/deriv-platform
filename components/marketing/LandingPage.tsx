@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
+import { MarketingDashboardPanel } from "@/components/marketing/MarketingDashboardPanel";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { MarketingHomeSection } from "@/components/marketing/MarketingHomeSection";
+import {
+  isMarketingLiveDeskId,
+  MarketingLiveDeskPanel,
+} from "@/components/marketing/MarketingLiveDeskPanel";
 import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingPlatformPanel } from "@/components/marketing/MarketingPlatformPanel";
-import { HOME_CTA } from "@/lib/marketing/home-content";
 import {
   platformNavIdFromSectionId,
   platformSectionHref,
@@ -18,6 +20,7 @@ import {
   usePageScrollRestoration,
 } from "@/lib/navigation/scroll-restoration";
 import { readSectionIdFromHash } from "@/lib/navigation/scroll-to-section";
+import { useScrollAnywhere } from "@/hooks/useScrollAnywhere";
 import { cn } from "@/lib/utils/cn";
 
 interface LandingPageProps {
@@ -29,8 +32,8 @@ type PanelDirection = "forward" | "back" | "none";
 
 function resolveActiveIdFromHash(): PlatformNavId {
   const hash = readSectionIdFromHash();
-  if (!hash) return "home";
-  return platformNavIdFromSectionId(hash) ?? "home";
+  if (!hash) return "dashboard";
+  return platformNavIdFromSectionId(hash) ?? "dashboard";
 }
 
 function directionBetween(from: PlatformNavId, to: PlatformNavId): PanelDirection {
@@ -40,12 +43,14 @@ function directionBetween(from: PlatformNavId, to: PlatformNavId): PanelDirectio
   return nextIdx > prevIdx ? "forward" : "back";
 }
 
-export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPageProps) {
-  const [activeId, setActiveId] = useState<PlatformNavId>("home");
+export function LandingPage(_props: LandingPageProps = {}) {
+  const [activeId, setActiveId] = useState<PlatformNavId>("dashboard");
   const [panelDirection, setPanelDirection] = useState<PanelDirection>("none");
   const [scrollReady, setScrollReady] = useState(false);
-  const prevActiveRef = useRef<PlatformNavId>("home");
+  const prevActiveRef = useRef<PlatformNavId>("dashboard");
   const userNavigatedRef = useRef(false);
+
+  useScrollAnywhere();
 
   const { scrollToTop } = usePageScrollRestoration(marketingScrollKey(activeId), {
     enabled: scrollReady,
@@ -93,7 +98,7 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
   );
 
   return (
-    <div className="marketing-page marketing-page--desktop-first relative min-h-dvh overflow-x-hidden bg-canvas">
+    <div className="marketing-page marketing-page--desktop-first relative min-h-dvh overflow-x-hidden bg-canvas" data-scroll-root>
       <div className="page-accent-wash pointer-events-none absolute inset-0" />
       <div
         className="marketing-hero-glow pointer-events-none absolute left-1/2 top-[-4rem] h-[40rem] w-[52rem] -translate-x-1/3 rounded-full blur-3xl"
@@ -106,7 +111,7 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
       />
       <div className="marketing-page-spacer" aria-hidden />
 
-      <main className="marketing-page-main relative mx-auto w-full max-w-[84rem] px-6 pb-24 xl:px-12">
+      <main className="marketing-page-main relative mx-auto w-full max-w-[84rem] px-6 pb-16 xl:px-12">
         <div
           key={activeId}
           className={cn(
@@ -116,10 +121,11 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
           )}
         >
           <div className="marketing-stagger">
-            {activeId === "home" ? (
-              <MarketingHomeSection
-                demoMode={demoMode}
-                isLoggedIn={isLoggedIn}
+            {activeId === "dashboard" ? (
+              <MarketingDashboardPanel onNavigate={handleNavigate} />
+            ) : isMarketingLiveDeskId(activeId) ? (
+              <MarketingLiveDeskPanel
+                navId={activeId}
                 onNavigate={handleNavigate}
               />
             ) : (
@@ -127,21 +133,9 @@ export function LandingPage({ demoMode = false, isLoggedIn = false }: LandingPag
             )}
           </div>
         </div>
-
-        {activeId === "home" ? (
-          <section className="marketing-cta">
-            <div className="marketing-cta-copy">
-              <h2 className="marketing-cta-title">{HOME_CTA.title}</h2>
-              <p className="marketing-cta-body">
-                {demoMode ? HOME_CTA.bodyDemo : HOME_CTA.bodyLive}
-              </p>
-            </div>
-            <MarketingAuthButtons size="lg" className="marketing-cta-actions" />
-          </section>
-        ) : null}
-
-        <MarketingFooter onNavigate={handleNavigate} />
       </main>
+
+      <MarketingFooter onNavigate={handleNavigate} />
     </div>
   );
 }

@@ -2,19 +2,18 @@
 
 import { ArrowRight } from "lucide-react";
 import { HOME_SECTIONS, HOME_WORKSPACES } from "@/lib/marketing/home-content";
-import type { PlatformNavId } from "@/lib/navigation/platform-nav";
+import { platformSectionIdFromNavId, type PlatformNavId } from "@/lib/navigation/platform-nav";
 
 interface MarketingHomeWorkspacesSectionProps {
   onNavigate?: (sectionId: string, id: PlatformNavId) => void;
 }
 
-const DESK_GROUPS = ["Trading", "Account"] as const;
+const DESK_GROUPS = ["Build", "Trade", "Learn"] as const;
 
 type DeskGroup = (typeof DESK_GROUPS)[number];
 
 function workspaceSectionId(id: PlatformNavId): string {
-  if (id === "home") return "overview";
-  return id;
+  return platformSectionIdFromNavId(id);
 }
 
 function DeskWorkspaceGroup({

@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { evaluateStrategy } from "@/lib/bot/strategies";
+import {
+  evaluateStrategy,
+  initProgressionState,
+  progressStake,
+  type StakeProgressionState,
+} from "@/lib/bot/strategies";
+import { resolveBotOrder } from "@/lib/bot/trade-map";
 import {
   canEnableLiveBot,
   DEFAULT_BOT_CONFIG,
@@ -65,6 +71,7 @@ export function useTradingBot({
   const demoRuntimeRef = useRef(heartbeat.demoRuntimeMs);
   const placeTradeRef = useRef(placeTrade);
   const lastProcessedEpochRef = useRef<number | null>(null);
+  const progressionRef = useRef<StakeProgressionState | null>(null);
   const configRef = useRef(config);
   const gatesRef = useRef({
     isConnected,
@@ -137,7 +144,11 @@ export function useTradingBot({
       }));
       return;
     }
-    setConfig({ ...configRef.current, enabled: true, paused: false });
+    const next = { ...configRef.current, enabled: true, paused: false };
+    progressionRef.current = next.quickStrategy
+      ? initProgressionState(next.stake)
+      : null;
+    setConfig(next);
     setHeartbeat((prev) => ({ ...prev, status: "running", blockReason: null }));
   }, [demoMode, setConfig]);
 
@@ -146,15 +157,55 @@ export function useTradingBot({
     setHeartbeat((prev) => ({ ...prev, status: "paused" }));
   }, [setConfig]);
 
-  const stop = useCallback(() => {
+  const stop = useCallback((reason?: string) => {
     setConfig({ ...configRef.current, enabled: false, paused: false });
     cooldownRef.current = 0;
+    progressionRef.current = null;
     setHeartbeat((prev) => ({
       ...prev,
       status: "idle",
-      blockReason: null,
+      blockReason: typeof reason === "string" ? reason : null,
     }));
   }, [setConfig]);
+
+  const handleRound = useCallback(
+    (profit: number) => {
+      const activeConfig = configRef.current;
+      if (!activeConfig.enabled) return;
+
+      if (activeConfig.restartAction === "stop" && profit < 0) {
+        stop("Stopped after loss");
+        return;
+      }
+
+      const params = activeConfig.quickStrategy;
+      if (!params) return;
+
+      const current =
+        progressionRef.current ?? initProgressionState(activeConfig.stake);
+      const next = progressStake(
+        current,
+        params,
+        profit >= 0 ? "win" : "loss",
+        profit >= 0 ? activeConfig.stake + profit : 0,
+      );
+      if (!next) {
+        stop("Profit/loss threshold reached");
+        return;
+      }
+      progressionRef.current = next;
+      if (next.currentStake !== activeConfig.stake) {
+        setConfig({ ...activeConfig, stake: next.currentStake });
+      }
+    },
+    [setConfig, stop],
+  );
+
+  const handleTradeRejected = useCallback(() => {
+    if (configRef.current.restartOnError) {
+      cooldownRef.current = 0;
+    }
+  }, []);
 
   const handleTick = useCallback((tick: TickEvent, tickHistory: TickEvent[]) => {
     const activeConfig = configRef.current;
@@ -203,16 +254,21 @@ export function useTradingBot({
     }
 
     const evaluation = evaluateStrategy(quotes, activeConfig);
+    const order = resolveBotOrder(activeConfig, evaluation);
 
-    if (evaluation.signal) {
+    if (order) {
       cooldownRef.current = activeConfig.cooldownTicks;
       placeTradeRef.current({
         symbol: gates.symbol,
-        contractType: evaluation.signal,
-        amount: activeConfig.stake,
+        contractType: order.contractType,
+        amount: progressionRef.current?.currentStake ?? activeConfig.stake,
         duration: activeConfig.duration,
-        durationUnit: "t",
+        durationUnit: activeConfig.durationUnit ?? "t",
         basis: "stake",
+        ...(order.barrier !== undefined ? { barrier: order.barrier } : {}),
+        ...(order.lastDigitPrediction !== undefined
+          ? { lastDigitPrediction: order.lastDigitPrediction }
+          : {}),
       });
     }
 
@@ -221,10 +277,8 @@ export function useTradingBot({
       lastTickAt: tick.epoch,
       ticksProcessed: prev.ticksProcessed + 1,
       lastSignalLabel: evaluation.label,
-      lastSignalAt: evaluation.signal ? Date.now() : prev.lastSignalAt,
-      tradesExecuted: evaluation.signal
-        ? prev.tradesExecuted + 1
-        : prev.tradesExecuted,
+      lastSignalAt: order ? Date.now() : prev.lastSignalAt,
+      tradesExecuted: order ? prev.tradesExecuted + 1 : prev.tradesExecuted,
     }));
   }, []);
 
@@ -237,6 +291,8 @@ export function useTradingBot({
     heartbeat,
     hydrated: true,
     handleTick,
+    handleRound,
+    handleTradeRejected,
     start,
     pause,
     stop,

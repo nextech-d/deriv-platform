@@ -2,15 +2,14 @@
 
 import { useCallback, type CSSProperties } from "react";
 import { HOME_DAY_ON_DESK, HOME_SECTIONS } from "@/lib/marketing/home-content";
-import type { PlatformNavId } from "@/lib/navigation/platform-nav";
+import { platformSectionIdFromNavId, type PlatformNavId } from "@/lib/navigation/platform-nav";
 
 interface MarketingHomeDaySectionProps {
   onNavigate?: (sectionId: string, id: PlatformNavId) => void;
 }
 
 function sectionIdForNav(id: PlatformNavId): string {
-  if (id === "home") return "overview";
-  return id;
+  return platformSectionIdFromNavId(id);
 }
 
 export function MarketingHomeDaySection({ onNavigate }: MarketingHomeDaySectionProps) {
@@ -33,7 +32,7 @@ export function MarketingHomeDaySection({ onNavigate }: MarketingHomeDaySectionP
 
           <ol className="marketing-day-timeline">
             {HOME_DAY_ON_DESK.map((moment, index) => {
-              const isHome = moment.navId === "home";
+              const isDashboard = moment.navId === "dashboard";
 
               const rowBody = (
                 <>
@@ -50,7 +49,7 @@ export function MarketingHomeDaySection({ onNavigate }: MarketingHomeDaySectionP
                 </>
               );
 
-              if (isHome || !onNavigate) {
+              if (isDashboard || !onNavigate) {
                 return (
                   <li
                     key={`${moment.time}-${moment.workspace}`}

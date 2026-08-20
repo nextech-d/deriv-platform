@@ -44,26 +44,31 @@ const PROVIDER_BLURBS: Record<string, string> = {
 };
 
 export const COPY_PANEL = {
-  eyebrow: "Copy",
+  eyebrow: "TradeCity Copy",
   title: "Trade with someone who already watches the feed",
-  summary: "Pick a desk in Kenya, Uganda, Tanzania, or Rwanda. When they signal, you can mirror it — or let the desk copy for you.",
-  lead: "These aren’t Telegram forwards. They’re curated providers on the same synthetics you trade. Each signal lasts about a minute. You set how much you’re willing to stake, and copy risk stays away from your manual book.",
+  summary:
+    "Pick a desk on TradeCity in Kenya, Uganda, Tanzania, or Rwanda. When they signal, you can mirror it — or let the desk copy for you.",
+  lead:
+    "These aren’t Telegram forwards. They’re curated TradeCity providers on the same synthetics you trade. Each signal lasts about a minute. You set how much you’re willing to stake, and copy risk stays away from your manual book.",
   steps: [
     {
       title: "Choose who to follow",
-      detail: "Browse the desks below. Follow the ones that match how you like to trade.",
+      detail: "Browse the TradeCity desks below. Follow the ones that match how you like to trade.",
     },
     {
       title: "Set your stake limits",
-      detail: "Cap what you’ll copy overall and per provider — never above your session max.",
+      detail:
+        "Cap what you’ll copy overall and per provider — never above your session max on TradeCity.",
     },
     {
       title: "Copy a signal — or auto-copy",
-      detail: "Hit Copy while the timer runs, or turn auto-copy on after you sign in.",
+      detail:
+        "Hit Copy while the timer runs, or turn auto-copy on after you sign in on TradeCity.",
     },
     {
       title: "Keep copy risk separate",
-      detail: "Stop-loss and daily drawdown for copy sit on their own book, not your manual tickets.",
+      detail:
+        "Stop-loss and daily drawdown for copy sit on their own book, not your manual tickets — on TradeCity.",
     },
   ] satisfies CopyPanelStep[],
   signal: {
@@ -83,8 +88,9 @@ export const COPY_PANEL = {
     { label: "Copies today", value: "Up to 12" },
     { label: "Per-copy stake", value: "Up to $5" },
   ] satisfies CopyPanelRiskRow[],
-  ctaTitle: "Ready to follow a desk?",
-  ctaBody: "Log in with Deriv, follow a provider, and start mirroring signals under your own limits.",
+  ctaTitle: "Ready to follow a TradeCity desk?",
+  ctaBody:
+    "Log in with Deriv, follow a provider, and start mirroring signals under your own limits on TradeCity.",
 } as const;
 
 export interface CopyPanelProviderRow {

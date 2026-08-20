@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { AUTH_LOGIN_PATH } from "@/lib/auth/auth-links";
 import type { CopyFollowState, CopySignal } from "@/lib/copy/types";
 import type { CopyRiskSettings } from "@/lib/copy/risk-settings";
 import { clampProviderStakes } from "@/lib/copy/settings";
@@ -103,7 +105,10 @@ export function CopySettingsSection({
 
       {!liveCopyAllowed ? (
         <p className="workspace-inline-alert workspace-inline-alert-warn mt-2 text-[10px]">
-          Sign in for live copy execution. Demo mode simulates copied trades.
+          <Link href={AUTH_LOGIN_PATH} className="font-semibold underline">
+            Log in
+          </Link>{" "}
+          with Deriv for live copy execution. Demo mode simulates copied trades.
         </p>
       ) : null}
 

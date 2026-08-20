@@ -2,10 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bot,
   Copy,
-  LayoutList,
-  Settings,
   TrendingUp,
-  Wallet,
 } from "lucide-react";
 
 export interface PlatformSectionFeature {
@@ -33,8 +30,8 @@ export interface PlatformSectionContent {
 
 export const PLATFORM_SECTIONS: PlatformSectionContent[] = [
   {
-    sectionId: "trade",
-    eyebrow: "Trade",
+    sectionId: "manual-trading",
+    eyebrow: "Manual trading",
     title: "Rise/Fall tickets on the synthetic rail",
     summary:
       "Stake, tick duration, and a live-quote gate beside Volatility and Boom/Crash — session risk can lock the desk before execute.",
@@ -85,8 +82,8 @@ export const PLATFORM_SECTIONS: PlatformSectionContent[] = [
     icon: TrendingUp,
   },
   {
-    sectionId: "auto",
-    eyebrow: "Auto",
+    sectionId: "auto-trader",
+    eyebrow: "Auto trader",
     title: "MA cross & RSI on the shared feed",
     summary:
       "Start, pause, and stop a bot with tunable periods, cooldown, and a 24h demo-runtime gate before live.",
@@ -137,8 +134,8 @@ export const PLATFORM_SECTIONS: PlatformSectionContent[] = [
     icon: Bot,
   },
   {
-    sectionId: "copy",
-    eyebrow: "Copy",
+    sectionId: "copy-trading",
+    eyebrow: "Copy trading",
     title: "Follow curated East Africa desks",
     summary:
       "Follow KE/UG/TZ/RW providers with auto-copy, per-provider stake caps, and a separate copy risk book.",
@@ -189,147 +186,220 @@ export const PLATFORM_SECTIONS: PlatformSectionContent[] = [
     icon: Copy,
   },
   {
-    sectionId: "portfolio",
-    eyebrow: "Portfolio",
-    title: "Open book with source filters",
-    summary:
-      "Live unrealized P/L for Manual, Copy, and Auto — close from the list; the book survives refresh in IndexedDB.",
-    body: "Open Rise/Fall contracts show direction, symbol, contract id, source badge, stake, status, and USD P/L with a local FX underlay. Filter All / Manual / Copy / Auto; Close sells (or closes demo). Persistence is local IndexedDB so a hard refresh on a flaky line does not wipe the open book.",
-    meta: ["Source filters", "Close", "IndexedDB"],
+    sectionId: "d-trader",
+    eyebrow: "D Trader",
+    title: "Deriv-style ticket on the synthetic rail",
+    summary: "Same Rise/Fall execution as Manual trading — stake, duration, and quote gate on the shared feed.",
+    body: "D Trader mirrors the familiar Deriv ticket flow for Volatility and Boom/Crash. Stake, tick duration, and session risk gates apply before every order.",
+    meta: ["Rise / Fall", "Quote gate", "Session risk"],
     features: [
-      {
-        label: "Open contracts list",
-        detail: "Symbol, Rise/Fall, contract id, stake + currency, and live status.",
-      },
-      {
-        label: "Live P/L",
-        detail: "Unrealized USD with local currency preview; desk and filtered totals.",
-      },
-      {
-        label: "Source badges",
-        detail: "Manual, Copy, and Auto labels on every open contract.",
-      },
-      {
-        label: "Source filters",
-        detail: "All / Manual / Copy / Auto chips with counts and empty states.",
-      },
-      {
-        label: "Close action",
-        detail: "Per-row Close sends a sell (or closes the demo contract).",
-      },
-      {
-        label: "Local persistence",
-        detail: "Open book synced to IndexedDB — survives hard refresh and brief offline.",
-      },
+      { label: "Symbol rail", detail: "R_10 through R_100 plus Boom/Crash 1000." },
+      { label: "Ticket", detail: "CALL and PUT with USD stake and tick duration chips." },
+      { label: "Risk", detail: "Session stop-loss and daily drawdown lock the desk when tripped." },
     ],
     preview: {
-      kicker: "Open book",
-      status: "3 open",
+      kicker: "D Trader",
+      status: "Quote live",
       rows: [
-        { key: "Filter", value: "All · 3 open" },
-        { key: "R_10 Rise #48291", value: "+2.40 USD · Manual" },
-        { key: "BOOM1000 #48302", value: "−0.80 USD · Auto" },
-        { key: "R_25 Fall #48310", value: "+1.10 USD · Copy" },
-        { key: "Unrealized", value: "+2.70 USD ≈ KES 350" },
-        { key: "Display", value: "KES preview" },
+        { key: "Symbol", value: "R_10" },
+        { key: "Side", value: "Rise" },
+        { key: "Stake", value: "10.00 USD" },
       ],
     },
-    icon: LayoutList,
+    icon: TrendingUp,
   },
   {
-    sectionId: "wallet",
-    eyebrow: "Wallet",
-    title: "Cashier, agents, and MoMo guides",
-    summary:
-      "Open official Deriv Cashier, browse KE/UG/TZ/RW agents, and walk withdrawals — plus Uganda/Tanzania network guides.",
-    body: "Deposit via Deriv Cashier (Fast Pesa / mobile money where available). The country rail scopes payment-agent listings with source disclosure and partner warnings. Withdrawals follow a three-step wizard (country → Cashier or agent → confirm). For UG and TZ, MoMo guides list MTN, Airtel, M-Pesa, Tigo, and Halotel with USSD and deposit/withdraw steps.",
-    meta: ["Cashier", "Agents", "MoMo guides"],
+    sectionId: "chart",
+    eyebrow: "Chart",
+    title: "Tick chart focus beside the live quote",
+    summary: "Full-width market tape for Volatility and Boom/Crash without leaving the terminal.",
+    body: "Chart workspace keeps the advanced tick chart and quote on the same feed Manual and Auto use — pick a symbol and read the tape before you ticket.",
+    meta: ["Tick chart", "Symbol rail", "Shared feed"],
     features: [
-      {
-        label: "Open Deriv Cashier",
-        detail: "Deep-link into official Cashier for Fast Pesa, MoMo, and cards.",
-      },
-      {
-        label: "Country agent rail",
-        detail: "KE (M-Pesa·Bank), UG (MTN·Airtel), TZ (M-Pesa·Tigo), RW (MTN) with refresh + count.",
-      },
-      {
-        label: "Agent directory",
-        detail: "Partner listings with source disclosure and verify-on-Deriv.com context.",
-      },
-      {
-        label: "Withdraw wizard",
-        detail: "Country → Cashier vs agent → Confirm / Open Cashier.",
-      },
-      {
-        label: "MoMo guides (UG/TZ)",
-        detail: "Network-specific deposit and withdraw steps with USSD chips.",
-      },
-      {
-        label: "Source line",
-        detail: "Directory source formatting so you know which agents are partner-listed.",
-      },
+      { label: "Live quote", detail: "Streaming last tick with connection state." },
+      { label: "Symbol switch", detail: "Same rail as Manual trading and Auto trader." },
+      { label: "Session strip", detail: "Balance and open count stay in the command bar." },
     ],
     preview: {
-      kicker: "Wallet desk",
-      status: "Cashier ready",
+      kicker: "Chart desk",
+      status: "Feed live",
       rows: [
-        { key: "Cashier", value: "Open · Fast Pesa / MoMo" },
-        { key: "Country", value: "KE · Kenya" },
-        { key: "Agents", value: "4 listed · refresh" },
-        { key: "Source", value: "Partner listings · verify" },
-        { key: "Withdraw", value: "Wizard · Cashier path" },
-        { key: "MoMo", value: "UG / TZ guides when selected" },
+        { key: "Symbol", value: "R_10" },
+        { key: "Quote", value: "5432.184" },
+        { key: "Ticks/min", value: "847" },
       ],
     },
-    icon: Wallet,
+    icon: TrendingUp,
   },
   {
-    sectionId: "settings",
-    eyebrow: "Settings",
-    title: "Session risk, copy limits, FX, theme",
+    sectionId: "trading-bot",
+    eyebrow: "Trading bot",
+    title: "Saved bot desk on the shared feed",
+    summary: "Run MA-cross or RSI from a dedicated bot workspace with the same telemetry as Auto trader.",
+    body: "Trading bot is the saved-strategy desk for bots you keep on the feed — start, pause, and stop without losing ticks.",
+    meta: ["MA cross", "RSI", "Telemetry"],
+    features: [
+      { label: "Strategies", detail: "MA-cross and RSI threshold presets." },
+      { label: "Run controls", detail: "Start, pause, resume, and stop." },
+      { label: "Demo gate", detail: "24h demo runtime before live unlock." },
+    ],
+    preview: {
+      kicker: "Bot desk",
+      status: "Idle",
+      rows: [
+        { key: "Strategy", value: "MA cross 5/20" },
+        { key: "Stake", value: "1.00 USD" },
+      ],
+    },
+    icon: Bot,
+  },
+  {
+    sectionId: "bot-builder",
+    eyebrow: "Bot builder",
+    title: "Visual blocks for trade, purchase, sell, and restart",
     summary:
-      "Client-side trading gates, separate copy risk, East Africa display currencies, and terminal theme — plus WS metrics.",
-    body: "Trading gates enforce max stake, session stop-loss, and daily max drawdown in USD (EAT calendar day) before every order; reset session loss from Settings. Copy adds auto-copy, global copy stake, copy SL/DD/max-copies, and unfollow-all. Display currency is KES/UGX/TZS/RWF/USD with live or fallback FX; theme is Dark (default), Light, or System.",
-    meta: ["USD gates", "Copy risk", "KES–RWF FX"],
+      "Assemble strategy windows with a blocks menu, AI Bot Generator, and a live run summary.",
+    body: "Bot builder mirrors a Deriv-style canvas: search Analysis Logics and Market Structure, configure Trade parameters and Purchase conditions, then track stake, payout, and win/loss on the Summary desk.",
+    meta: ["Blocks menu", "AI generator", "Run summary"],
     features: [
       {
-        label: "Trading gates",
-        detail: "Enabled toggle, max stake, session stop-loss, daily drawdown (USD), and reset session counter.",
+        label: "AI Bot Generator",
+        detail: "Jump into Ai bot from the toolbar to seed a strategy briefly.",
       },
       {
-        label: "Copy controls",
-        detail: "Auto-copy, global max stake (≤ session max), copy risk fields, reset counters, unfollow all.",
+        label: "Blocks menu",
+        detail:
+          "Trade parameters, Purchase / Sell / Restart conditions, Analysis, Utility, and desk tools.",
       },
       {
-        label: "Display FX",
-        detail: "KES, UGX, TZS, RWF, or USD — live rate when available, fallback stamp otherwise.",
+        label: "Strategy canvas",
+        detail:
+          "Numbered windows for market, duration, stake, purchase side, sell logic, and trade-again.",
       },
       {
-        label: "Theme",
-        detail: "Dark (default), Light, or System via the terminal theme picker.",
+        label: "Summary desk",
+        detail:
+          "Summary, Transactions, and Journal tabs with stake, payout, runs, and P/L stats.",
       },
       {
-        label: "WS metrics",
-        detail: "Connection snapshot and reset for resilience checks on flaky lines.",
-      },
-      {
-        label: "Admin studios",
-        detail: "Links to Partner and Copy provider studios when ADMIN_SECRET is configured.",
+        label: "Workspace tools",
+        detail: "Load/save XML, undo/redo, zoom, and chart layout shortcuts on the toolbar.",
       },
     ],
     preview: {
-      kicker: "Risk prefs",
-      status: "Armed",
+      kicker: "Builder",
+      status: "Desk live",
       rows: [
-        { key: "Max stake", value: "25.00 USD" },
-        { key: "Session SL", value: "50.00 USD" },
-        { key: "Daily DD", value: "100.00 USD" },
-        { key: "Copy SL · DD", value: "25 · 50 USD" },
-        { key: "Currency", value: "KES · live FX" },
-        { key: "Theme", value: "Dark" },
+        { key: "Market", value: "Volatility 100 (1s)" },
+        { key: "Purchase", value: "Rise" },
+        { key: "Duration", value: "5 ticks" },
+        { key: "Stake", value: "0.60 USD" },
       ],
     },
-    icon: Settings,
+    icon: Bot,
+  },
+  {
+    sectionId: "ai-bot",
+    eyebrow: "Ai bot",
+    title: "Generate bots from a brief (coming next)",
+    summary: "Describe a strategy in plain language and get a runnable bot config.",
+    body: "Ai bot will turn a short brief into MA/RSI parameters you can run on the shared feed.",
+    meta: ["Prompt", "Generate", "Review"],
+    features: [
+      { label: "Brief", detail: "Describe markets, style, and risk in plain language." },
+      { label: "Generate", detail: "Produce stake, duration, and indicator settings." },
+      { label: "Review", detail: "Edit before sending to Trading bot or Auto trader." },
+    ],
+    preview: {
+      kicker: "Ai bot",
+      status: "Soon",
+      rows: [
+        { key: "Status", value: "Coming next" },
+        { key: "Output", value: "Bot config draft" },
+      ],
+    },
+    icon: Bot,
+  },
+  {
+    sectionId: "analysis-tool",
+    eyebrow: "Analysis tool",
+    title: "Digit signals before you open a ticket",
+    summary:
+      "Parity, barrier, matches, and frequency desks over the live tick window.",
+    body: "Analysis tool reads last digits from the shared feed — even/odd bias, over/under around a barrier, match/differ rates, and hot/cold digits — so you can study before Manual trading or Bot builder.",
+    meta: ["Parity", "Barrier", "Frequency"],
+    features: [
+      {
+        label: "Digit strip",
+        detail: "Recent last digits color-coded by parity from the live symbol.",
+      },
+      {
+        label: "Parity & streak",
+        detail: "Even/odd percentages plus the current same-side streak length.",
+      },
+      {
+        label: "Barrier desk",
+        detail: "Over/Under share relative to a configurable digit barrier.",
+      },
+      {
+        label: "Matches & frequency",
+        detail: "Target digit hit rate and a hot/cold frequency board.",
+      },
+    ],
+    preview: {
+      kicker: "Analysis",
+      status: "Desk live",
+      rows: [
+        { key: "Mode", value: "Parity" },
+        { key: "Window", value: "Last 20" },
+        { key: "Symbol", value: "R_100" },
+      ],
+    },
+    icon: TrendingUp,
+  },
+  {
+    sectionId: "pro-ai",
+    eyebrow: "Pro AI",
+    title: "Advanced AI desk (coming next)",
+    summary: "Signals, scenario runs, and assisted ticket sizing.",
+    body: "Pro AI will sit beside the ticket with scenario assists and sizing hints under your risk gates.",
+    meta: ["Signals", "Scenarios", "Sizing"],
+    features: [
+      { label: "Signals", detail: "Desk-scoped ideas on the shared feed." },
+      { label: "Scenarios", detail: "What-if stake and duration runs." },
+      { label: "Risk", detail: "Honors session stop-loss and stake caps." },
+    ],
+    preview: {
+      kicker: "Pro AI",
+      status: "Soon",
+      rows: [
+        { key: "Status", value: "Coming next" },
+        { key: "Assist", value: "Ticket sizing" },
+      ],
+    },
+    icon: TrendingUp,
+  },
+  {
+    sectionId: "deriv-course",
+    eyebrow: "Deriv Course",
+    title: "Guides and lessons (coming next)",
+    summary: "Curriculum for synthetics, risk, bots, and copy trading.",
+    body: "Deriv Course will walk new desks from first login through risk, Manual trading, Auto trader, and Copy.",
+    meta: ["Guides", "Lessons", "Playbooks"],
+    features: [
+      { label: "Basics", detail: "Accounts, demo, and first ticket." },
+      { label: "Risk", detail: "Stop-loss, drawdown, and stake caps." },
+      { label: "Modes", detail: "Manual, Auto, and Copy playbooks." },
+    ],
+    preview: {
+      kicker: "Course",
+      status: "Soon",
+      rows: [
+        { key: "Status", value: "Coming next" },
+        { key: "Tracks", value: "Risk · Bots · Copy" },
+      ],
+    },
+    icon: TrendingUp,
   },
 ];
+

@@ -12,6 +12,8 @@ export interface SessionData {
   accounts?: DerivAccount[];
   activeAccountId?: string;
   isLoggedIn: boolean;
+  /** CSRF token stored in session and exposed to client via a cookie. */
+  csrfToken?: string;
 }
 
 export const defaultSession: SessionData = {

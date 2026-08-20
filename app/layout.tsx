@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Sans_Condensed, IBM_Plex_Mono, Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { WindowScrollRestoration } from "@/components/navigation/WindowScrollRestoration";
 import { PwaRegister } from "@/components/PwaRegister";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -23,15 +23,36 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  display: "swap",
+});
+
+const ibmPlexCondensed = IBM_Plex_Sans_Condensed({
+  variable: "--font-ibm-plex-condensed",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Deriv Platform — East Africa",
+  title: "TradeCity — East Africa",
   description:
     "Resilient Deriv trading shell for East Africa with Web Worker WebSocket engine",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Deriv EA",
+    title: "TradeCity",
   },
 };
 
@@ -50,7 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-theme="dark"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${ibmPlexSans.variable} ${ibmPlexCondensed.variable} ${ibmPlexMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
