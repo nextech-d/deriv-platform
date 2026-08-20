@@ -10,13 +10,33 @@ export const DERIV_EXTERNAL_LINK = {
 
 const DERIV_SIGNUP_BASE = "https://hub.deriv.com/tradershub/signup";
 
+function isAllowedSignupUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname;
+    return (
+      host === "deriv.com" ||
+      host === "hub.deriv.com" ||
+      host === "track.deriv.com" ||
+      host.endsWith(".deriv.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Deriv TradersHub signup — trader accounts are created at Deriv, not on TradeCity.
- * Affiliate token is attached when configured.
+ * Sign up leaves TradeCity for Deriv. Prefer a full partner signup URL
+ * (`NEXT_PUBLIC_DERIV_SIGNUP_URL`); otherwise build TradersHub with `t=`.
+ * Log in uses the same owner’s App ID and affiliate token.
  */
 export function getDerivSignupUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_DERIV_SIGNUP_URL?.trim();
+  if (explicit && isAllowedSignupUrl(explicit)) return explicit;
+
   const params = new URLSearchParams();
-  const token = process.env.NEXT_PUBLIC_DERIV_AFFILIATE_TOKEN;
+  const token = process.env.NEXT_PUBLIC_DERIV_AFFILIATE_TOKEN?.trim();
   const campaign =
     process.env.NEXT_PUBLIC_DERIV_UTM_CAMPAIGN ?? "deriv_platform_ea";
 

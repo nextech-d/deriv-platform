@@ -29,27 +29,31 @@ export const ULTIMATE_MIN_STAKE = FAST_MIN_STAKE;
 export const ULTIMATE_PAYOUT = FAST_PAYOUT;
 
 export const ULTIMATE_INITIAL: UltimateInitial[] = [
-  { id: "OU_1_8_LAST2", label: "Over 1 / Under 8 · last 2", over: 1, under: 8, window: 2 },
-  { id: "OU_2_7_LAST3", label: "Over 2 / Under 7 · last 3", over: 2, under: 7, window: 3 },
-  { id: "OU_2_7_LAST4", label: "Over 2 / Under 7 · last 4", over: 2, under: 7, window: 4 },
-  { id: "OU_2_7_LAST5", label: "Over 2 / Under 7 · last 5", over: 2, under: 7, window: 5 },
-  { id: "OU_3_6_LAST4", label: "Over 3 / Under 6 · last 4", over: 3, under: 6, window: 4 },
+  { id: "OU_1_8_LAST2", label: "Over 1 / Under 8 · analyze last 2 digits", over: 1, under: 8, window: 2 },
+  { id: "OU_2_7_LAST3", label: "Over 2 / Under 7 · analyze last 3 digits", over: 2, under: 7, window: 3 },
+  { id: "OU_2_7_LAST4", label: "Over 2 / Under 7 · analyze last 4 digits", over: 2, under: 7, window: 4 },
+  { id: "OU_2_7_LAST5", label: "Over 2 / Under 7 · analyze last 5 digits", over: 2, under: 7, window: 5 },
+  { id: "OU_3_6_LAST4", label: "Over 3 / Under 6 · analyze last 4 digits", over: 3, under: 6, window: 4 },
 ];
 
 export const ULTIMATE_RECOVERY: UltimateRecovery[] = [
-  { id: "EO_PATTERN_CONTINUE", label: "Even / Odd · continue trend", family: "even_odd", mode: "pattern", invert: false },
-  { id: "EO_PATTERN_REVERSAL", label: "Even / Odd · reverse trend", family: "even_odd", mode: "pattern", invert: true },
+  { id: "EO_PATTERN_CONTINUE", label: "Even / Odd · continue current trend", family: "even_odd", mode: "pattern", invert: false },
+  { id: "EO_PATTERN_REVERSAL", label: "Even / Odd · reverse current trend", family: "even_odd", mode: "pattern", invert: true },
   { id: "EO_PCT_CONTINUE", label: "Even / Odd · strongest side", family: "even_odd", mode: "percent", invert: false },
   { id: "EO_PCT_OPPOSITE", label: "Even / Odd · opposite side", family: "even_odd", mode: "percent", invert: true },
-  { id: "RF_PATTERN_FOLLOW", label: "Rise / Fall · follow tape", family: "rise_fall", mode: "pattern", invert: false },
-  { id: "RF_PATTERN_REVERSE", label: "Rise / Fall · reverse tape", family: "rise_fall", mode: "pattern", invert: true },
+  { id: "RF_PATTERN_FOLLOW", label: "Rise / Fall · follow current direction", family: "rise_fall", mode: "pattern", invert: false },
+  { id: "RF_PATTERN_REVERSE", label: "Rise / Fall · reverse current direction", family: "rise_fall", mode: "pattern", invert: true },
   { id: "RF_PCT_CONTINUE", label: "Rise / Fall · strongest side", family: "rise_fall", mode: "percent", invert: false },
   { id: "RF_PCT_OPPOSITE", label: "Rise / Fall · opposite side", family: "rise_fall", mode: "percent", invert: true },
-  { id: "OU_PATTERN_CONTINUE", label: "Over / Under · continue", family: "over_under", mode: "pattern", invert: false },
-  { id: "OU_PATTERN_REVERSE", label: "Over / Under · reverse", family: "over_under", mode: "pattern", invert: true },
+  { id: "OU_PATTERN_CONTINUE", label: "Over / Under · continue current direction", family: "over_under", mode: "pattern", invert: false },
+  { id: "OU_PATTERN_REVERSE", label: "Over / Under · reverse current direction", family: "over_under", mode: "pattern", invert: true },
   { id: "OU_PCT_CONTINUE", label: "Over / Under · strongest side", family: "over_under", mode: "percent", invert: false },
   { id: "OU_PCT_OPPOSITE", label: "Over / Under · opposite side", family: "over_under", mode: "percent", invert: true },
 ];
+
+export function parityTape(digits: number[]): string {
+  return digits.map((digit) => (digit % 2 === 0 ? "E" : "O")).join(" ");
+}
 
 export function clampUltimateWindow(value: number): number {
   if (!Number.isFinite(value)) return 7;
@@ -134,7 +138,7 @@ export function ultimateRecoveryScan(
     if (last == null) return null;
     const even = digits.filter((digit) => digit % 2 === 0).length;
     const odd = digits.length - even;
-    let side: UltimateSide =
+    const side: UltimateSide =
       spec.mode === "pattern"
         ? last % 2 === 0
           ? { contractType: "DIGITEVEN", label: "Even" }
@@ -153,7 +157,7 @@ export function ultimateRecoveryScan(
       if (quotes[i]! > quotes[i - 1]!) up += 1;
     }
     const down = quotes.length - 1 - up;
-    let side: UltimateSide =
+    const side: UltimateSide =
       spec.mode === "pattern"
         ? lastUp
           ? { contractType: "CALL", label: "Rise" }

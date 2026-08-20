@@ -4,21 +4,27 @@ const SESSION_COOKIE = "deriv_platform_session";
 const CSRF_COOKIE = "deriv_csrf";
 const CSRF_HEADER = "x-csrf-token";
 
-const PUBLIC_PATHS = new Set(["/", "/login"]);
+/** Reachable without a Deriv session. Admin still requires Bearer ADMIN_SECRET in the route. */
 const PUBLIC_PREFIXES = [
   "/api/health",
   "/api/auth/login",
   "/api/auth/callback",
-  "/_next/",
-  "/favicon",
-  "/assets/",
+  "/api/auth/status",
+  "/api/auth/pat",
+  "/api/auth/env-bootstrap",
+  "/api/admin",
+  "/api/copy/providers",
+  "/api/fx/rates",
+  "/api/payments/agents",
+  "/api/monitoring/report",
 ];
 
 const MUTATING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
 function isPublic(pathname: string): boolean {
-  if (PUBLIC_PATHS.has(pathname)) return true;
-  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+  return PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 }
 
 export function middleware(request: NextRequest) {
@@ -31,6 +37,9 @@ export function middleware(request: NextRequest) {
   const hasSession = request.cookies.has(SESSION_COOKIE);
 
   if (!hasSession) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
@@ -38,6 +47,7 @@ export function middleware(request: NextRequest) {
 
   if (
     pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/admin") &&
     MUTATING_METHODS.has(request.method)
   ) {
     const csrfCookie = request.cookies.get(CSRF_COOKIE)?.value;
@@ -51,8 +61,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/api/:path*",
-  ],
+  matcher: ["/api/:path*"],
 };

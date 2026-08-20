@@ -1,7 +1,8 @@
 import type { AppView } from "@/components/layout/AppShell";
 import { PLATFORM_NAV_ORDER } from "@/lib/navigation/platform-nav";
 
-const STORAGE_KEY = "deriv_platform_last_workspace";
+export const LAST_WORKSPACE_KEY = "deriv_platform_last_workspace";
+const STORAGE_KEY = LAST_WORKSPACE_KEY;
 
 const LEGACY_VIEW_MAP: Record<string, AppView> = {
   home: "dashboard",

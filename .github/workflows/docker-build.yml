@@ -29,6 +29,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       NEXT_PUBLIC_DERIV_APP_ID: ${{ secrets.NEXT_PUBLIC_DERIV_APP_ID }}
+      NEXT_PUBLIC_DERIV_SIGNUP_URL: ${{ secrets.NEXT_PUBLIC_DERIV_SIGNUP_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +44,7 @@ jobs:
           echo "aws_region=${AWS_REGION:-af-south-1}" >> "$GITHUB_OUTPUT"
           echo "ecr_repository=${ECR_REPOSITORY:-deriv-platform}" >> "$GITHUB_OUTPUT"
           echo "app_id=${NEXT_PUBLIC_DERIV_APP_ID:-000000}" >> "$GITHUB_OUTPUT"
+          echo "signup_url=${NEXT_PUBLIC_DERIV_SIGNUP_URL:-}" >> "$GITHUB_OUTPUT"
 
       - name: Validate Dockerfile build (no push)
         if: steps.mode.outputs.push != 'true'
@@ -50,6 +52,7 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_DEMO_MODE=true \
             --build-arg NEXT_PUBLIC_DERIV_APP_ID=000000 \
+            --build-arg NEXT_PUBLIC_DERIV_SIGNUP_URL= \
             -t deriv-platform:ci .
 
       - name: Configure AWS credentials
@@ -72,10 +75,12 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           ECR_REPOSITORY: ${{ steps.mode.outputs.ecr_repository }}
           APP_ID: ${{ steps.mode.outputs.app_id }}
+          SIGNUP_URL: ${{ steps.mode.outputs.signup_url }}
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_DEMO_MODE=false \
             --build-arg NEXT_PUBLIC_DERIV_APP_ID="$APP_ID" \
+            --build-arg NEXT_PUBLIC_DERIV_SIGNUP_URL="$SIGNUP_URL" \
             -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
             -t "$REGISTRY/$ECR_REPOSITORY:latest" \
             .

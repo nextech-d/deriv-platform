@@ -77,6 +77,7 @@ import {
   ANALYSIS_DCIRCLE_SYMBOLS,
   ULTIMATE_BOT_MARKETS,
 } from "@/lib/terminal/chart-markets";
+import { BULK_SCAN_SYMBOLS } from "@/lib/terminal/bulk-trader";
 import { buildHomeOnboardingSteps } from "@/lib/terminal/home-onboarding";
 import {
   readLastWorkspace,
@@ -86,6 +87,12 @@ import {
   dashboardScrollKey,
   usePageScrollRestoration,
 } from "@/lib/navigation/scroll-restoration";
+import {
+  clearBootHold,
+  resolveDashboardView,
+  viewFromLocationHash,
+  writeViewHash,
+} from "@/lib/navigation/workspace-boot";
 
 interface DashboardClientProps {
   accounts: DerivAccount[];
@@ -100,6 +107,8 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const router = useRouter();
   const [activeView, setActiveView] = useState<AppView>("dashboard");
+  const [viewReady, setViewReady] = useState(false);
+  const [allowViewAnim, setAllowViewAnim] = useState(false);
   const [scrollReady, setScrollReady] = useState(false);
   const [activeAccountId, setActiveAccountId] = useState(
     initialAccountId ?? accounts[0]?.accountId,
@@ -268,24 +277,45 @@ export function DashboardClient({
     }
     seedingRef.current = false;
     setActiveView(view);
+    writeViewHash(view);
   }, []);
 
   const openSettings = useCallback(() => handleViewChange("settings"), [handleViewChange]);
 
   useLayoutEffect(() => {
-    setActiveView(readLastWorkspace() ?? "dashboard");
-    setScrollReady(true);
-  }, []);
-
-  useEffect(() => {
+    const view = resolveDashboardView();
+    setActiveView(view);
     setLastWorkspace(readLastWorkspace());
+    setViewReady(true);
+    setScrollReady(true);
+    writeViewHash(view);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!viewReady) return;
+    clearBootHold();
+  }, [viewReady]);
+
+  useEffect(() => {
+    if (!viewReady) return;
+    setAllowViewAnim(true);
+  }, [viewReady]);
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      setActiveView(viewFromLocationHash() ?? "dashboard");
+    };
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
   }, []);
 
   useEffect(() => {
+    if (!viewReady) return;
+    writeViewHash(activeView);
     if (activeView === "dashboard") return;
     writeLastWorkspace(activeView);
     setLastWorkspace(activeView);
-  }, [activeView]);
+  }, [activeView, viewReady]);
 
   /** Only jump to top on intentional nav — never on tick/balance re-renders. */
   useLayoutEffect(() => {
@@ -425,6 +455,9 @@ export function DashboardClient({
     if (activeView === "analysis-tool" || activeView === "signal-center") {
       return [...ANALYSIS_DCIRCLE_SYMBOLS];
     }
+    if (activeView === "bulk-trader") {
+      return mergeWatchSymbols(symbol, [...BULK_SCAN_SYMBOLS]);
+    }
     return mergeWatchSymbols(symbol, copyWatchSymbols);
   }, [activeView, symbol, copyWatchSymbols]);
 
@@ -481,31 +514,38 @@ export function DashboardClient({
     duration?: number;
     amount?: number;
     symbol?: string;
+    count?: number;
   }) {
     setRiskNotice(null);
     if (tradingLocked) return;
 
     const amount = payload.amount ?? stake;
-    const block = checkRiskGate(settings, stats, amount);
+    const count = Math.max(1, Math.min(20, Math.round(payload.count ?? 1)));
+    const block = checkRiskGate(settings, stats, amount * count);
     if (block) {
       setRiskNotice(block);
       return;
     }
 
-    placeTrade({
+    const request = {
       symbol: payload.symbol ?? symbol,
       contractType: payload.contractType,
       amount,
       duration: payload.duration ?? duration,
       durationUnit: (payload.durationUnit as "t" | "s" | "m" | "h" | "d") ?? "t",
-      basis: "stake",
-      source: "manual",
+      basis: "stake" as const,
+      source: "manual" as const,
       ...(payload.barrier !== undefined ? { barrier: payload.barrier } : {}),
       ...(payload.barrier2 !== undefined ? { barrier2: payload.barrier2 } : {}),
       ...(payload.lastDigitPrediction !== undefined
         ? { lastDigitPrediction: payload.lastDigitPrediction }
         : {}),
-    });
+    };
+    if (count === 1) {
+      placeTrade(request);
+      return;
+    }
+    placeTradeSequence(Array.from({ length: count }, () => ({ ...request })));
   }
 
   function handleEdgingBuy(totalStake: number, ticks = 1) {
@@ -1043,6 +1083,9 @@ export function DashboardClient({
               setDuration(ticks);
               handleViewChange("d-trader");
             }}
+            contracts={contracts}
+            onCloseContract={handleCloseContract}
+            closingId={closingId}
           />
         );
 
@@ -1056,15 +1099,15 @@ export function DashboardClient({
             isConnected={isConnected}
             tradingLocked={tradingLocked || (!demoMode && !activeAccount)}
             busy={isTrading}
-            formatLocal={formatLocal}
+            chartHistory={chartHistory}
+            chartHistoryLoading={chartHistoryLoading}
+            onRequestHistory={requestChartHistory}
             onTrade={handleContractTrade}
-            onOpenDTrader={(family, digit, ticks) => {
-              setDTraderFamily(family);
-              setDTraderDigitTarget(digit);
-              setDTraderBarrier(digit);
-              setDuration(ticks);
-              handleViewChange("d-trader");
-            }}
+            contracts={contracts}
+            formatLocal={formatLocal}
+            onCloseContract={handleCloseContract}
+            closingId={closingId}
+            notice={riskNotice ?? tradeNotice}
           />
         );
 
@@ -1142,6 +1185,7 @@ export function DashboardClient({
 
   return (
     <ErrorBoundary>
+      {viewReady ? (
       <AppShell
         activeView={activeView}
         onViewChange={handleViewChange}
@@ -1165,8 +1209,13 @@ export function DashboardClient({
           symbol,
         }}
       >
-        <ViewTransition viewKey={activeView}>{renderView()}</ViewTransition>
+        <ViewTransition viewKey={activeView} animate={allowViewAnim}>
+          {renderView()}
+        </ViewTransition>
       </AppShell>
+      ) : (
+        <div className="tc-shell" aria-busy="true" />
+      )}
     </ErrorBoundary>
   );
 }

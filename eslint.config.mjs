@@ -9,6 +9,7 @@ const eslintConfig = defineConfig([
     rules: {
       // Common hydration / bootstrap patterns; fix incrementally post-launch
       "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
       "@typescript-eslint/no-empty-object-type": "warn",
     },
   },

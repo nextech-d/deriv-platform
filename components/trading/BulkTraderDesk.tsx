@@ -1,41 +1,57 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { TraderAuthLinks } from "@/components/auth/TraderAuthLinks";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  analyzeBarrier,
   analyzeFrequency,
-  analyzeMatches,
-  analyzeParity,
   digitsFromQuotes,
   lastDigitFromQuote,
 } from "@/lib/terminal/analysis-tool";
-import { TRADER_DESK_MARKETS } from "@/lib/terminal/chart-markets";
+import { BULK_TRADER_MARKETS } from "@/lib/terminal/chart-markets";
 import {
+  BULK_AUTO_ACTION_DEFAULT,
+  BULK_AUTO_CONDITION_DEFAULT,
+  BULK_AUTO_RISK_DEFAULT,
+  BULK_CONTRACTS,
+  BULK_DEFAULT_STAKE,
+  BULK_DEFAULT_SYMBOL,
+  BULK_DEFAULT_WINDOW,
   BULK_MIN_STAKE,
-  BULK_WINDOWS,
-  bulkDefaultDigit,
-  bulkFamily,
+  BULK_SCANNER_DEFAULT,
+  BULK_SCAN_SYMBOLS,
+  bulkConditionMet,
+  bulkContractNeedsDigit,
+  bulkDigitTones,
+  bulkLabel,
+  bulkLastDigit,
+  bulkMartingaleStake,
   bulkNeedsDigit,
+  bulkPair,
+  bulkPipSize,
+  bulkPayout,
+  bulkRiskStop,
+  bulkScannerSignal,
+  bulkWinRates,
   clampBulkCount,
+  clampBulkDigit,
+  clampBulkStake,
   clampBulkWindow,
+  type BulkAutoAction,
+  type BulkAutoCondition,
+  type BulkAutoRisk,
+  type BulkContract,
+  type BulkScannerConfig,
   type BulkTradeFamily,
 } from "@/lib/terminal/bulk-trader";
 import {
   clampEdgingDuration,
   exitTickAfter,
-  pendingProgress,
   ticksForMarket,
 } from "@/lib/terminal/edging";
-import {
-  clampFastStake,
-  fastPnl,
-  fastTradeKind,
-  fastWins,
-  type FastTradeType,
-} from "@/lib/terminal/fast-trader";
-import type { TickEvent } from "@/lib/ws/protocol";
+import { fastPnl } from "@/lib/terminal/fast-trader";
+import type { ChartHistorySnapshot, TickEvent } from "@/lib/ws/protocol";
+import type { OpenContractRecord } from "@/lib/state/types";
 import { cn } from "@/lib/utils/cn";
+import { TradesDrawer, type TradesDrawerTab } from "@/components/trading/TradesDrawer";
 
 interface BulkTraderDeskProps {
   symbol: string;
@@ -45,30 +61,24 @@ interface BulkTraderDeskProps {
   isConnected: boolean;
   tradingLocked?: boolean;
   busy?: boolean;
-  formatLocal?: (value: number) => string;
+  chartHistory?: ChartHistorySnapshot | null;
+  chartHistoryLoading?: boolean;
+  onRequestHistory?: (symbol: string, granularity: number) => void;
   onTrade?: (payload: {
+    symbol?: string;
     contractType: string;
     lastDigitPrediction?: number;
     barrier?: number;
     duration?: number;
     durationUnit?: string;
     amount?: number;
+    count?: number;
   }) => void;
-  onOpenDTrader?: (
-    family: ReturnType<typeof bulkFamily>,
-    digit: number,
-    duration: number,
-  ) => void;
-}
-
-function dollars(n: number): string {
-  return `$${n.toFixed(2)}`;
-}
-
-function toneFor(pct: number): "hot" | "mid" | "cold" {
-  if (pct >= 15) return "hot";
-  if (pct >= 10) return "mid";
-  return "cold";
+  contracts?: OpenContractRecord[];
+  formatLocal?: (value: number) => string;
+  onCloseContract?: (contractId: number) => void;
+  closingId?: number | null;
+  notice?: string | null;
 }
 
 export function BulkTraderDesk({
@@ -79,184 +89,395 @@ export function BulkTraderDesk({
   isConnected,
   tradingLocked = false,
   busy = false,
-  formatLocal = dollars,
+  chartHistory = null,
+  chartHistoryLoading = false,
+  onRequestHistory,
   onTrade,
-  onOpenDTrader,
+  contracts = [],
+  formatLocal = (value) => `$${value.toFixed(2)}`,
+  onCloseContract,
+  closingId = null,
+  notice = null,
 }: BulkTraderDeskProps) {
-  const [windowSize, setWindowSize] = useState(120);
-  const [tradeType, setTradeType] = useState<BulkTradeFamily>("evenodd");
-  const [duration, setDuration] = useState(1);
-  const [stake, setStake] = useState(BULK_MIN_STAKE);
-  const [bulk, setBulk] = useState(1);
+  const [family, setFamily] = useState<BulkTradeFamily>("evenodd");
   const [digit, setDigit] = useState(5);
-  const [mode, setMode] = useState<"manual" | "auto">("manual");
-  const [pendingUi, setPendingUi] = useState(false);
-  const [autoLeft, setAutoLeft] = useState(0);
-  const [stats, setStats] = useState({ trades: 0, wins: 0, losses: 0, profit: 0 });
+  const [duration, setDuration] = useState(1);
+  const [stake, setStake] = useState(BULK_DEFAULT_STAKE);
+  const [bulk, setBulk] = useState(1);
+  const [windowSize, setWindowSize] = useState(BULK_DEFAULT_WINDOW);
+  const [message, setMessage] = useState("");
+  const [autoOpen, setAutoOpen] = useState(false);
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerRunning, setScannerRunning] = useState(false);
+  const [scannerConfig, setScannerConfig] = useState(BULK_SCANNER_DEFAULT);
+  const [scannerStake, setScannerStake] = useState(BULK_DEFAULT_STAKE);
+  const [scannerCount, setScannerCount] = useState(5);
+  const [scannerLog, setScannerLog] = useState<string[]>([]);
+  const [scannerTiles, setScannerTiles] = useState<Record<string, number[]>>({});
+  const [scannerStatus, setScannerStatus] = useState("Ready to scan for last-digit pressure.");
+  const [condition, setCondition] = useState<BulkAutoCondition>(BULK_AUTO_CONDITION_DEFAULT);
+  const [action, setAction] = useState<BulkAutoAction>(BULK_AUTO_ACTION_DEFAULT);
+  const [risk, setRisk] = useState<BulkAutoRisk>(BULK_AUTO_RISK_DEFAULT);
+  const [result, setResult] = useState<{
+    win: boolean;
+    profit: number;
+    symbol: string;
+    contractType: string;
+    closed: number;
+    total: number;
+  } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<TradesDrawerTab>("transactions");
+  const [journal, setJournal] = useState<string[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
+
   const pendingRef = useRef<{
     epoch: number;
-    type: FastTradeType;
     stake: number;
     duration: number;
-    digit: number;
-    entryQuote: number;
+    count: number;
+    type: BulkContract;
+    prediction: number;
+    track: boolean;
   } | null>(null);
-  const skipEpochRef = useRef(0);
-
-  const ticks = useMemo(
-    () => ticksForMarket(tickHistory, symbol) as TickEvent[],
-    [tickHistory, symbol],
+  const autoArmedRef = useRef(false);
+  const autoPnlRef = useRef(0);
+  const autoStakeRef = useRef(BULK_DEFAULT_STAKE);
+  const scannerFiredRef = useRef(false);
+  const pipSize = bulkPipSize(symbol);
+  const visibleContracts = useMemo(
+    () => contracts.filter((contract) => !hiddenIds.includes(contract.contractId)),
+    [contracts, hiddenIds],
   );
-  const samples = useMemo(() => digitsFromQuotes(ticks, windowSize), [ticks, windowSize]);
+
+  function openTradesDrawer(tab: TradesDrawerTab = "transactions") {
+    setDrawerTab(tab);
+    setDrawerOpen(true);
+  }
+
+  const ticks = useMemo(() => {
+    if (
+      chartHistory &&
+      chartHistory.symbol === symbol &&
+      chartHistory.granularity === 0 &&
+      chartHistory.ticks.length >= 2
+    ) {
+      return chartHistory.ticks;
+    }
+    return ticksForMarket(tickHistory, symbol) as TickEvent[];
+  }, [chartHistory, symbol, tickHistory]);
+
+  const samples = useMemo(
+    () => digitsFromQuotes(ticks, windowSize, pipSize),
+    [ticks, windowSize, pipSize],
+  );
   const freq = useMemo(() => analyzeFrequency(samples), [samples]);
-  const parity = useMemo(() => analyzeParity(samples), [samples]);
-  const barrier = useMemo(() => analyzeBarrier(samples, digit), [samples, digit]);
-  const matches = useMemo(() => analyzeMatches(samples, digit), [samples, digit]);
   const quote =
     ticks.at(-1)?.quote ?? (lastTick?.symbol === symbol ? lastTick.quote : null);
-  const lastDigit = quote == null ? null : lastDigitFromQuote(quote);
+  const lastDigit = quote == null ? null : bulkLastDigit(quote, pipSize);
   const pcts = freq.counts.map((count) =>
     freq.window ? Math.round((count / freq.window) * 1000) / 10 : 0,
   );
-  const strip = samples.slice(-16);
-  const hasPulse = ticks.length >= 2;
-  const needsDigit = bulkNeedsDigit(tradeType);
-  const outcomes =
-    tradeType === "overunder"
-      ? [
-          { id: "over" as const, label: "Over", pct: barrier.overPct, contract: "DIGITOVER" },
-          { id: "under" as const, label: "Under", pct: barrier.underPct, contract: "DIGITUNDER" },
-        ]
-      : tradeType === "matchesdiffers"
-        ? [
-            { id: "matches" as const, label: "Matches", pct: matches.matchPct, contract: "DIGITMATCH" },
-            { id: "differs" as const, label: "Differs", pct: matches.differPct, contract: "DIGITDIFF" },
-          ]
-        : [
-            { id: "even" as const, label: "Even", pct: parity.evenPct, contract: "DIGITEVEN" },
-            { id: "odd" as const, label: "Odd", pct: parity.oddPct, contract: "DIGITODD" },
-          ];
-  const lead = outcomes[0]!.pct >= outcomes[1]!.pct ? outcomes[0]!.id : outcomes[1]!.id;
-  const canTrade = Boolean(onTrade) && isConnected && !tradingLocked && !busy && !pendingRef.current;
-  const winRate = stats.trades ? ((stats.wins / stats.trades) * 100).toFixed(1) : "0.0";
+  const tones = useMemo(() => bulkDigitTones(pcts), [pcts]);
+  const strip = samples.slice(-8).map((sample) => sample.digit);
+  const digits = samples.map((sample) => sample.digit);
+  const needsDigit = bulkNeedsDigit(family);
+  const [left, right] = bulkPair(family);
+  const rates = useMemo(() => bulkWinRates(pcts, digit), [pcts, digit]);
+  const payout = bulkPayout(stake);
+  const conditionMet = bulkConditionMet(digits, condition);
 
-  const markets = TRADER_DESK_MARKETS.some((item) => item.id === symbol)
-    ? TRADER_DESK_MARKETS
-    : [{ id: symbol, label: symbol }, ...TRADER_DESK_MARKETS];
+  useEffect(() => {
+    if (!notice) return;
+    setMessage(notice);
+  }, [notice]);
 
-  function play(type: FastTradeType) {
-    const kind = fastTradeKind(type);
-    if (!onTrade || !canTrade) return;
-    if (kind.needsDigit && digit == null) return;
+  useEffect(() => {
+    if (!message) return;
+    setJournal((prev) => {
+      const line = `${new Date().toLocaleTimeString()}  ${message}`;
+      if (prev[0] === line || prev[0]?.endsWith(`  ${message}`)) return prev;
+      return [line, ...prev].slice(0, 80);
+    });
+  }, [message]);
+
+  const markets = BULK_TRADER_MARKETS.some((item) => item.id === symbol)
+    ? BULK_TRADER_MARKETS
+    : [{ id: symbol, label: symbol }, ...BULK_TRADER_MARKETS];
+
+  useEffect(() => {
+    if (symbol !== BULK_DEFAULT_SYMBOL) onSymbolChange(BULK_DEFAULT_SYMBOL);
+    // Land on Volatility 100 Index the way dangote does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!onRequestHistory || !isConnected) return;
+    onRequestHistory(symbol, 0);
+  }, [symbol, onRequestHistory, isConnected]);
+
+  useEffect(() => {
+    setCondition((prev) => (prev.family === family ? prev : { ...prev, family }));
+  }, [family]);
+
+  useEffect(() => {
+    if (!message) return;
+    const id = window.setTimeout(() => setMessage(""), 6000);
+    return () => window.clearTimeout(id);
+  }, [message]);
+
+  function buy(contractType: BulkContract, options?: {
+    market?: string;
+    stake?: number;
+    count?: number;
+    prediction?: number;
+    track?: boolean;
+  }) {
+    const market = options?.market ?? symbol;
+    const sized = options?.stake ?? stake;
+    const count = options?.count ?? bulk;
+    const prediction = options?.prediction ?? digit;
+    if (tradingLocked) {
+      setMessage("Log in to your Deriv account to place trades.");
+      return;
+    }
+    if (!onTrade) return;
+    if (sized < BULK_MIN_STAKE) {
+      setMessage("Enter a valid stake (minimum 0.35) before buying.");
+      return;
+    }
+    if (count < 1) {
+      setMessage("Enter a valid number of bulk trades.");
+      return;
+    }
+    if (!onTrade || !isConnected) {
+      setMessage("Waiting for the feed.");
+      return;
+    }
     const tick = ticks.at(-1);
     pendingRef.current = {
       epoch: tick?.epoch ?? 0,
-      type,
-      stake,
+      stake: sized,
       duration,
-      digit,
-      entryQuote: tick?.quote ?? quote ?? 0,
+      count,
+      type: contractType,
+      prediction,
+      track: Boolean(options?.track),
     };
-    setPendingUi(true);
     onTrade({
-      contractType: kind.contract,
+      symbol: market,
+      contractType,
       duration,
       durationUnit: "t",
-      amount: stake,
-      ...(kind.needsDigit ? { lastDigitPrediction: digit, barrier: digit } : {}),
+      amount: sized,
+      count,
+      ...(bulkContractNeedsDigit(contractType)
+        ? { lastDigitPrediction: prediction, barrier: prediction }
+        : {}),
     });
+    const name = contractType.replace("DIGIT", "");
+    setMessage(`Sent ${count} ${name} contract${count > 1 ? "s" : ""}.`);
   }
 
   useEffect(() => {
-    pendingRef.current = null;
-    setPendingUi(false);
-    setMode("manual");
-    setAutoLeft(0);
-  }, [symbol]);
-
-  useEffect(() => {
-    setDigit(bulkDefaultDigit(tradeType));
-  }, [tradeType]);
-
-  useEffect(() => {
     const pending = pendingRef.current;
-    if (!pending) {
-      if (mode === "auto" && autoLeft > 0 && canTrade && ticks.at(-1) && (ticks.at(-1)?.epoch ?? 0) > skipEpochRef.current) {
-        skipEpochRef.current = ticks.at(-1)!.epoch;
-        play(lead);
-      }
-      return;
-    }
+    if (!pending) return;
     const exit = exitTickAfter(ticks, pending.epoch, pending.duration);
     if (!exit?.quote) return;
-    const win = fastWins({
-      type: pending.type,
-      exitDigit: lastDigitFromQuote(exit.quote),
-      exitQuote: exit.quote,
-      entryQuote: pending.entryQuote,
-      digit: pending.digit,
-    });
+    const exitDigit = lastDigitFromQuote(exit.quote, pipSize);
+    const win =
+      pending.type === "DIGITEVEN"
+        ? exitDigit % 2 === 0
+        : pending.type === "DIGITODD"
+          ? exitDigit % 2 === 1
+          : pending.type === "DIGITOVER"
+            ? exitDigit > pending.prediction
+            : pending.type === "DIGITUNDER"
+              ? exitDigit < pending.prediction
+              : pending.type === "DIGITMATCH"
+                ? exitDigit === pending.prediction
+                : exitDigit !== pending.prediction;
+    const profit = Number((fastPnl(win, pending.stake) * pending.count).toFixed(2));
     pendingRef.current = null;
-    setPendingUi(false);
-    setStats((prev) => ({
-      trades: prev.trades + 1,
-      wins: prev.wins + (win ? 1 : 0),
-      losses: prev.losses + (win ? 0 : 1),
-      profit: Number((prev.profit + fastPnl(win, pending.stake)).toFixed(2)),
-    }));
-    setAutoLeft((left) => {
-      const next = Math.max(0, left - 1);
-      if (next <= 0) setMode("manual");
-      return next;
-    });
-  }, [ticks, mode, autoLeft, canTrade, lead, stake, duration, digit]);
+    autoPnlRef.current = Number((autoPnlRef.current + profit).toFixed(2));
+    autoStakeRef.current = bulkMartingaleStake(autoStakeRef.current, win, risk);
+    if (pending.track) {
+      setResult({
+        win: profit >= 0,
+        profit,
+        symbol,
+        contractType: bulkLabel(pending.type),
+        closed: pending.count,
+        total: pending.count,
+      });
+      setDrawerTab("transactions");
+      setDrawerOpen(true);
+    }
+    if (autoRunning) {
+      const stop = bulkRiskStop(autoPnlRef.current, risk);
+      if (stop) {
+        setAutoRunning(false);
+        autoArmedRef.current = false;
+        setMessage(
+          stop === "stop_loss"
+            ? "Auto trader stopped: stop-loss hit."
+            : "Auto trader stopped: take-profit hit.",
+        );
+      }
+    }
+  }, [ticks, pipSize, risk, autoRunning, symbol]);
 
-  const progress = pendingRef.current
-    ? pendingProgress(ticks, pendingRef.current.epoch, pendingRef.current.duration)
-    : null;
+  useEffect(() => {
+    if (!autoRunning) {
+      autoArmedRef.current = false;
+      return;
+    }
+    if (!conditionMet) {
+      autoArmedRef.current = false;
+      return;
+    }
+    if (autoArmedRef.current || pendingRef.current) return;
+    if (!tradingLocked && (!onTrade || !isConnected || busy)) return;
+    autoArmedRef.current = true;
+    buy(action.contractType, {
+      stake: risk.useMartingale ? autoStakeRef.current : stake,
+      prediction: action.prediction,
+    });
+    // buy is stable enough for this edge trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRunning, conditionMet, digits, tradingLocked, isConnected, busy, onTrade, action, risk, stake]);
+
+  useEffect(() => {
+    if (!scannerRunning) {
+      scannerFiredRef.current = false;
+      return;
+    }
+    if (scannerFiredRef.current) return;
+    const nextTiles: Record<string, number[]> = {};
+    for (const market of BULK_SCAN_SYMBOLS) {
+      const pip = bulkPipSize(market);
+      const history = ticksForMarket(tickHistory, market);
+      const recent = history.slice(-scannerConfig.sampleSize).map((tick) =>
+        bulkLastDigit(tick.quote, pip),
+      );
+      nextTiles[market] = recent;
+      const signal = bulkScannerSignal(recent, scannerConfig);
+      if (signal && !scannerFiredRef.current) {
+        scannerFiredRef.current = true;
+        setScannerTiles((prev) => ({ ...prev, ...nextTiles }));
+        setScannerLog((prev) => [
+          ...prev.slice(-11),
+          `[SUCCESS] ${market}: ${signal.contractType.replace("DIGIT", "")} ${signal.prediction} detected.`,
+        ]);
+        setScannerStatus(`Trade route found on ${market}.`);
+        setScannerRunning(false);
+        setDrawerTab("transactions");
+        setDrawerOpen(true);
+        if (tradingLocked || !onTrade) {
+          setMessage("Log in to your Deriv account to place trades.");
+          return;
+        }
+        buy(signal.contractType, {
+          market,
+          stake: scannerStake,
+          count: scannerCount,
+          prediction: signal.prediction,
+          track: true,
+        });
+        return;
+      }
+    }
+    setScannerTiles((prev) => ({ ...prev, ...nextTiles }));
+  }, [scannerRunning, tickHistory, scannerConfig, scannerStake, scannerCount, tradingLocked, onTrade]);
 
   return (
-    <div data-testid="bulk-trader-desk" data-desk className="bulk-trader" data-scroll-pane>
-      <header className="edging-toolbar">
-        <h1>Bulk Trader</h1>
-        <div className="edging-toolbar-status">
-          <span className={cn("edging-chip", (isConnected || hasPulse) && "is-live")}>
-            {isConnected ? "Live" : hasPulse ? "Feed ready" : "Waiting"}
-          </span>
-          <span className="edging-chip">{freq.window} ticks</span>
-        </div>
-      </header>
+    <div
+      data-testid="bulk-trader-desk"
+      data-desk
+      className={cn("bulk-trader", drawerOpen && "has-drawer")}
+      data-scroll-pane
+    >
+      <div className="bulk-body" data-scroll-pane>
+        {tradingLocked ? (
+          <div className="bulk-banner">
+            <p>Log in to your Deriv account to place trades. Market analysis works without an account.</p>
+          </div>
+        ) : null}
 
-      <div className="edging-body">
-        <section className="edging-card edging-controls">
-          <div className="fast-types bulk-types" role="tablist" aria-label="Trade family">
-            {(
-              [
-                ["evenodd", "Even / Odd"],
-                ["overunder", "Over / Under"],
-                ["matchesdiffers", "Matches / Differs"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={tradeType === id}
-                className={cn("fast-type", tradeType === id && "is-on")}
-                onClick={() => setTradeType(id)}
-              >
-                {label}
-              </button>
+        <div className="bulk-tick-bar">
+          <div className="bulk-tick">
+            <span>Current tick</span>
+            <strong>{quote == null ? "--" : quote.toFixed(pipSize)}</strong>
+          </div>
+          <div className="bulk-tick-actions">
+            <button
+              type="button"
+              className="bulk-link-btn"
+              aria-expanded={drawerOpen}
+              onClick={() => openTradesDrawer("transactions")}
+            >
+              View trades
+            </button>
+            <button type="button" className="bulk-link-btn is-teal" onClick={() => setScannerOpen(true)}>
+              Analysis
+            </button>
+          </div>
+        </div>
+
+        <label className="bulk-outline bulk-window-field">
+          <span>Number of ticks</span>
+          <input
+            type="number"
+            min={10}
+            max={5000}
+            value={windowSize}
+            onChange={(event) => setWindowSize(clampBulkWindow(Number(event.target.value)))}
+            aria-label="Sample window"
+          />
+        </label>
+
+        <div className="bulk-circles">
+          {Array.from({ length: 10 }, (_, value) => (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "bulk-circle",
+                `is-${tones[value] ?? "neutral"}`,
+                digit === value && "is-on",
+                lastDigit === value && "is-now",
+              )}
+              onClick={() => setDigit(value)}
+            >
+              <strong>{value}</strong>
+              <em>{(pcts[value] ?? 0).toFixed(1)}%</em>
+            </button>
+          ))}
+        </div>
+
+        {strip.length ? (
+          <div className="bulk-digits" aria-label="Recent digits">
+            {strip.map((value, index) => (
+              <span key={`${value}-${index}`} className={cn(index === strip.length - 1 && "is-now")}>
+                {value}
+              </span>
             ))}
           </div>
+        ) : (
+          <p className="bulk-note">
+            {chartHistoryLoading ? "Loading Deriv ticks…" : "Waiting on ticks for this market."}
+          </p>
+        )}
 
-          <div className="edging-fields">
-            <label>
+        <div className="bulk-config">
+          <div className="bulk-config-top">
+            <label className="bulk-outline">
               <span>Market</span>
               <select
                 value={symbol}
                 onChange={(event) => onSymbolChange(event.target.value)}
-                aria-label="Bulk Trader market"
+                aria-label="Market"
               >
                 {markets.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -264,25 +485,50 @@ export function BulkTraderDesk({
                   </option>
                 ))}
               </select>
-              <em>Synthetic</em>
             </label>
-            <label>
-              <span>Window</span>
+            <label className="bulk-outline">
+              <span>Trade type</span>
               <select
-                value={windowSize}
-                onChange={(event) => setWindowSize(clampBulkWindow(Number(event.target.value)))}
-                aria-label="Sample window"
+                value={family}
+                onChange={(event) => setFamily(event.target.value as BulkTradeFamily)}
+                aria-label="Trade type"
               >
-                {BULK_WINDOWS.map((size) => (
-                  <option key={size} value={size}>
-                    Last {size}
-                  </option>
-                ))}
+                <option value="evenodd">Even/Odd</option>
+                <option value="overunder">Over/Under</option>
+                <option value="matchesdiffers">Matches/Differs</option>
               </select>
-              <em>Frequency sample</em>
             </label>
-            <label>
-              <span>Duration (ticks)</span>
+          </div>
+
+          <div className={cn("bulk-duration-row", needsDigit && "has-prediction")}>
+            <label className="bulk-outline">
+              <span>Number of ticks</span>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={duration}
+                onChange={(event) => setDuration(clampEdgingDuration(Number(event.target.value)))}
+                aria-label="Contract ticks"
+              />
+            </label>
+            {needsDigit ? (
+              <label className="bulk-outline">
+                <span>Prediction</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={9}
+                  value={digit}
+                  onChange={(event) => setDigit(clampBulkDigit(Number(event.target.value)))}
+                />
+              </label>
+            ) : null}
+          </div>
+
+          <div className="bulk-purchase-row">
+            <label className="bulk-outline">
+              <span>Ticks</span>
               <input
                 type="number"
                 min={1}
@@ -290,225 +536,439 @@ export function BulkTraderDesk({
                 value={duration}
                 onChange={(event) => setDuration(clampEdgingDuration(Number(event.target.value)))}
               />
-              <em>1–10 ticks</em>
             </label>
-            <div
-              className={cn(
-                "edging-tick",
-                lastDigit != null && lastDigit % 2 === 0 && "is-cover",
-                lastDigit != null && lastDigit % 2 === 1 && "is-lose",
-              )}
-            >
-              <span>Last digit</span>
-              <strong>{lastDigit ?? "—"}</strong>
-              <em>{quote == null ? "Waiting" : quote.toFixed(3)}</em>
-            </div>
-          </div>
-
-          <div className="edging-fields">
-            <label>
+            <label className="bulk-outline">
               <span>Stake</span>
               <input
                 type="number"
                 min={BULK_MIN_STAKE}
-                step={0.05}
+                step={0.01}
                 value={stake}
-                onChange={(event) => setStake(clampFastStake(Number(event.target.value)))}
+                onChange={(event) => setStake(clampBulkStake(Number(event.target.value)))}
               />
-              <em>{formatLocal(stake)}</em>
             </label>
-            <label>
-              <span>Bulk trades</span>
+            <label className="bulk-outline">
+              <span>No. of bulk trades</span>
               <input
                 type="number"
                 min={1}
-                max={5}
+                max={20}
                 value={bulk}
                 onChange={(event) => setBulk(clampBulkCount(Number(event.target.value)))}
               />
-              <em>Auto rounds</em>
             </label>
-            {needsDigit ? (
-              <label>
-                <span>{tradeType === "overunder" ? "Barrier" : "Digit"}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={9}
-                  value={digit}
-                  onChange={(event) =>
-                    setDigit(Math.max(0, Math.min(9, Number(event.target.value) || 0)))
-                  }
-                />
-                <em>{tradeType === "overunder" ? `Over / Under ${digit}` : `Matches / Differs ${digit}`}</em>
-              </label>
-            ) : (
-              <div className="edging-tick">
-                <span>Lead</span>
-                <strong>{lead === "even" ? "Even" : "Odd"}</strong>
-                <em>Stronger side</em>
-              </div>
-            )}
-            <div className="edging-tick">
-              <span>Queue</span>
-              <strong>
-                {pendingUi && progress ? `${progress.done}/${progress.need}` : mode === "auto" ? String(autoLeft) : "Idle"}
-              </strong>
-              <em>Open tickets</em>
-            </div>
           </div>
-        </section>
-
-        <section className="edging-card edging-readout">
-          <div className={cn("edging-tick", lastDigit != null && lastDigit === digit && needsDigit && "is-match")}>
-            <span>Tape</span>
-            <strong>{lastDigit ?? "—"}</strong>
-            <em>{quote == null ? "Waiting" : quote.toFixed(3)}</em>
-          </div>
-          {strip.length ? (
-            <div className="edging-strip" aria-label="Recent digits">
-              {strip.map((sample, index) => (
-                <span
-                  key={`${sample.epoch ?? index}-${sample.digit}`}
-                  className={cn(
-                    needsDigit
-                      ? sample.digit === digit && "is-win"
-                      : sample.digit % 2 === 0
-                        ? "is-win"
-                        : "is-lose",
-                    index === strip.length - 1 && "is-now",
-                  )}
-                >
-                  {sample.digit}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="edging-note">Waiting on ticks for this market.</p>
-          )}
-        </section>
-
-        <div className="edging-grid">
-          <section className="edging-card">
-            <h2>Digit frequency</h2>
-            <div className="edging2-pad">
-              {Array.from({ length: 10 }, (_, value) => {
-                const pct = pcts[value] ?? 0;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    className={cn(
-                      "edging2-digit",
-                      `is-${toneFor(pct)}`,
-                      digit === value && needsDigit && "is-on",
-                      lastDigit === value && "is-now",
-                    )}
-                    onClick={() => setDigit(value)}
-                  >
-                    <strong>{value}</strong>
-                    <em>{pct.toFixed(1)}%</em>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="edging-legend">Teal ≥15% · Ink &lt;10% · last tick ringed</p>
-          </section>
-
-          <section className="edging-card">
-            <h2>Ticket</h2>
-            <div className="edging2-actions">
-              {outcomes.map((side, index) => (
-                <button
-                  key={side.id}
-                  type="button"
-                  className={cn(
-                    "edging-cta",
-                    index === 0 ? "is-teal" : "is-ink",
-                    lead === side.id && "is-lead",
-                  )}
-                  disabled={!canTrade || mode === "auto"}
-                  onClick={() => play(side.id)}
-                >
-                  {side.label}
-                  {needsDigit ? ` ${digit}` : ""} · {side.pct.toFixed(1)}%
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className={cn("edging-cta is-reset", mode === "auto" ? "is-ghost" : "is-ink")}
-              disabled={!canTrade && mode !== "auto"}
-              onClick={() => {
-                if (mode === "auto") {
-                  setMode("manual");
-                  setAutoLeft(0);
-                  return;
-                }
-                skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
-                setAutoLeft(bulk);
-                setMode("auto");
-              }}
-            >
-              {mode === "auto" ? `Stop auto · ${autoLeft} left` : `Start auto · ${bulk}`}
-            </button>
-            {pendingUi && progress ? (
-              <div className="edging-meter" aria-label={`Ticket ${progress.done} of ${progress.need} ticks`}>
-                <i style={{ width: `${(progress.done / progress.need) * 100}%` }} />
-              </div>
-            ) : null}
-            {onOpenDTrader ? (
-              <button
-                type="button"
-                className="edging-cta is-ghost is-reset"
-                onClick={() => onOpenDTrader(bulkFamily(tradeType), digit, duration)}
-              >
-                Open in D-Trader
-              </button>
-            ) : null}
-            {tradingLocked ? (
-              <div className="edging-notice">
-                <p>Log in with Deriv to place bulk tickets.</p>
-                <TraderAuthLinks />
-              </div>
-            ) : null}
-          </section>
         </div>
 
-        <section className="edging-card">
-          <h2>Session</h2>
-          <div className="edging-stats">
-            <Stat label="Trades" value={String(stats.trades)} />
-            <Stat label="Wins" value={String(stats.wins)} />
-            <Stat label="Losses" value={String(stats.losses)} />
-            <Stat label="Win rate" value={`${winRate}%`} />
-            <Stat label="P/L" value={formatLocal(stats.profit)} />
-            <Stat label="Lead" value={outcomes.find((item) => item.id === lead)?.label ?? "—"} />
-          </div>
-          <button
-            type="button"
-            className="edging-cta is-ghost is-reset"
-            onClick={() => {
-              pendingRef.current = null;
-              setPendingUi(false);
-              setMode("manual");
-              setAutoLeft(0);
-              setStats({ trades: 0, wins: 0, losses: 0, profit: 0 });
-            }}
-          >
-            Reset
-          </button>
-        </section>
+        <div className="bulk-outcomes">
+          {[left, right].map((contract, index) => (
+            <button
+              key={contract}
+              type="button"
+              className={cn("bulk-outcome", index === 0 ? "is-teal" : "is-ink")}
+              style={{ flex: `${Math.max(rates[contract], 8)} 1 0` }}
+              disabled={autoRunning || Boolean(busy)}
+              onClick={() => buy(contract)}
+            >
+              <strong>
+                {bulkLabel(contract)}
+                {bulkContractNeedsDigit(contract) ? ` ${digit}` : ""}
+              </strong>
+              <b className="bulk-outcome-payout">{payout.toFixed(2)}</b>
+              <em>{rates[contract].toFixed(2)}%</em>
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          className={cn("bulk-auto", autoRunning && "is-on")}
+          onClick={() => {
+            if (autoRunning) {
+              setAutoRunning(false);
+              autoArmedRef.current = false;
+              setMessage("Auto trader stopped.");
+              return;
+            }
+            setAutoOpen(true);
+          }}
+        >
+          {autoRunning ? "Stop auto trading" : "Auto trader"}
+        </button>
+
+        {message ? <p className="bulk-message">{message}</p> : null}
       </div>
+
+      <TradesDrawer
+        open={drawerOpen}
+        tab={drawerTab}
+        onTabChange={setDrawerTab}
+        onClose={() => setDrawerOpen(false)}
+        contracts={visibleContracts}
+        formatLocal={formatLocal}
+        onCloseContract={onCloseContract}
+        closingId={closingId}
+        journal={journal}
+        onReset={() => {
+          setHiddenIds(contracts.map((contract) => contract.contractId));
+          setJournal([]);
+          setMessage("");
+        }}
+      />
+
+      <BulkModal
+        open={autoOpen}
+        title="Auto trade settings"
+        kicker="Auto trades"
+        onClose={() => setAutoOpen(false)}
+      >
+        <div className="bulk-modal-grid">
+          <label className="bulk-outline">
+            <span>If Last digits</span>
+            <input
+              type="number"
+              min={1}
+              value={condition.window}
+              onChange={(event) =>
+                setCondition((prev) => ({
+                  ...prev,
+                  window: Math.max(1, Math.round(Number(event.target.value) || 1)),
+                }))
+              }
+            />
+          </label>
+          <label className="bulk-outline">
+            <span>Are</span>
+            {family === "evenodd" ? (
+              <select
+                value={condition.evenMode}
+                onChange={(event) =>
+                  setCondition((prev) => ({
+                    ...prev,
+                    evenMode: event.target.value as BulkAutoCondition["evenMode"],
+                  }))
+                }
+              >
+                <option value="all_even">All even</option>
+                <option value="all_odd">All odd</option>
+              </select>
+            ) : family === "matchesdiffers" ? (
+              <select value="all_same" disabled>
+                <option value="all_same">All same</option>
+              </select>
+            ) : (
+              <select
+                value={condition.comparator}
+                onChange={(event) =>
+                  setCondition((prev) => ({
+                    ...prev,
+                    comparator: event.target.value as BulkAutoCondition["comparator"],
+                  }))
+                }
+              >
+                <option value="greater">&gt;</option>
+                <option value="less">&lt;</option>
+                <option value="equal">=</option>
+              </select>
+            )}
+          </label>
+          {family === "overunder" ? (
+            <label className="bulk-outline">
+              <span>Than digit</span>
+              <input
+                type="number"
+                min={0}
+                max={9}
+                value={condition.thresholdDigit}
+                onChange={(event) =>
+                  setCondition((prev) => ({
+                    ...prev,
+                    thresholdDigit: clampBulkDigit(Number(event.target.value)),
+                  }))
+                }
+              />
+            </label>
+          ) : null}
+          <label className="bulk-outline">
+            <span>then Trade</span>
+            <select
+              value={action.contractType}
+              onChange={(event) =>
+                setAction((prev) => ({
+                  ...prev,
+                  contractType: event.target.value as BulkContract,
+                }))
+              }
+            >
+              {BULK_CONTRACTS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="bulk-outline">
+            <span>Prediction</span>
+            <input
+              type="number"
+              min={0}
+              max={9}
+              disabled={!bulkContractNeedsDigit(action.contractType)}
+              value={action.prediction}
+              onChange={(event) =>
+                setAction((prev) => ({
+                  ...prev,
+                  prediction: clampBulkDigit(Number(event.target.value)),
+                }))
+              }
+            />
+          </label>
+          <label className="bulk-check">
+            <input
+              type="checkbox"
+              checked={risk.useMartingale}
+              onChange={(event) =>
+                setRisk((prev) => ({ ...prev, useMartingale: event.target.checked }))
+              }
+            />
+            <span>Martingale</span>
+          </label>
+          <label className="bulk-outline">
+            <span>Base stake</span>
+            <input
+              type="number"
+              min={BULK_MIN_STAKE}
+              step={0.01}
+              value={risk.baseStake}
+              onChange={(event) =>
+                setRisk((prev) => ({ ...prev, baseStake: clampBulkStake(Number(event.target.value)) }))
+              }
+            />
+          </label>
+          <label className="bulk-outline">
+            <span>Multiplier</span>
+            <input
+              type="number"
+              min={1}
+              step={0.1}
+              value={risk.multiplier}
+              onChange={(event) =>
+                setRisk((prev) => ({
+                  ...prev,
+                  multiplier: Math.max(1, Number(event.target.value) || 1),
+                }))
+              }
+            />
+          </label>
+          <label className="bulk-outline">
+            <span>Stop loss</span>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={risk.stopLoss ?? ""}
+              onChange={(event) =>
+                setRisk((prev) => ({
+                  ...prev,
+                  stopLoss: event.target.value === "" ? null : Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+          <label className="bulk-outline">
+            <span>Take profit</span>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={risk.takeProfit ?? ""}
+              onChange={(event) =>
+                setRisk((prev) => ({
+                  ...prev,
+                  takeProfit: event.target.value === "" ? null : Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+        </div>
+        <p className="bulk-modal-status">
+          {conditionMet ? "Condition met" : "Waiting for condition"} ·{" "}
+          {autoRunning ? "Auto trader running" : "Auto trader idle"}
+        </p>
+        <button
+          type="button"
+          className="bulk-modal-cta"
+          onClick={() => {
+            if (autoRunning) {
+              setAutoRunning(false);
+              autoArmedRef.current = false;
+              setMessage("Auto trader stopped.");
+              return;
+            }
+            autoPnlRef.current = 0;
+            autoStakeRef.current = risk.baseStake;
+            autoArmedRef.current = false;
+            setAutoRunning(true);
+            setAutoOpen(false);
+            setMessage("Auto trader started.");
+          }}
+        >
+          {autoRunning ? "Stop auto trading" : "Start auto trading"}
+        </button>
+      </BulkModal>
+
+      <BulkModal
+        open={scannerOpen}
+        title="Digit scanner"
+        kicker="Analysis dashboard"
+        onClose={() => {
+          setScannerOpen(false);
+          setScannerRunning(false);
+        }}
+      >
+        <div className="bulk-modal-grid">
+          {(
+            [
+              ["Low threshold", "lowThreshold"],
+              ["High threshold", "highThreshold"],
+              ["Over digit", "overDigit"],
+              ["Under digit", "underDigit"],
+              ["Sample size", "sampleSize"],
+            ] as const
+          ).map(([label, key]) => (
+            <label key={key} className="bulk-outline">
+              <span>{label}</span>
+              <input
+                type="number"
+                min={key === "sampleSize" ? 1 : 0}
+                max={key === "sampleSize" ? 20 : 9}
+                value={scannerConfig[key]}
+                onChange={(event) =>
+                  setScannerConfig((prev) => ({
+                    ...prev,
+                    [key]:
+                      key === "sampleSize"
+                        ? Math.max(1, Math.round(Number(event.target.value) || 1))
+                        : clampBulkDigit(Number(event.target.value)),
+                  }))
+                }
+              />
+            </label>
+          ))}
+          <label className="bulk-outline">
+            <span>Stake</span>
+            <input
+              type="number"
+              min={BULK_MIN_STAKE}
+              step={0.01}
+              value={scannerStake}
+              onChange={(event) => setScannerStake(clampBulkStake(Number(event.target.value)))}
+            />
+          </label>
+          <label className="bulk-outline">
+            <span>No. of bulk trades</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={scannerCount}
+              onChange={(event) => setScannerCount(clampBulkCount(Number(event.target.value)))}
+            />
+          </label>
+        </div>
+        <div className="bulk-scanner-tiles">
+          {Object.keys(scannerTiles).length
+            ? Object.entries(scannerTiles).map(([market, values]) => (
+                <div key={market}>
+                  <span>{market}</span>
+                  <strong>{values.length ? values.join(",") : "waiting"}</strong>
+                </div>
+              ))
+            : (
+                <div>
+                  <span>Markets</span>
+                  <strong>R_100, R_75, R_50, R_25, R_10</strong>
+                </div>
+              )}
+        </div>
+        <div className="bulk-scanner-log">
+          {scannerLog.map((line, index) => (
+            <p key={`${line}-${index}`}>{line}</p>
+          ))}
+        </div>
+        <p className="bulk-modal-status">
+          {scannerRunning ? "Scanning" : "Standby"} · {scannerStatus}
+        </p>
+        <button
+          type="button"
+          className="bulk-modal-cta"
+          onClick={() => {
+            if (scannerRunning) {
+              setScannerRunning(false);
+              setScannerStatus("Scanner stopped.");
+              return;
+            }
+            scannerFiredRef.current = false;
+            setScannerTiles({});
+            setScannerLog(["[INFO] Pattern scanner armed"]);
+            setScannerStatus("Scanning live markets…");
+            setScannerRunning(true);
+          }}
+        >
+          {scannerRunning ? "Stop scanner" : "Scan for best market"}
+        </button>
+      </BulkModal>
+
+      {result ? (
+        <div className="bulk-modal-overlay" role="presentation">
+          <section className={cn("bulk-result", result.win ? "is-win" : "is-loss")} role="dialog">
+            <button type="button" className="bulk-modal-close" onClick={() => setResult(null)}>
+              ✕
+            </button>
+            <span>{result.win ? "Total profit" : "Total loss"}</span>
+            <h3>{result.win ? "Batch won" : "Batch lost"}</h3>
+            <strong>
+              {result.profit >= 0 ? "+" : ""}
+              {result.profit.toFixed(2)}
+            </strong>
+            <p>
+              {result.symbol} · {result.contractType} · {result.closed}/{result.total}
+            </p>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function BulkModal({
+  open,
+  title,
+  kicker,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  kicker: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  if (!open) return null;
   return (
-    <div className="edging-stat">
-      <p>{label}</p>
-      <strong>{value}</strong>
+    <div className="bulk-modal-overlay" role="presentation" onClick={onClose}>
+      <section className="bulk-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+        <header>
+          <div>
+            <span>{kicker}</span>
+            <h3>{title}</h3>
+          </div>
+          <button type="button" className="bulk-modal-close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </header>
+        {children}
+      </section>
     </div>
   );
 }

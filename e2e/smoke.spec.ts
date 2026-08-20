@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  clickDashboardWindow,
   platformNav,
   waitForLiveConnection,
   workspaceMain,
@@ -54,10 +55,10 @@ test.describe("Marketing", () => {
     await expect(page.getByTestId("copy-trader-desk")).toBeVisible();
     await expect(page.getByText("Copy controls")).toBeVisible();
 
-    await nav.getByRole("button", { name: "Edging" }).click();
+    await nav.getByRole("button", { name: "Edging", exact: true }).click();
     await expect(page.getByTestId("edging-desk")).toBeVisible();
 
-    await nav.getByRole("button", { name: "Edging 2" }).click();
+    await nav.getByRole("button", { name: "Edging 2", exact: true }).click();
     await expect(page.getByTestId("edging-2-desk")).toBeVisible();
 
     await nav.getByRole("button", { name: "Fast Trader" }).click();
@@ -83,11 +84,11 @@ test.describe("Marketing", () => {
 
   test("Speed Bot window opens builder with a seeded strategy", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: /Speed Bot/i }).click();
-    const skip = page.getByRole("button", { name: "Skip" });
-    if (await skip.isVisible().catch(() => false)) await skip.click();
+    await clickDashboardWindow(page, "Speed Bot");
     await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
-    await expect(page.getByText(/Dashboard · Speed Bot/)).toBeVisible();
+    await expect(
+      page.locator(".bot-builder-status-chip").filter({ hasText: "Dashboard · Speed Bot" }),
+    ).toBeVisible();
   });
 
   test("trader log in goes to TradeCity, sign up goes to Deriv", async ({ page }) => {
@@ -130,25 +131,22 @@ test.describe("Dashboard (demo mode)", () => {
   test("dashboard windows open the matching desks", async ({ page }) => {
     await waitForLiveConnection(page);
 
-    await workspaceMain(page).getByRole("button", { name: /Speed Bot/i }).click();
-    const skip = page.getByRole("button", { name: "Skip" });
-    if (await skip.isVisible().catch(() => false)) await skip.click();
+    await clickDashboardWindow(page, "Speed Bot");
     await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
-    await expect(page.getByText(/Dashboard · Speed Bot/)).toBeVisible();
+    await expect(
+      page.locator(".bot-builder-status-chip").filter({ hasText: "Dashboard · Speed Bot" }),
+    ).toBeVisible();
 
     await platformNav(page).getByRole("button", { name: "Dashboard" }).click();
-    await workspaceMain(page).getByRole("button", { name: /Analysis tool/i }).click();
+    await clickDashboardWindow(page, "Analysis tool");
     await expect(page.getByText("DCIRCLE")).toBeVisible();
 
     await platformNav(page).getByRole("button", { name: "Dashboard" }).click();
-    await workspaceMain(page).getByRole("button", { name: /Premium Bots/i }).click();
+    await clickDashboardWindow(page, "Premium Bots");
     await expect(page.getByRole("heading", { name: /Premium bots:/i })).toBeVisible();
 
     await platformNav(page).getByRole("button", { name: "Dashboard" }).click();
-    await workspaceMain(page)
-      .locator(".terminal-home-window")
-      .filter({ hasText: "Free bots" })
-      .click();
+    await clickDashboardWindow(page, "Free bots");
     await expect(page.getByRole("heading", { name: /Free bots:/i })).toBeVisible();
   });
 
@@ -156,7 +154,10 @@ test.describe("Dashboard (demo mode)", () => {
     await waitForLiveConnection(page);
     const [chooser] = await Promise.all([
       page.waitForEvent("filechooser"),
-      workspaceMain(page).getByRole("button", { name: /Load Bot/i }).click(),
+      workspaceMain(page)
+        .locator(".terminal-home-window")
+        .filter({ hasText: "Load Bot" })
+        .click(),
     ]);
     await chooser.setFiles({
       name: "broken.xml",

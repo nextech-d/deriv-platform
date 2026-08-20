@@ -212,7 +212,7 @@ export function MoneyManagementDesk({
             checked={rollActuals}
             onChange={(event) => setRollActuals(event.target.checked)}
           />
-          Compound logged profits into the next day's start
+          Compound logged profits into the next day&apos;s start
         </label>
 
         <div className="money-mgmt-kpis">

@@ -63,6 +63,7 @@ Copy `.env.example` → `.env.local` (dev) or inject via Secrets Manager (prod):
 | `NEXT_PUBLIC_DEMO_MODE` | `false` |
 | `SESSION_SECRET` | Unique, ≥ 32 chars |
 | `NEXT_PUBLIC_DERIV_APP_ID` | Production app ID |
+| `NEXT_PUBLIC_DERIV_SIGNUP_URL` | Partner signup URL |
 | `ADMIN_SECRET` | Strong random if using `/admin` |
 | `PARTNER_AGENTS_DATA_PATH` | `/app/data/payment-agents-partners.json` |
 | `COPY_PROVIDERS_DATA_PATH` | `/app/data/copy-providers.json` |

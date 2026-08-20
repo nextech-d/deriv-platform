@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-/** Main workspace column — avoids sidebar duplicate labels. */
+/** Main workspace column — avoids navbar duplicate labels. */
 export function workspaceMain(page: Page) {
   return page.locator("main");
 }
@@ -17,12 +17,41 @@ export function workspaceSidebar(page: Page) {
 
 async function dismissTour(page: Page) {
   const skip = page.getByRole("button", { name: "Skip" });
-  try {
-    await skip.waitFor({ state: "visible", timeout: 1500 });
-    await skip.click();
-  } catch {
-    // Tour already dismissed or not shown.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      await skip.waitFor({
+        state: "visible",
+        timeout: attempt === 0 ? 1_500 : 800,
+      });
+      await skip.click();
+    } catch {
+      return;
+    }
   }
+}
+
+/** Chrome-only views (Settings / Wallet / Portfolio) live on the dashboard hash. */
+export async function openHashView(
+  page: Page,
+  hash: "settings" | "wallet" | "portfolio",
+) {
+  if (!page.url().includes("/dashboard")) {
+    await page.goto(`/dashboard#${hash}`);
+  } else {
+    await page.evaluate((next) => {
+      window.location.hash = next;
+    }, hash);
+  }
+  await page.waitForURL(new RegExp(`#${hash}`));
+  await dismissTour(page);
+}
+
+export async function clickDashboardWindow(page: Page, title: string) {
+  await workspaceMain(page)
+    .locator(".terminal-home-window")
+    .filter({ hasText: title })
+    .click();
+  await dismissTour(page);
 }
 
 /** Dashboard shell ready (nav + desk). Connection may still be connecting. */
@@ -51,12 +80,19 @@ export async function openSidebarView(page: Page, name: RegExp | string) {
           .replace("Dashboard Balance & pulse", "Dashboard")
           .replace("Manual trading Rise/Fall ticket", "D-Trader")
       : name;
-  await platformNav(page).getByRole("button", { name: label }).click();
+  await platformNav(page).getByRole("button", {
+    name: label,
+    exact: typeof label === "string",
+  }).click();
   await dismissTour(page);
 }
 
 export async function openSettings(page: Page) {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await waitForLiveConnection(page);
+  await openHashView(page, "settings");
+  await expect(workspaceMain(page).getByText("Trading gates")).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 export async function openCopyView(page: Page) {
@@ -65,13 +101,13 @@ export async function openCopyView(page: Page) {
   await expect(workspaceMain(page).getByText("Copy controls")).toBeVisible();
 }
 
-/** At least one live tick received (quote numeric, not placeholder). */
+/** At least one live tick received on D-Trader (chart quote, not the old 4-dp ticker). */
 export async function waitForMarketTicks(page: Page) {
-  await expect(
-    workspaceMain(page).locator(".market-quote-value").filter({
-      hasText: /^\d+\.\d{4}$/,
-    }),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("d-trader-desk")).toBeVisible({ timeout: 20_000 });
+  await expect(workspaceMain(page).locator(".chart-desk-quote strong")).toHaveText(
+    /\d+\.\d+/,
+    { timeout: 30_000 },
+  );
 }
 
 export async function openHomeView(page: Page) {
@@ -92,15 +128,13 @@ export async function openTradeView(page: Page) {
 
 export async function openPortfolioView(page: Page) {
   await waitForLiveConnection(page);
-  await openHomeView(page);
-  await workspaceMain(page)
-    .getByRole("button", { name: /Portfolio Review the open book/i })
-    .click();
+  await openHashView(page, "portfolio");
+  await expect(workspaceMain(page).getByText("Open book")).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 export async function openWalletView(page: Page) {
   await openHomeView(page);
-  await workspaceMain(page)
-    .getByRole("button", { name: /Wallet Cashier and agents/i })
-    .click();
+  await openHashView(page, "wallet");
 }

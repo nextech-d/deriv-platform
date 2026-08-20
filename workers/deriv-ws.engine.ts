@@ -508,7 +508,7 @@ async function requestChartHistory(symbol: string, granularity: number): Promise
       {
         ticks_history: symbol,
         end: "latest",
-        count: ticksStyle ? 800 : 300,
+        count: ticksStyle ? 2000 : 300,
         style: ticksStyle ? "ticks" : "candles",
         adjust_start_time: 1,
         ...(ticksStyle ? {} : { granularity }),

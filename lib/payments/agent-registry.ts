@@ -102,11 +102,5 @@ export function fallbackAgentsForCountry(country: string): PaymentAgent[] {
   );
 }
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
-}
-
-export { isAuthorized, resolveDataFilePath };
+export { isAuthorized } from "@/lib/admin/auth";
+export { resolveDataFilePath };

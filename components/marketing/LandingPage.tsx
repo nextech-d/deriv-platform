@@ -10,7 +10,6 @@ import {
 import { MarketingNavbar } from "@/components/marketing/MarketingNavbar";
 import { MarketingPlatformPanel } from "@/components/marketing/MarketingPlatformPanel";
 import {
-  platformNavIdFromSectionId,
   platformSectionHref,
   PLATFORM_NAV_ORDER,
   type PlatformNavId,
@@ -19,7 +18,10 @@ import {
   marketingScrollKey,
   usePageScrollRestoration,
 } from "@/lib/navigation/scroll-restoration";
-import { readSectionIdFromHash } from "@/lib/navigation/scroll-to-section";
+import {
+  clearBootHold,
+  resolveLandingView,
+} from "@/lib/navigation/workspace-boot";
 import { useScrollAnywhere } from "@/hooks/useScrollAnywhere";
 import { cn } from "@/lib/utils/cn";
 
@@ -30,12 +32,6 @@ interface LandingPageProps {
 
 type PanelDirection = "forward" | "back" | "none";
 
-function resolveActiveIdFromHash(): PlatformNavId {
-  const hash = readSectionIdFromHash();
-  if (!hash) return "dashboard";
-  return platformNavIdFromSectionId(hash) ?? "dashboard";
-}
-
 function directionBetween(from: PlatformNavId, to: PlatformNavId): PanelDirection {
   const prevIdx = PLATFORM_NAV_ORDER.indexOf(from);
   const nextIdx = PLATFORM_NAV_ORDER.indexOf(to);
@@ -45,6 +41,7 @@ function directionBetween(from: PlatformNavId, to: PlatformNavId): PanelDirectio
 
 export function LandingPage(_props: LandingPageProps = {}) {
   const [activeId, setActiveId] = useState<PlatformNavId>("dashboard");
+  const [viewReady, setViewReady] = useState(false);
   const [panelDirection, setPanelDirection] = useState<PanelDirection>("none");
   const [scrollReady, setScrollReady] = useState(false);
   const prevActiveRef = useRef<PlatformNavId>("dashboard");
@@ -70,15 +67,21 @@ export function LandingPage(_props: LandingPageProps = {}) {
   );
 
   useLayoutEffect(() => {
-    const fromHash = resolveActiveIdFromHash();
+    const fromHash = resolveLandingView();
     prevActiveRef.current = fromHash;
     setActiveId(fromHash);
+    setViewReady(true);
     setScrollReady(true);
   }, []);
 
+  useLayoutEffect(() => {
+    if (!viewReady) return;
+    clearBootHold();
+  }, [viewReady]);
+
   useEffect(() => {
     const syncFromHash = () => {
-      activatePanel(resolveActiveIdFromHash(), {
+      activatePanel(resolveLandingView(), {
         scrollToTop: userNavigatedRef.current,
       });
       userNavigatedRef.current = false;
@@ -112,6 +115,7 @@ export function LandingPage(_props: LandingPageProps = {}) {
       <div className="marketing-page-spacer" aria-hidden />
 
       <main className="marketing-page-main relative mx-auto w-full max-w-[84rem] px-6 pb-16 xl:px-12">
+        {viewReady ? (
         <div
           key={activeId}
           className={cn(
@@ -133,6 +137,9 @@ export function LandingPage(_props: LandingPageProps = {}) {
             )}
           </div>
         </div>
+        ) : (
+          <div className="marketing-workspace-panel" aria-hidden />
+        )}
       </main>
 
       <MarketingFooter onNavigate={handleNavigate} />

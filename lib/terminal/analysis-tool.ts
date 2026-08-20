@@ -38,19 +38,21 @@ function roundPct(part: number, total: number): number {
   return Math.round((part / total) * 10_000) / 100;
 }
 
-/** Last decimal digit of a quote (Deriv-style digit contracts). */
-export function lastDigitFromQuote(quote: number): number {
-  const scaled = Math.round(Math.abs(quote) * 100);
-  return scaled % 10;
+/** Last decimal digit of a quote using Deriv pip size (toFixed(pip).slice(-1)). */
+export function lastDigitFromQuote(quote: number, pipSize = 2): number {
+  const places = Number.isFinite(pipSize) ? Math.max(0, Math.min(8, Math.round(pipSize))) : 2;
+  const digit = Number(Math.abs(quote).toFixed(places).slice(-1));
+  return Number.isFinite(digit) ? digit : 0;
 }
 
 export function digitsFromQuotes(
   quotes: Array<{ quote: number; epoch?: number }>,
   limit = 40,
+  pipSize = 2,
 ): DigitSample[] {
   const slice = quotes.slice(-limit);
   return slice.map((tick) => ({
-    digit: lastDigitFromQuote(tick.quote),
+    digit: lastDigitFromQuote(tick.quote, pipSize),
     quote: tick.quote,
     epoch: tick.epoch,
   }));

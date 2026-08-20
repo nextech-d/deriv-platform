@@ -12,7 +12,9 @@ async function followFirstProvider(page: import("@playwright/test").Page) {
   const followButtons = workspaceMain(page).getByRole("button", { name: /^Follow$/i });
   await expect(followButtons.first()).toBeVisible();
   await followButtons.first().click();
-  await expect(workspaceMain(page).getByText(/\d+ following/)).toBeVisible();
+  await expect(
+    workspaceMain(page).locator(".copy-trader-chip").filter({ hasText: /\d+ following/ }),
+  ).toBeVisible();
 }
 
 async function waitForCopySignal(page: import("@playwright/test").Page) {
@@ -32,11 +34,9 @@ async function openTradeAndBuyRise(page: import("@playwright/test").Page) {
 }
 
 async function waitForOpenPositionCount(page: import("@playwright/test").Page, count: string) {
+  await openPortfolioView(page);
   await expect(
-    workspaceMain(page)
-      .getByText("Open", { exact: true })
-      .locator("..")
-      .getByText(count, { exact: true }),
+    workspaceMain(page).locator(".portfolio-count-chip").filter({ hasText: `${count} open` }),
   ).toBeVisible({ timeout: 15_000 });
 }
 
@@ -99,8 +99,6 @@ test.describe("Portfolio source filters", () => {
     test.setTimeout(90_000);
     await openTradeAndBuyRise(page);
     await waitForOpenPositionCount(page, "1");
-
-    await openPortfolioView(page);
     await expect(
       workspaceMain(page).locator(".portfolio-source-badge", { hasText: "Manual" }).first(),
     ).toBeVisible({ timeout: 15_000 });

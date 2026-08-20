@@ -6,6 +6,9 @@ cd "$(dirname "$0")/.."
 echo "→ lint"
 npm run lint
 
+echo "→ unit tests"
+npm test
+
 echo "→ build"
 npm run build
 

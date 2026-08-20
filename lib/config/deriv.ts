@@ -15,7 +15,7 @@ export const derivConfig = {
   oauthBaseUrl: DERIV_OAUTH_BASE,
   oauthAuthorizeUrl: `${DERIV_OAUTH_BASE}/auth`,
   oauthTokenUrl: `${DERIV_OAUTH_BASE}/token`,
-  tradeMarkupPercent: 0.5,
+  tradeMarkupPercent: 3,
   publicWsUrl: "wss://api.derivws.com/trading/v1/options/ws/public",
 } as const;
 

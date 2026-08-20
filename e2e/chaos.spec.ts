@@ -42,7 +42,10 @@ test.describe("Chaos / resilience (demo)", () => {
     await maxStake.fill("1");
 
     await openTradeView(page);
-    const stakeInput = workspaceMain(page).locator("#trade-stake");
+    const stakeInput = workspaceMain(page)
+      .locator("label.d-trader-field")
+      .filter({ hasText: /^Stake/ })
+      .locator("input");
     await stakeInput.fill("5");
 
     const rise = workspaceMain(page).getByRole("button", { name: /^Rise$/i });

@@ -24,6 +24,7 @@ Create Secrets Manager entries (or SSM parameters) for:
 - `SESSION_SECRET`
 - `ADMIN_SECRET`
 - `NEXT_PUBLIC_DERIV_APP_ID` (build arg — also set in GitHub Actions)
+- `NEXT_PUBLIC_DERIV_SIGNUP_URL` (build arg — partner signup URL)
 - Optional: `DERIV_OAUTH_CLIENT_SECRET`, `SENTRY_DSN`
 
 Create an **EFS** file system + access point mounted at `/app/data` for admin JSON persistence.
@@ -39,6 +40,7 @@ GitHub Actions workflow `.github/workflows/docker-build.yml` builds the image on
 | `AWS_REGION` | `af-south-1` |
 | `ECR_REPOSITORY` | `deriv-platform` |
 | `NEXT_PUBLIC_DERIV_APP_ID` | Production app ID |
+| `NEXT_PUBLIC_DERIV_SIGNUP_URL` | Partner signup URL |
 
 Trigger: **Actions → Docker build & push → Run workflow**, or push to `main`.
 
@@ -64,7 +66,7 @@ aws ecs register-task-definition \
 
 ## 5. Deriv OAuth
 
-Register redirect URI: `https://YOUR_DOMAIN/api/auth/callback`
+Register redirect URI: `https://tradecity.trade/api/auth/callback`
 
 Set build arg / env `NEXT_PUBLIC_DEMO_MODE=false` for production images.
 

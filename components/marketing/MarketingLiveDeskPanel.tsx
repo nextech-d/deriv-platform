@@ -31,6 +31,7 @@ import {
   type BotBuilderSnapshot,
 } from "@/lib/terminal/strategy-seed";
 import { writeBuilderHandoff } from "@/lib/terminal/desk-handoff";
+import { ULTIMATE_BOT_MARKETS } from "@/lib/terminal/chart-markets";
 import { saveBotConfig } from "@/lib/bot/settings";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
 
@@ -78,6 +79,14 @@ const DEMO_TICKS: TickEvent[] = DEMO_QUOTES.map((row) => ({
   quote: row.quote,
   epoch: row.epoch,
 }));
+
+const ULTIMATE_DEMO_TICKS: TickEvent[] = ULTIMATE_BOT_MARKETS.flatMap((market, marketIndex) =>
+  DEMO_QUOTES.map((row) => ({
+    symbol: market.id,
+    quote: row.quote + marketIndex * 0.013,
+    epoch: row.epoch,
+  })),
+);
 
 const DEMO_BOT_CONFIG: BotConfig = {
   enabled: false,
@@ -396,7 +405,7 @@ export function MarketingLiveDeskPanel({
           <UltimateBotDesk
             symbol="R_100"
             onSymbolChange={() => undefined}
-            tickHistory={DEMO_TICKS}
+            tickHistory={ULTIMATE_DEMO_TICKS}
             isConnected={false}
             tradingLocked
             onOpenDTrader={() => onNavigate?.("d-trader", "d-trader")}
@@ -411,7 +420,6 @@ export function MarketingLiveDeskPanel({
             tickHistory={DEMO_TICKS}
             isConnected={false}
             tradingLocked
-            onOpenDTrader={() => onNavigate?.("d-trader", "d-trader")}
           />
         ) : null}
       </div>

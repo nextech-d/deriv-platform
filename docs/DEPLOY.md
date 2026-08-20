@@ -4,7 +4,7 @@ Target region: **AWS `af-south-1`** (Cape Town) for lowest latency to Kenya, Uga
 
 ## Prerequisites
 
-- Deriv OAuth app registered with production redirect URI: `https://your-domain.com/api/auth/callback`
+- Deriv OAuth app registered with production redirect URI: `https://tradecity.trade/api/auth/callback`
 - Environment secrets in AWS Secrets Manager or SSM Parameter Store
 - TLS certificate (ACM) on ALB or CloudFront
 
@@ -12,7 +12,8 @@ Target region: **AWS `af-south-1`** (Cape Town) for lowest latency to Kenya, Uga
 
 | Variable | Required | Notes |
 | --- | --- | --- |
-| `NEXT_PUBLIC_DERIV_APP_ID` | Yes | Deriv App Manager ID |
+| `NEXT_PUBLIC_DERIV_APP_ID` | Yes | Deriv App Manager ID (bake at image build) |
+| `NEXT_PUBLIC_DERIV_SIGNUP_URL` | Yes | Owner’s Deriv partner signup URL (bake at image build) |
 | `SESSION_SECRET` | Yes | Min 32 chars; rotate periodically |
 | `NEXT_PUBLIC_DEMO_MODE` | Yes | Set `false` in production |
 | `DERIV_OAUTH_CLIENT_ID` | Live OAuth | Falls back to app ID |
@@ -61,6 +62,7 @@ Build-time public env (baked into client bundle):
 docker build -t deriv-platform \
   --build-arg NEXT_PUBLIC_DEMO_MODE=false \
   --build-arg NEXT_PUBLIC_DERIV_APP_ID=your_app_id \
+  --build-arg NEXT_PUBLIC_DERIV_SIGNUP_URL=https://track.deriv.com/your-partner-link \
   .
 ```
 

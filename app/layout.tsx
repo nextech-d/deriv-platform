@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, IBM_Plex_Sans_Condensed, IBM_Plex_Mono, Geist, Geist_Mon
 import { WindowScrollRestoration } from "@/components/navigation/WindowScrollRestoration";
 import { PwaRegister } from "@/components/PwaRegister";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { BootViewScript } from "@/components/BootViewScript";
 import { ThemeScript } from "@/components/ThemeScript";
 import { THEME_META_COLORS } from "@/lib/theme/settings";
 import "./globals.css";
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <ThemeScript />
+        <BootViewScript />
       </head>
       <body className="min-h-full flex flex-col font-sans antialiased">
         <ThemeProvider>
