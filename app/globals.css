@@ -2792,7 +2792,7 @@ html[data-boot-hold] body {
 
 .bot-builder-caret {
   color: #4b5563;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -2804,13 +2804,26 @@ html[data-boot-hold] body {
 
 .bot-builder-inline-select,
 .bot-builder-inline-input {
-  height: 1.55rem;
-  padding: 0 0.45rem;
-  border: 1px solid #b7bec9;
-  border-radius: 10px;
-  background: #fff;
+  height: 1.7rem;
+  padding: 0 1.45rem 0 0.7rem;
+  border: 1px solid #c5cad3;
+  border-radius: 999px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%234b5563' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 10px 6px;
   color: #1f2937;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.bot-builder-inline-input {
+  width: 4.25rem;
+  text-align: center;
+  padding: 0 0.45rem;
+  background-image: none;
 }
 
 .bot-builder-inline-select:focus,
@@ -2818,11 +2831,6 @@ html[data-boot-hold] body {
   outline: none;
   border-color: #2d46c6;
   box-shadow: 0 0 0 2px rgb(45 70 198 / 0.18);
-}
-
-.bot-builder-inline-input {
-  width: 4.25rem;
-  text-align: center;
 }
 
 .bot-builder-vh-link {
@@ -22629,11 +22637,16 @@ html[data-theme] .bot-builder-subblock {
   color: #fff;
 }
 
-html[data-theme] .bot-builder-block .bot-builder-inline-select,
+html[data-theme] .bot-builder-block .bot-builder-inline-select {
+  background-color: #fff;
+  color: #1f2937;
+  border-color: #c5cad3;
+}
+
 html[data-theme] .bot-builder-block .bot-builder-inline-input {
   background: #fff;
   color: #1f2937;
-  border-color: #b7bec9;
+  border-color: #c5cad3;
 }
 
 html[data-theme] .tc-load-source {

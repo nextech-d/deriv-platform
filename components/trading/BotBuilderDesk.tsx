@@ -27,7 +27,6 @@ import {
 } from "@/lib/terminal/bot-builder";
 import {
   DEFAULT_BUILDER_SNAPSHOT,
-  builderGroupedMarketOptions,
   snapshotFromXml,
   snapshotToBotConfig,
   snapshotToXml,
@@ -365,10 +364,9 @@ export function BotBuilderDesk({
     const next: BotBuilderSnapshot = {
       ...snapshot,
       ...partial,
-      symbol:
-        partial.market != null
+      symbol: partial.symbol ?? (partial.market != null
           ? symbolFromMarketLabel(partial.market)
-          : (partial.symbol ?? snapshot.symbol),
+          : snapshot.symbol),
     };
     if (partial.tradeType && partial.tradeType !== snapshot.tradeType) {
       next.purchase = purchasesForTradeType(partial.tradeType)[0]!;
@@ -585,10 +583,6 @@ export function BotBuilderDesk({
     { label: "Contracts won", value: String(runStats?.won ?? 0) },
     { label: "Total profit/loss", value: `${(runStats?.pnl ?? 0).toFixed(2)} ${walletCurrency}` },
   ];
-  const marketGroups = builderGroupedMarketOptions();
-  const activeMarketGroup =
-    marketGroups.find((group) => group.options.some((option) => option.label === snapshot.market)) ??
-    marketGroups[0];
   const tradeFamily = ["Rise/Fall", "Higher/Lower"].includes(snapshot.tradeType)
     ? "Up/Down"
     : ["Even/Odd", "Over/Under", "Matches"].includes(snapshot.tradeType)
@@ -890,8 +884,6 @@ export function BotBuilderDesk({
               snapshot={snapshot}
               running={running}
               walletCurrency={walletCurrency}
-              marketGroups={marketGroups}
-              activeMarketGroup={activeMarketGroup}
               tradeFamily={tradeFamily}
               familyTypes={familyTypes}
               purchaseOptions={purchaseOptions}

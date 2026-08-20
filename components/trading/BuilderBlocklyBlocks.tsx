@@ -19,6 +19,7 @@ import {
   type DurationRule,
   type DurationUnit,
 } from "@/lib/terminal/strategy-seed";
+import { CHART_MARKET_TREE, findChartMarketPath } from "@/lib/terminal/chart-markets";
 import { cn } from "@/lib/utils/cn";
 
 type FocusBlock = "trade" | "purchase" | "sell" | "restart";
@@ -30,17 +31,10 @@ interface CanvasChip {
   lane: FocusBlock;
 }
 
-interface MarketGroup {
-  group: string;
-  options: Array<{ label: string; symbol: string }>;
-}
-
 interface BuilderBlocklyBlocksProps {
   snapshot: BotBuilderSnapshot;
   running: boolean;
   walletCurrency: string;
-  marketGroups: MarketGroup[];
-  activeMarketGroup?: MarketGroup;
   tradeFamily: string;
   familyTypes: BuilderTradeType[];
   purchaseOptions: string[];
@@ -91,7 +85,7 @@ function LaneChips({ chips, lane }: { chips: CanvasChip[]; lane: FocusBlock }) {
 function Caret() {
   return (
     <span className="bot-builder-caret" aria-hidden>
-      ›
+      {">"}
     </span>
   );
 }
@@ -100,8 +94,6 @@ export function BuilderBlocklyBlocks({
   snapshot,
   running,
   walletCurrency,
-  marketGroups,
-  activeMarketGroup,
   tradeFamily,
   familyTypes,
   purchaseOptions,
@@ -120,8 +112,26 @@ export function BuilderBlocklyBlocks({
       (meta) => meta.type === (snapshot.quickStrategy?.type ?? "martingale"),
     ) ?? QUICK_STRATEGY_METAS[0];
   const hidden = snapshot.hideTradeParameters;
-  const advanced = snapshot.showAdvancedSettings;
   const tradeSpec = BUILDER_TRADE_TYPES[snapshot.tradeType];
+  const marketPath =
+    findChartMarketPath(snapshot.symbol) ??
+    findChartMarketPath(snapshot.market) ??
+    findChartMarketPath("1HZ100V")!;
+  const continuous = marketPath.group.label === "Continuous Indices";
+
+  function pickMarket(symbol: string, label: string, journal: string) {
+    onPatch(
+      {
+        symbol,
+        market: label,
+        alternateMarkets:
+          findChartMarketPath(symbol)?.group.label === "Continuous Indices"
+            ? snapshot.alternateMarkets
+            : false,
+      },
+      journal,
+    );
+  }
 
   return (
     <>
@@ -132,26 +142,23 @@ export function BuilderBlocklyBlocks({
       >
         <BlockHead index="1" title="Trade parameters" icon={LayoutGrid} />
         <div className="bot-builder-block-body">
-          <div className="bot-builder-inline">
+          <div className="bot-builder-inline bot-builder-market-strip">
             <span className="bot-builder-inline-label">Market:</span>
-            <select className="bot-builder-inline-select" disabled value="Derived">
-              <option value="Derived">Derived</option>
-            </select>
-            <Caret />
             <select
               className="bot-builder-inline-select"
               disabled={running}
-              value={activeMarketGroup?.group ?? ""}
+              aria-label="Market category"
+              value={marketPath.category.id}
               onChange={(event) => {
-                const group = marketGroups.find((item) => item.group === event.target.value);
-                if (group?.options[0]) {
-                  onPatch({ market: group.options[0].label }, "Market group changed");
-                }
+                const category = CHART_MARKET_TREE.find((item) => item.id === event.target.value);
+                const group = category?.groups[0];
+                const market = group?.markets[0];
+                if (market) pickMarket(market.id, market.label, "Market category changed");
               }}
             >
-              {marketGroups.map((group) => (
-                <option key={group.group} value={group.group}>
-                  {group.group}
+              {CHART_MARKET_TREE.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
                 </option>
               ))}
             </select>
@@ -159,12 +166,34 @@ export function BuilderBlocklyBlocks({
             <select
               className="bot-builder-inline-select"
               disabled={running}
-              value={snapshot.market}
-              onChange={(event) => onPatch({ market: event.target.value }, "Market updated")}
+              aria-label="Market group"
+              value={marketPath.group.id}
+              onChange={(event) => {
+                const group = marketPath.category.groups.find((item) => item.id === event.target.value);
+                const market = group?.markets[0];
+                if (market) pickMarket(market.id, market.label, "Market group changed");
+              }}
             >
-              {(activeMarketGroup?.options ?? []).map((option) => (
-                <option key={option.symbol} value={option.label}>
-                  {option.label}
+              {marketPath.category.groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.label}
+                </option>
+              ))}
+            </select>
+            <Caret />
+            <select
+              className="bot-builder-inline-select"
+              disabled={running}
+              aria-label="Market"
+              value={marketPath.market.id}
+              onChange={(event) => {
+                const market = marketPath.group.markets.find((item) => item.id === event.target.value);
+                if (market) pickMarket(market.id, market.label, "Market updated");
+              }}
+            >
+              {marketPath.group.markets.map((market) => (
+                <option key={market.id} value={market.id}>
+                  {market.label}
                 </option>
               ))}
             </select>
@@ -173,90 +202,48 @@ export function BuilderBlocklyBlocks({
           <label className="bot-builder-check">
             <input
               type="checkbox"
-              checked={snapshot.hideTradeParameters}
-              onChange={(event) => onPatch({ hideTradeParameters: event.target.checked })}
+              disabled={running || !continuous}
+              checked={snapshot.alternateMarkets && continuous}
+              onChange={(event) =>
+                onPatch({
+                  alternateMarkets: event.target.checked,
+                  maxOpenPositions: event.target.checked
+                    ? Math.max(2, snapshot.maxOpenPositions)
+                    : 1,
+                })
+              }
             />
-            Hide trade parameters
-          </label>
-          <label className="bot-builder-check">
-            <input
-              type="checkbox"
-              checked={snapshot.showAdvancedSettings}
-              onChange={(event) => onPatch({ showAdvancedSettings: event.target.checked })}
-            />
-            Show advanced settings:
+            Alternate markets (Continuous Indices only):
           </label>
           <div className="bot-builder-inline">
-            <label className="bot-builder-check">
-              <input
-                type="checkbox"
-                checked={snapshot.virtualHook}
-                onChange={(event) => {
-                  onPatch({ virtualHook: event.target.checked });
-                  onOpenVh(event.target.checked);
-                }}
-              />
-              Virtual Hook:
-            </label>
-            {snapshot.virtualHook ? (
-              <button type="button" className="bot-builder-vh-link" onClick={onToggleVh}>
-                VH Settings
-              </button>
-            ) : null}
-          </div>
-
-          {snapshot.virtualHook && vhOpen ? (
-            <div
-              className="bot-builder-vh-panel"
-              onClick={(event) => event.stopPropagation()}
+            <span className="bot-builder-inline-label">Alternate mode:</span>
+            <select
+              className="bot-builder-inline-select"
+              disabled={running || !snapshot.alternateMarkets || !continuous}
+              value={snapshot.alternateMode}
+              onChange={(event) =>
+                onPatch({
+                  alternateMode: event.target.value as BotBuilderSnapshot["alternateMode"],
+                })
+              }
             >
-              <div className="bot-builder-inline">
-                <span className="bot-builder-inline-label">Recovery:</span>
-                <select
-                  className="bot-builder-inline-select"
-                  disabled={running}
-                  value={snapshot.quickStrategy?.type ?? "martingale"}
-                  onChange={(event) =>
-                    onPatch({
-                      virtualHook: true,
-                      quickStrategy: defaultQuickParams(event.target.value as QuickStrategyType),
-                    })
-                  }
-                >
-                  {QUICK_STRATEGY_METAS.map((meta) => (
-                    <option key={meta.type} value={meta.type}>
-                      {meta.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {vhMeta?.fields
-                .filter((field) => field.key !== "type" && !field.hidden)
-                .map((field) => (
-                  <div key={field.key} className="bot-builder-inline">
-                    <span className="bot-builder-inline-label">{field.label}:</span>
-                    <input
-                      className="bot-builder-inline-input"
-                      disabled={running}
-                      type="number"
-                      min={field.min}
-                      max={field.max}
-                      step={field.step}
-                      value={Number(snapshot.quickStrategy?.[field.key] ?? field.defaultValue)}
-                      onChange={(event) =>
-                        onPatch({
-                          virtualHook: true,
-                          quickStrategy: {
-                            ...(snapshot.quickStrategy ?? defaultQuickParams("martingale")),
-                            [field.key]: Number(event.target.value),
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                ))}
-            </div>
-          ) : null}
+              <option value="every_x_runs">Every X runs</option>
+            </select>
+            <span className="bot-builder-inline-label">every</span>
+            <input
+              className="bot-builder-inline-input"
+              disabled={running || !snapshot.alternateMarkets || !continuous}
+              type="number"
+              min={1}
+              max={50}
+              value={snapshot.alternateEvery}
+              onChange={(event) =>
+                onPatch({
+                  alternateEvery: Math.min(50, Math.max(1, Number(event.target.value) || 1)),
+                })
+              }
+            />
+          </div>
 
           {!hidden ? (
             <>
@@ -372,16 +359,86 @@ export function BuilderBlocklyBlocks({
             </>
           ) : null}
 
-          {advanced ? (
+          <label className="bot-builder-check">
+            <input
+              type="checkbox"
+              checked={snapshot.restartBuySellOnError}
+              onChange={(event) => onPatch({ restartBuySellOnError: event.target.checked })}
+            />
+            Restart buy/sell on error (disable for better performance):
+          </label>
+          <div className="bot-builder-inline">
             <label className="bot-builder-check">
               <input
                 type="checkbox"
-                checked={snapshot.restartBuySellOnError}
-                onChange={(event) => onPatch({ restartBuySellOnError: event.target.checked })}
+                checked={snapshot.virtualHook}
+                onChange={(event) => {
+                  onPatch({ virtualHook: event.target.checked });
+                  onOpenVh(event.target.checked);
+                }}
               />
-              Restart buy/sell on error (disable for better performance):
+              Virtual Hook:
             </label>
+            {snapshot.virtualHook ? (
+              <button type="button" className="bot-builder-vh-link" onClick={onToggleVh}>
+                VH Settings
+              </button>
+            ) : null}
+          </div>
+
+          {snapshot.virtualHook && vhOpen ? (
+            <div
+              className="bot-builder-vh-panel"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="bot-builder-inline">
+                <span className="bot-builder-inline-label">Recovery:</span>
+                <select
+                  className="bot-builder-inline-select"
+                  disabled={running}
+                  value={snapshot.quickStrategy?.type ?? "martingale"}
+                  onChange={(event) =>
+                    onPatch({
+                      virtualHook: true,
+                      quickStrategy: defaultQuickParams(event.target.value as QuickStrategyType),
+                    })
+                  }
+                >
+                  {QUICK_STRATEGY_METAS.map((meta) => (
+                    <option key={meta.type} value={meta.type}>
+                      {meta.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {vhMeta?.fields
+                .filter((field) => field.key !== "type" && !field.hidden)
+                .map((field) => (
+                  <div key={field.key} className="bot-builder-inline">
+                    <span className="bot-builder-inline-label">{field.label}:</span>
+                    <input
+                      className="bot-builder-inline-input"
+                      disabled={running}
+                      type="number"
+                      min={field.min}
+                      max={field.max}
+                      step={field.step}
+                      value={Number(snapshot.quickStrategy?.[field.key] ?? field.defaultValue)}
+                      onChange={(event) =>
+                        onPatch({
+                          virtualHook: true,
+                          quickStrategy: {
+                            ...(snapshot.quickStrategy ?? defaultQuickParams("martingale")),
+                            [field.key]: Number(event.target.value),
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+            </div>
           ) : null}
+
           <label className="bot-builder-check">
             <input
               type="checkbox"
@@ -390,42 +447,25 @@ export function BuilderBlocklyBlocks({
             />
             Restart last trade on error (bot ignores the unsuccessful trade):
           </label>
-          <label className="bot-builder-check">
-            <input
-              type="checkbox"
-              checked={snapshot.alternateMarkets}
-              onChange={(event) =>
-                onPatch({
-                  alternateMarkets: event.target.checked,
-                  maxOpenPositions: event.target.checked
-                    ? Math.max(2, snapshot.maxOpenPositions)
-                    : 1,
-                })
-              }
-            />
-            Alternate markets
-          </label>
 
-          {advanced ? (
-            <div className="bot-builder-statement">
-              <span>Run once at start:</span>
-              <div
-                className={cn(
-                  "bot-builder-statement-slot",
-                  snapshot.runOnceAtStart && "is-on",
-                )}
-              >
-                <label className="bot-builder-check">
-                  <input
-                    type="checkbox"
-                    checked={snapshot.runOnceAtStart}
-                    onChange={(event) => onPatch({ runOnceAtStart: event.target.checked })}
-                  />
-                  {snapshot.runOnceAtStart ? "Once at start" : "Off"}
-                </label>
-              </div>
+          <div className="bot-builder-statement">
+            <span>Run once at start:</span>
+            <div
+              className={cn(
+                "bot-builder-statement-slot",
+                snapshot.runOnceAtStart && "is-on",
+              )}
+            >
+              <label className="bot-builder-check">
+                <input
+                  type="checkbox"
+                  checked={snapshot.runOnceAtStart}
+                  onChange={(event) => onPatch({ runOnceAtStart: event.target.checked })}
+                />
+                {snapshot.runOnceAtStart ? "Once at start" : "Off"}
+              </label>
             </div>
-          ) : null}
+          </div>
 
           {!hidden ? (
             <div className="bot-builder-subblock">
@@ -469,10 +509,16 @@ export function BuilderBlocklyBlocks({
                     value={snapshot.stake}
                     onChange={(event) => onPatch({ stake: event.target.value })}
                   />
-                  <span className="bot-builder-hint">
-                    (min:0.35 - max:50000)
-                  </span>
+                  <span className="bot-builder-hint">(min: 0.6 - max: 77000)</span>
                 </div>
+                <label className="bot-builder-check">
+                  <input
+                    type="checkbox"
+                    checked={snapshot.tradeEachTick}
+                    onChange={(event) => onPatch({ tradeEachTick: event.target.checked })}
+                  />
+                  Trade each tick:
+                </label>
               </div>
             </div>
           ) : null}
@@ -504,10 +550,8 @@ export function BuilderBlocklyBlocks({
               ))}
             </select>
           </div>
-          {advanced ? (
-            <>
-              <div className="bot-builder-inline">
-                <span className="bot-builder-inline-label">Allow Bulk Purchase:</span>
+          <div className="bot-builder-inline">
+            <span className="bot-builder-inline-label">Allow Bulk Purchase:</span>
                 <select
                   className="bot-builder-inline-select"
                   disabled={running}
@@ -543,8 +587,6 @@ export function BuilderBlocklyBlocks({
                   }
                 />
               </div>
-            </>
-          ) : null}
           <LaneChips chips={chips} lane="purchase" />
         </div>
       </article>

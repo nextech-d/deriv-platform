@@ -16,7 +16,10 @@ import {
   quickStrategyToSnapshot,
   validateQuickStrategy,
   workspaceChipsForSnapshot,
+  symbolFromMarketLabel,
+  marketLabelForSymbol,
 } from "@/lib/terminal/strategy-seed";
+import { findChartMarketPath } from "@/lib/terminal/chart-markets";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
 
 function block(id: string) {
@@ -167,6 +170,25 @@ describe("strategy seeds", () => {
         }),
       ),
     ).toMatch(/greater than 1/);
+  });
+
+  it("resolves the dangote market breadcrumb including forex and metals", () => {
+    const path = findChartMarketPath("1HZ100V");
+    expect(path?.category.label).toBe("synthetics");
+    expect(path?.group.label).toBe("Continuous Indices");
+    expect(path?.market.label).toBe("Volatility 100 (1s) Index");
+    expect(symbolFromMarketLabel("Volatility 100 (1s) Index")).toBe("1HZ100V");
+    expect(symbolFromMarketLabel("EUR/USD")).toBe("frxEURUSD");
+    expect(marketLabelForSymbol("frxXAUUSD")).toBe("Gold/USD");
+    expect(findChartMarketPath("Crash 500 Index")?.group.label).toBe("Crash Index");
+  });
+
+  it("maps trade-each-tick onto a zero cooldown", () => {
+    const config = snapshotToBotConfig({
+      ...DEFAULT_BUILDER_SNAPSHOT,
+      tradeEachTick: true,
+    });
+    expect(config.cooldownTicks).toBe(0);
   });
 });
 

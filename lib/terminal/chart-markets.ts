@@ -251,6 +251,20 @@ export function chartMarketLabel(id: string): string {
   return flattenChartMarkets().find((m) => m.id === id)?.label ?? id;
 }
 
+export function findChartMarketPath(symbolOrLabel: string) {
+  const needle = symbolOrLabel.trim().toLowerCase();
+  if (!needle) return undefined;
+  for (const category of CHART_MARKET_TREE) {
+    for (const group of category.groups) {
+      const market = group.markets.find(
+        (item) => item.id.toLowerCase() === needle || item.label.toLowerCase() === needle,
+      );
+      if (market) return { category, group, market };
+    }
+  }
+  return undefined;
+}
+
 /** Fast Trader dropdown — A–Z synthetics. */
 export const TRADER_DESK_MARKETS: ChartMarket[] = [
   { id: "RDBEAR", label: "Bear Market Index" },

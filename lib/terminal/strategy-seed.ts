@@ -136,6 +136,9 @@ export interface BotBuilderSnapshot {
   sourceLabel: string;
   botStrategy: BotStrategy;
   alternateMarkets: boolean;
+  alternateMode: "every_x_runs";
+  alternateEvery: number;
+  tradeEachTick: boolean;
   fastExecution: boolean;
   hideTradeParameters: boolean;
   showAdvancedSettings: boolean;
@@ -179,6 +182,9 @@ export const DEFAULT_BUILDER_SNAPSHOT: BotBuilderSnapshot = {
   sourceLabel: "Blank workspace",
   botStrategy: "ma_cross",
   alternateMarkets: false,
+  alternateMode: "every_x_runs",
+  alternateEvery: 1,
+  tradeEachTick: false,
   fastExecution: true,
   hideTradeParameters: false,
   showAdvancedSettings: true,
@@ -197,26 +203,37 @@ export const DEFAULT_BUILDER_SNAPSHOT: BotBuilderSnapshot = {
 
 import {
   allMarketOptions,
-  groupedMarketOptions,
   symbolLabel,
   SYMBOL_ID_PATTERN,
 } from "@/lib/markets/symbols";
+import { CHART_MARKET_TREE, findChartMarketPath } from "@/lib/terminal/chart-markets";
 
 export function builderMarketOptions() {
-  return allMarketOptions();
+  return CHART_MARKET_TREE.flatMap((category) =>
+    category.groups.flatMap((group) =>
+      group.markets.map((market) => ({ label: market.label, symbol: market.id })),
+    ),
+  );
 }
 
 export function builderGroupedMarketOptions() {
-  return groupedMarketOptions();
+  return CHART_MARKET_TREE.map((category) => ({
+    group: category.label,
+    options: category.groups.flatMap((group) =>
+      group.markets.map((market) => ({ label: market.label, symbol: market.id })),
+    ),
+  }));
 }
 
 export function marketLabelForSymbol(symbol: string): string {
-  return symbolLabel(symbol);
+  return findChartMarketPath(symbol)?.market.label ?? symbolLabel(symbol);
 }
 
 export function symbolFromMarketLabel(label: string): string {
   return (
-    allMarketOptions().find((item) => item.label === label)?.symbol ?? "R_100"
+    findChartMarketPath(label)?.market.id ??
+    allMarketOptions().find((item) => item.label === label)?.symbol ??
+    "R_100"
   );
 }
 
@@ -276,6 +293,9 @@ export function normalizeLoadedSnapshot(
     purchase: normalizePurchase(tradeType, merged.purchase || ""),
     candleInterval,
     alternateMarkets: Boolean(merged.alternateMarkets),
+    alternateMode: "every_x_runs",
+    alternateEvery: Math.min(50, Math.max(1, Number(merged.alternateEvery) || 1)),
+    tradeEachTick: Boolean(merged.tradeEachTick),
     fastExecution: merged.fastExecution !== false,
     hideTradeParameters: Boolean(merged.hideTradeParameters),
     showAdvancedSettings: merged.showAdvancedSettings !== false,
@@ -330,7 +350,7 @@ export function snapshotToBotConfig(
     rsiPeriod: snapshot.rsiPeriod,
     rsiOversold: snapshot.rsiOversold,
     rsiOverbought: snapshot.rsiOverbought,
-    cooldownTicks: snapshot.runOnceAtStart
+    cooldownTicks: snapshot.tradeEachTick || snapshot.runOnceAtStart
       ? 0
       : clamped.fastExecution
         ? Math.min(2, Math.max(1, clamped.cooldownTicks || 1))
