@@ -34,6 +34,7 @@ import {
   snapshotToXml,
   symbolFromMarketLabel,
   BUILDER_TRADE_TYPES,
+  DIGIT_TRADE_TYPES,
   DURATION_RULES,
   clampSnapshotDuration,
   defaultQuickParams,
@@ -556,21 +557,22 @@ export function BotBuilderDesk({
       const parsed = snapshotFromXml(String(reader.result ?? ""));
       if (!parsed) {
         setNotice("Could not parse strategy file");
-        setFlash({ tone: "ok", text: "Could not parse strategy file" });
+        setFlash({ tone: "ok", text: `"${file.name}" is not a Deriv or TradeCity strategy file` });
         return;
       }
       installBot(
-        { ...parsed, sourceLabel: `Loaded · ${file.name}` },
+        { ...parsed, sourceLabel: parsed.sourceLabel.startsWith("Loaded") ? parsed.sourceLabel : `Loaded · ${file.name}` },
         `Imported ${file.name} onto the workspace`,
       );
       setLoadOpen(false);
       setDriveOpen(false);
     };
+    reader.onerror = () => {
+      setFlash({ tone: "ok", text: `Could not read ${file.name}` });
+    };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = "";
     if (driveFileRef.current) driveFileRef.current.value = "";
-    setLoadOpen(false);
-    setDriveOpen(false);
   }
 
   function handleRun() {
@@ -605,7 +607,7 @@ export function BotBuilderDesk({
   ];
   const tradeFamily = ["Rise/Fall", "Higher/Lower"].includes(snapshot.tradeType)
     ? "Up/Down"
-    : ["Even/Odd", "Over/Under", "Matches"].includes(snapshot.tradeType)
+    : DIGIT_TRADE_TYPES.includes(snapshot.tradeType)
       ? "Digits"
       : snapshot.tradeType === "Touch/No Touch"
         ? "In/Out"
@@ -614,11 +616,16 @@ export function BotBuilderDesk({
     if (["Rise/Fall", "Higher/Lower"].includes(snapshot.tradeType)) {
       return ["Rise/Fall", "Higher/Lower"].includes(type);
     }
-    if (["Even/Odd", "Over/Under", "Matches"].includes(snapshot.tradeType)) {
-      return ["Even/Odd", "Over/Under", "Matches"].includes(type);
+    if (DIGIT_TRADE_TYPES.includes(snapshot.tradeType)) {
+      return DIGIT_TRADE_TYPES.includes(type);
     }
     if (snapshot.tradeType === "Touch/No Touch") return type === "Touch/No Touch";
     return type === snapshot.tradeType;
+  }).sort((a, b) => {
+    if (DIGIT_TRADE_TYPES.includes(a) && DIGIT_TRADE_TYPES.includes(b)) {
+      return DIGIT_TRADE_TYPES.indexOf(a) - DIGIT_TRADE_TYPES.indexOf(b);
+    }
+    return 0;
   });
   const durationRule = DURATION_RULES[snapshot.tradeType];
   const durationLimit = durationBounds(snapshot.tradeType, snapshot.durationUnit);

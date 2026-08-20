@@ -4,6 +4,9 @@ import { Plus } from "lucide-react";
 import {
   CANDLE_INTERVALS,
   DURATION_UNIT_LABELS,
+  builderTradeTypeLabel,
+  contractTypeChoice,
+  patchFromContractChoice,
   type BotBuilderSnapshot,
   type BuilderTradeType,
   type DurationRule,
@@ -197,7 +200,7 @@ export function BuilderBlocklyBlocks({
                 >
                   {familyTypes.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {builderTradeTypeLabel(type)}
                     </option>
                   ))}
                 </select>
@@ -207,16 +210,15 @@ export function BuilderBlocklyBlocks({
                 <select
                   className="bot-builder-inline-select"
                   disabled={running}
-                  value={snapshot.contractType}
-                  onChange={(event) =>
-                    onPatch({
-                      contractType: event.target.value as BotBuilderSnapshot["contractType"],
-                    })
-                  }
+                  value={contractTypeChoice(snapshot)}
+                  onChange={(event) => onPatch(patchFromContractChoice(snapshot.tradeType, event.target.value))}
                 >
-                  <option>Both</option>
-                  <option>Call</option>
-                  <option>Put</option>
+                  <option value="Both">Both</option>
+                  {purchaseOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="bot-builder-inline">

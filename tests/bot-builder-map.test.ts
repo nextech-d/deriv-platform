@@ -12,6 +12,7 @@ import {
   DEFAULT_BUILDER_SNAPSHOT,
   courseStrategyToSnapshot,
   snapshotToBotConfig,
+  snapshotFromXml,
   speedBotSnapshot,
   quickStrategyToSnapshot,
   validateQuickStrategy,
@@ -181,6 +182,32 @@ describe("strategy seeds", () => {
     expect(symbolFromMarketLabel("EUR/USD")).toBe("frxEURUSD");
     expect(marketLabelForSymbol("frxXAUUSD")).toBe("Gold/USD");
     expect(findChartMarketPath("Crash 500 Index")?.group.label).toBe("Crash Index");
+  });
+
+  it("loads official Deriv Bot XML onto the workspace", () => {
+    const snapshot = snapshotFromXml(`
+      <xml xmlns="http://www.w3.org/1999/xhtml" is_dbot="true">
+        <block type="trade_definition">
+          <field name="SYMBOL_LIST">R_100</field>
+          <field name="TRADETYPECAT_LIST">digits</field>
+          <field name="TRADETYPE_LIST">evenodd</field>
+          <field name="TYPE_LIST">both</field>
+          <field name="CANDLEINTERVAL_LIST">60</field>
+          <field name="DURATIONTYPE_LIST">t</field>
+          <field name="PURCHASE_LIST">DIGITEVEN</field>
+          <value name="DURATION"><field name="NUM">1</field></value>
+          <value name="AMOUNT"><field name="NUM">0.60</field></value>
+          <block type="purchase"></block>
+          <block type="trade_again"></block>
+        </block>
+      </xml>
+    `);
+    expect(snapshot?.symbol).toBe("R_100");
+    expect(snapshot?.tradeType).toBe("Even/Odd");
+    expect(snapshot?.contractType).toBe("Both");
+    expect(snapshot?.purchase).toBe("Even");
+    expect(snapshot?.stake).toBe("0.60");
+    expect(snapshotFromXml("<strategy/>")).toBeNull();
   });
 
   it("uses official Deriv Derived groups on Bot Builder", () => {

@@ -11,6 +11,7 @@ import {
   purchasesForTradeType,
   quickStrategyToSnapshot,
   validateQuickStrategy,
+  builderTradeTypeLabel,
   type BuilderTradeType,
   type DurationUnit,
   type BotBuilderSnapshot,
@@ -412,7 +413,7 @@ export function QuickStrategyStudio({
                       >
                         {TRADE_TYPES.map((item) => (
                           <option key={item} value={item}>
-                            {item}
+                            {builderTradeTypeLabel(item)}
                           </option>
                         ))}
                       </select>

@@ -256,9 +256,59 @@ export function purchasesForTradeType(tradeType: BuilderTradeType): string[] {
   return ["Rise", "Fall"];
 }
 
+export function builderTradeTypeLabel(tradeType: BuilderTradeType): string {
+  if (tradeType === "Matches") return "Matches/Differs";
+  return tradeType;
+}
+
+export const DIGIT_TRADE_TYPES: BuilderTradeType[] = ["Even/Odd", "Over/Under", "Matches"];
+
+export function contractTypeChoice(snapshot: {
+  tradeType: BuilderTradeType;
+  contractType: BotBuilderSnapshot["contractType"];
+}): string {
+  const [primary, secondary] = purchasesForTradeType(snapshot.tradeType);
+  if (snapshot.contractType === "Call") return primary;
+  if (snapshot.contractType === "Put") return secondary ?? primary;
+  return "Both";
+}
+
+export function patchFromContractChoice(
+  tradeType: BuilderTradeType,
+  choice: string,
+): Pick<BotBuilderSnapshot, "contractType" | "purchase"> {
+  const [primary, secondary] = purchasesForTradeType(tradeType);
+  if (choice === primary) return { contractType: "Call", purchase: primary };
+  if (choice === secondary) return { contractType: "Put", purchase: secondary ?? primary };
+  return { contractType: "Both", purchase: primary };
+}
+
 export function normalizePurchase(tradeType: BuilderTradeType, purchase: string): string {
   const options = purchasesForTradeType(tradeType);
   if (options.includes(purchase)) return purchase;
+  const aliases: Record<string, string> = {
+    call: "Rise",
+    put: "Fall",
+    calle: "Higher",
+    pute: "Lower",
+    digiteven: "Even",
+    digitodd: "Odd",
+    digitover: "Over",
+    digitunder: "Under",
+    digitmatch: "Matches",
+    digitdiff: "Differs",
+    onetouch: "Touch",
+    notouch: "No Touch",
+    asianu: "Asian Up",
+    asiand: "Asian Down",
+    resetcall: "Reset Call",
+    resetput: "Reset Put",
+    tickhigh: "High Tick",
+    ticklow: "Low Tick",
+    both: options[0]!,
+  };
+  const mapped = aliases[purchase.trim().toLowerCase()];
+  if (mapped && options.includes(mapped)) return mapped;
   const lower = purchase.toLowerCase();
   const found = options.find(
     (option) =>
@@ -826,6 +876,124 @@ export function snapshotToXml(snapshot: BotBuilderSnapshot): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<deriv-ea-strategy version="1">\n  <payload>${escaped}</payload>\n</deriv-ea-strategy>\n`;
 }
 
+function xmlField(xml: string, name: string): string {
+  const match = xml.match(new RegExp(`<field name="${name}">([^<]*)</field>`, "i"));
+  return match?.[1]?.trim() ?? "";
+}
+
+function xmlValueNum(xml: string, valueName: string): string {
+  const match = xml.match(
+    new RegExp(`<value name="${valueName}"[^>]*>[\\s\\S]*?<field name="NUM">([^<]*)</field>`, "i"),
+  );
+  return match?.[1]?.trim() ?? "";
+}
+
+function tradeTypeFromBlockly(code: string): BuilderTradeType {
+  const key = code.trim().toLowerCase().replace(/[_-]/g, "");
+  if (key.includes("higherlower") || key === "higher") return "Higher/Lower";
+  if (key.includes("evenodd") || key === "even" || key === "odd") return "Even/Odd";
+  if (key.includes("overunder") || key === "over" || key === "under") return "Over/Under";
+  if (key.includes("matches") || key.includes("differs")) return "Matches";
+  if (key.includes("touch")) return "Touch/No Touch";
+  if (key.includes("asian")) return "Asian";
+  if (key.includes("reset")) return "Reset";
+  if (key.includes("tick") || key.includes("highlow")) return "High/Low Ticks";
+  return "Rise/Fall";
+}
+
+function contractFromBlockly(
+  tradeType: BuilderTradeType,
+  typeList: string,
+  purchaseList: string,
+): Pick<BotBuilderSnapshot, "contractType" | "purchase"> {
+  const token = (typeList || purchaseList).trim().toLowerCase();
+  const [primary, secondary] = purchasesForTradeType(tradeType);
+  if (!token || token === "both") return { contractType: "Both", purchase: primary };
+  const purchase = normalizePurchase(tradeType, typeList || purchaseList);
+  if (purchase === secondary) return { contractType: "Put", purchase };
+  if (purchase === primary) return { contractType: "Call", purchase };
+  return { contractType: "Both", purchase };
+}
+
+function candleFromBlockly(code: string): CandleInterval {
+  const map: Record<string, CandleInterval> = {
+    "60": "1 minute",
+    "120": "2 minutes",
+    "180": "3 minutes",
+    "300": "5 minutes",
+    "600": "10 minutes",
+    "900": "15 minutes",
+    "1800": "30 minutes",
+    "3600": "1 hour",
+    "7200": "2 hours",
+    "14400": "4 hours",
+    "28800": "8 hours",
+    "86400": "1 day",
+  };
+  return map[code.trim()] ?? DEFAULT_BUILDER_SNAPSHOT.candleInterval;
+}
+
+function quickTypeFromBlockly(xml: string): QuickStrategyType | undefined {
+  const blob = xml.toLowerCase();
+  if (blob.includes("reverse_martingale") || blob.includes("reverse martingale")) {
+    return "reverse_martingale";
+  }
+  if (blob.includes("reverse_dalembert") || blob.includes("reverse d'alembert") || blob.includes("reverse_d_alembert")) {
+    return "reverse_dalembert";
+  }
+  if (blob.includes("1_3_2_6") || blob.includes("1-3-2-6")) return "one_three_two_six";
+  if (blob.includes("oscars")) return "oscars_grind";
+  if (blob.includes("dalembert")) return "dalembert";
+  if (blob.includes("martingale")) return "martingale";
+  return undefined;
+}
+
+function snapshotFromBlocklyXml(xml: string): BotBuilderSnapshot | null {
+  if (!/<block\b/i.test(xml) || !/trade_definition/i.test(xml)) return null;
+  const symbol = xmlField(xml, "SYMBOL_LIST") || DEFAULT_BUILDER_SNAPSHOT.symbol;
+  const tradeType = tradeTypeFromBlockly(
+    xmlField(xml, "TRADETYPE_LIST") || xmlField(xml, "TRADETYPECAT_LIST"),
+  );
+  const sides = contractFromBlockly(tradeType, xmlField(xml, "TYPE_LIST"), xmlField(xml, "PURCHASE_LIST"));
+  const durationUnitRaw = xmlField(xml, "DURATIONTYPE_LIST").toLowerCase();
+  const durationUnit: DurationUnit =
+    durationUnitRaw === "s" || durationUnitRaw === "m" || durationUnitRaw === "h" || durationUnitRaw === "d"
+      ? durationUnitRaw
+      : durationUnitRaw === "t"
+        ? "t"
+        : DURATION_RULES[tradeType]?.defaultUnit ?? "t";
+  const duration = xmlValueNum(xml, "DURATION") || String(durationBounds(tradeType, durationUnit).min);
+  const stake = xmlValueNum(xml, "AMOUNT") || DEFAULT_BUILDER_SNAPSHOT.stake;
+  const cat = xmlField(xml, "TRADETYPECAT_LIST").toLowerCase();
+  const quick = quickTypeFromBlockly(xml);
+  const prediction = xmlField(xml, "PREDICTION") || xmlValueNum(xml, "PREDICTION");
+  return normalizeLoadedSnapshot({
+    ...DEFAULT_BUILDER_SNAPSHOT,
+    symbol,
+    market: marketLabelForSymbol(symbol),
+    tradeType,
+    ...sides,
+    duration,
+    durationUnit,
+    stake,
+    candleInterval: candleFromBlockly(xmlField(xml, "CANDLEINTERVAL_LIST")),
+    restartBuySellOnError: xmlField(xml, "TIME_MACHINE_ENABLED").toUpperCase() === "TRUE",
+    restartOnError: xmlField(xml, "RESTARTONERROR").toUpperCase() !== "FALSE",
+    restartAction: /<block type="trade_again"/i.test(xml) ? "trade_again" : "stop",
+    sellAction: /<block type="sell_at_market"/i.test(xml) ? "sell_at_market" : "none",
+    tradeOptionsMode: cat.includes("accumulat")
+      ? "accumulator"
+      : cat.includes("multipl")
+        ? "multiplier"
+        : "vanilla",
+    digitTarget: prediction ? Number(prediction) : DEFAULT_BUILDER_SNAPSHOT.digitTarget,
+    virtualHook: Boolean(quick),
+    quickStrategy: quick ? defaultQuickParams(quick) : undefined,
+    botStrategy: botStrategyForTradeType(tradeType),
+    sourceLabel: "Loaded · Deriv Bot",
+  });
+}
+
 export function snapshotFromXml(xml: string): BotBuilderSnapshot | null {
   try {
     const match = xml.match(/<payload>([\s\S]*?)<\/payload>/i);
@@ -838,11 +1006,12 @@ export function snapshotFromXml(xml: string): BotBuilderSnapshot | null {
       const parsed = JSON.parse(raw) as BotBuilderSnapshot;
       return normalizeLoadedSnapshot(parsed);
     }
-    // Fallback: raw JSON file pasted as .xml
+    const blockly = snapshotFromBlocklyXml(xml);
+    if (blockly) return blockly;
     const parsed = JSON.parse(xml) as BotBuilderSnapshot;
     return normalizeLoadedSnapshot(parsed);
   } catch {
-    return null;
+    return snapshotFromBlocklyXml(xml);
   }
 }
 
