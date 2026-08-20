@@ -137,6 +137,12 @@ export interface BotBuilderSnapshot {
   botStrategy: BotStrategy;
   alternateMarkets: boolean;
   fastExecution: boolean;
+  hideTradeParameters: boolean;
+  showAdvancedSettings: boolean;
+  restartBuySellOnError: boolean;
+  runOnceAtStart: boolean;
+  allowBulkPurchase: boolean;
+  bulkTradeCount: number;
   /** Stake progression applied when the snapshot is sent to the runner. */
   quickStrategy?: QuickStrategyParams;
   /**
@@ -174,6 +180,12 @@ export const DEFAULT_BUILDER_SNAPSHOT: BotBuilderSnapshot = {
   botStrategy: "ma_cross",
   alternateMarkets: false,
   fastExecution: true,
+  hideTradeParameters: false,
+  showAdvancedSettings: true,
+  restartBuySellOnError: false,
+  runOnceAtStart: false,
+  allowBulkPurchase: false,
+  bulkTradeCount: 1,
   fastPeriod: DEFAULT_BOT_CONFIG.fastPeriod,
   slowPeriod: DEFAULT_BOT_CONFIG.slowPeriod,
   rsiPeriod: DEFAULT_BOT_CONFIG.rsiPeriod,
@@ -265,6 +277,12 @@ export function normalizeLoadedSnapshot(
     candleInterval,
     alternateMarkets: Boolean(merged.alternateMarkets),
     fastExecution: merged.fastExecution !== false,
+    hideTradeParameters: Boolean(merged.hideTradeParameters),
+    showAdvancedSettings: merged.showAdvancedSettings !== false,
+    restartBuySellOnError: Boolean(merged.restartBuySellOnError),
+    runOnceAtStart: Boolean(merged.runOnceAtStart),
+    allowBulkPurchase: Boolean(merged.allowBulkPurchase),
+    bulkTradeCount: Math.min(20, Math.max(1, Number(merged.bulkTradeCount) || 1)),
     restartOnError: merged.restartOnError !== false,
     virtualHook: Boolean(merged.virtualHook),
     sellAction: merged.sellAction === "sell_at_market" ? "sell_at_market" : "none",
@@ -312,12 +330,16 @@ export function snapshotToBotConfig(
     rsiPeriod: snapshot.rsiPeriod,
     rsiOversold: snapshot.rsiOversold,
     rsiOverbought: snapshot.rsiOverbought,
-    cooldownTicks: clamped.fastExecution
-      ? Math.min(2, Math.max(1, clamped.cooldownTicks || 1))
-      : (clamped.cooldownTicks ?? base.cooldownTicks),
-    maxOpenPositions: snapshot.alternateMarkets
-      ? Math.max(2, snapshot.maxOpenPositions)
-      : snapshot.maxOpenPositions,
+    cooldownTicks: snapshot.runOnceAtStart
+      ? 0
+      : clamped.fastExecution
+        ? Math.min(2, Math.max(1, clamped.cooldownTicks || 1))
+        : (clamped.cooldownTicks ?? base.cooldownTicks),
+    maxOpenPositions: snapshot.allowBulkPurchase
+      ? Math.max(1, snapshot.bulkTradeCount || 1)
+      : snapshot.alternateMarkets
+        ? Math.max(2, snapshot.maxOpenPositions)
+        : snapshot.maxOpenPositions,
     quickStrategy: snapshot.virtualHook
       ? (snapshot.quickStrategy ?? defaultQuickParams("martingale"))
       : undefined,
@@ -326,7 +348,7 @@ export function snapshotToBotConfig(
     sideMode: snapshot.contractType,
     restartAction: snapshot.restartAction,
     sellAction: snapshot.sellAction,
-    restartOnError: snapshot.restartOnError,
+    restartOnError: snapshot.restartOnError || snapshot.restartBuySellOnError,
     virtualHook: snapshot.virtualHook,
   };
 }

@@ -112,6 +112,20 @@ describe("strategy seeds", () => {
     expect(snapshotToBotConfig(snapshot).stake).toBe(0.5);
   });
 
+  it("maps bulk purchase, run-once, and buy/sell restart onto the runner", () => {
+    const config = snapshotToBotConfig({
+      ...DEFAULT_BUILDER_SNAPSHOT,
+      allowBulkPurchase: true,
+      bulkTradeCount: 3,
+      runOnceAtStart: true,
+      restartBuySellOnError: true,
+      restartOnError: false,
+    });
+    expect(config.maxOpenPositions).toBe(3);
+    expect(config.cooldownTicks).toBe(0);
+    expect(config.restartOnError).toBe(true);
+  });
+
   it("maps quick strategy parameters onto the snapshot, chips, and runner", () => {
     const snapshot = quickStrategyToSnapshot({
       type: "martingale",

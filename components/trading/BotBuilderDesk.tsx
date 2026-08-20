@@ -28,14 +28,12 @@ import {
 } from "@/lib/terminal/bot-builder";
 import {
   DEFAULT_BUILDER_SNAPSHOT,
-  builderMarketOptions,
   builderGroupedMarketOptions,
   snapshotFromXml,
   snapshotToBotConfig,
   snapshotToXml,
   symbolFromMarketLabel,
   BUILDER_TRADE_TYPES,
-  CANDLE_INTERVALS,
   DURATION_RULES,
   DURATION_UNIT_LABELS,
   clampSnapshotDuration,
@@ -47,13 +45,13 @@ import {
   workspaceChipsForSnapshot,
   type BotBuilderSnapshot,
   type BuilderTradeType,
-  type DurationUnit,
 } from "@/lib/terminal/strategy-seed";
 import { TourDialog } from "@/components/trading/TourDialog";
 import {
   DriveFileDialog,
   LoadBotSourceGrid,
 } from "@/components/trading/LoadBotSourceGrid";
+import { BuilderBlocklyBlocks } from "@/components/trading/BuilderBlocklyBlocks";
 import { QuickStrategyStudio } from "@/components/trading/QuickStrategyStudio";
 import {
   consumeBuilderHandoff,
@@ -63,8 +61,7 @@ import {
   clearBuilderWorkspace,
 } from "@/lib/terminal/desk-handoff";
 import { effectForBuilderBlock, type BuilderLane } from "@/lib/terminal/builder-block-map";
-import type { BotConfig, QuickStrategyType } from "@/lib/bot/types";
-import { QUICK_STRATEGY_METAS } from "@/lib/bot/types";
+import type { BotConfig } from "@/lib/bot/types";
 import { lastDigitFromQuote } from "@/lib/terminal/analysis-tool";
 import { formatWalletBalance } from "@/lib/utils/format-wallet";
 import type { OpenContractRecord } from "@/lib/state/types";
@@ -155,29 +152,6 @@ const TOOL_GROUPS = [
     ],
   },
 ] as const;
-
-function BlockHead({ index, title }: { index: string; title: string }) {
-  return (
-    <header className="bot-builder-block-head">
-      <span className="bot-builder-block-index">{index}</span>
-      <h3>{title}</h3>
-    </header>
-  );
-}
-
-function LaneChips({ chips, lane }: { chips: CanvasChip[]; lane: FocusBlock }) {
-  const shown = chips.filter((chip) => chip.lane === lane).slice(0, 10);
-  if (!shown.length) return null;
-  return (
-    <div className="bot-builder-chips" data-testid={`tc-builder-chips-${lane}`}>
-      {shown.map((chip) => (
-        <span key={chip.id} className="bot-builder-chip">
-          {chip.label}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 const ALL_TRADE_TYPES = Object.keys(BUILDER_TRADE_TYPES) as BuilderTradeType[];
 
@@ -634,10 +608,6 @@ export function BotBuilderDesk({
   });
   const durationRule = DURATION_RULES[snapshot.tradeType];
   const durationLimit = durationBounds(snapshot.tradeType, snapshot.durationUnit);
-  const vhMeta =
-    QUICK_STRATEGY_METAS.find(
-      (meta) => meta.type === (snapshot.quickStrategy?.type ?? "martingale"),
-    ) ?? QUICK_STRATEGY_METAS[0];
   const flyoutBlocks = (() => {
     if (!openGroup) return [];
     const cat = categories.find((item) => item.id === openGroup.cat);
@@ -900,383 +870,25 @@ export function BotBuilderDesk({
             className="bot-builder-canvas-grid"
             style={{ transform: `scale(${snapshot.zoom})`, transformOrigin: "top left" }}
           >
-            <article
-              data-lane="trade"
-              className={cn("bot-builder-block", focusBlock === "trade" && "bot-builder-block-focused")}
-              onClick={() => setFocusBlock("trade")}
-            >
-              <BlockHead index="1" title="Trade parameters" />
-              <div className="bot-builder-block-body">
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">Market</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={activeMarketGroup?.group ?? ""}
-                    onChange={(event) => {
-                      const group = marketGroups.find((item) => item.group === event.target.value);
-                      if (group?.options[0]) {
-                        patchSnapshot({ market: group.options[0].label }, "Market group changed");
-                      }
-                    }}
-                  >
-                    {marketGroups.map((group) => (
-                      <option key={group.group} value={group.group}>
-                        {group.group}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.market}
-                    onChange={(event) => patchSnapshot({ market: event.target.value }, "Market updated")}
-                  >
-                    {(activeMarketGroup?.options ?? builderMarketOptions()).map((option) => (
-                      <option key={option.symbol} value={option.label}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">Trade type</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={tradeFamily}
-                    onChange={(event) => {
-                      const family = event.target.value;
-                      if (family === "Up/Down") patchSnapshot({ tradeType: "Rise/Fall" });
-                      else if (family === "Digits") patchSnapshot({ tradeType: "Even/Odd" });
-                      else if (family === "In/Out") patchSnapshot({ tradeType: "Touch/No Touch" });
-                      else if (family === "Asian") patchSnapshot({ tradeType: "Asian" });
-                      else if (family === "Reset") patchSnapshot({ tradeType: "Reset" });
-                      else if (family === "High/Low Ticks") patchSnapshot({ tradeType: "High/Low Ticks" });
-                    }}
-                  >
-                    <option value="Up/Down">Up/Down</option>
-                    <option value="Digits">Digits</option>
-                    <option value="In/Out">In/Out</option>
-                    <option value="Asian">Asian</option>
-                    <option value="Reset">Reset</option>
-                    <option value="High/Low Ticks">High/Low Ticks</option>
-                  </select>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.tradeType}
-                    onChange={(event) =>
-                      patchSnapshot({ tradeType: event.target.value as BuilderTradeType })
-                    }
-                  >
-                    {familyTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">Contract type</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.contractType}
-                    onChange={(event) =>
-                      patchSnapshot({
-                        contractType: event.target.value as BotBuilderSnapshot["contractType"],
-                      })
-                    }
-                  >
-                    <option>Both</option>
-                    <option>Call</option>
-                    <option>Put</option>
-                  </select>
-                  <span className="bot-builder-inline-sep">Default candle interval</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.candleInterval}
-                    onChange={(event) =>
-                      patchSnapshot({
-                        candleInterval: event.target.value as BotBuilderSnapshot["candleInterval"],
-                      })
-                    }
-                  >
-                    {CANDLE_INTERVALS.map((interval) => (
-                      <option key={interval} value={interval}>
-                        {interval}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {BUILDER_TRADE_TYPES[snapshot.tradeType]?.needsBarrier ? (
-                  <div className="bot-builder-inline">
-                    <span className="bot-builder-inline-label">Barrier</span>
-                    <input
-                      className="bot-builder-inline-input"
-                      disabled={running}
-                      type="number"
-                      step={0.01}
-                      value={snapshot.barrier}
-                      onChange={(event) =>
-                        patchSnapshot({ barrier: Number(event.target.value) || 0 })
-                      }
-                    />
-                  </div>
-                ) : null}
-                {BUILDER_TRADE_TYPES[snapshot.tradeType]?.needsDigit ? (
-                  <div className="bot-builder-inline">
-                    <span className="bot-builder-inline-label">
-                      {snapshot.tradeType === "Matches" ? "Match digit" : "Digit barrier"}
-                    </span>
-                    <input
-                      className="bot-builder-inline-input"
-                      disabled={running}
-                      type="number"
-                      min={0}
-                      max={9}
-                      value={snapshot.tradeType === "Matches" ? snapshot.digitTarget : snapshot.barrier}
-                      onChange={(event) => {
-                        const value = Math.min(9, Math.max(0, Number(event.target.value) || 0));
-                        patchSnapshot(
-                          snapshot.tradeType === "Matches" ? { digitTarget: value } : { barrier: value },
-                        );
-                      }}
-                    />
-                  </div>
-                ) : null}
-                <div className="bot-builder-checks">
-                  <label className="bot-builder-check">
-                    <input
-                      type="checkbox"
-                      checked={snapshot.alternateMarkets}
-                      onChange={(event) =>
-                        patchSnapshot({
-                          alternateMarkets: event.target.checked,
-                          maxOpenPositions: event.target.checked
-                            ? Math.max(2, snapshot.maxOpenPositions)
-                            : 1,
-                        })
-                      }
-                    />
-                    Alternate markets
-                  </label>
-                  <label className="bot-builder-check">
-                    <input
-                      type="checkbox"
-                      checked={snapshot.virtualHook}
-                      onChange={(event) => patchSnapshot({ virtualHook: event.target.checked })}
-                    />
-                    Virtual hook
-                  </label>
-                  {snapshot.virtualHook ? (
-                    <button
-                      type="button"
-                      className="bot-builder-vh-link"
-                      onClick={() => setVhOpen((open) => !open)}
-                    >
-                      VH Settings
-                    </button>
-                  ) : null}
-                  <label className="bot-builder-check">
-                    <input
-                      type="checkbox"
-                      checked={snapshot.restartOnError}
-                      onChange={(event) => patchSnapshot({ restartOnError: event.target.checked })}
-                    />
-                    Restart last trade on error
-                  </label>
-                </div>
-                {snapshot.virtualHook && vhOpen ? (
-                  <div
-                    className="bot-builder-vh-panel"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <div className="bot-builder-inline">
-                      <span className="bot-builder-inline-label">Recovery</span>
-                      <select
-                        className="bot-builder-inline-select"
-                    disabled={running}
-                        value={snapshot.quickStrategy?.type ?? "martingale"}
-                        onChange={(event) =>
-                          patchSnapshot({
-                            virtualHook: true,
-                            quickStrategy: defaultQuickParams(
-                              event.target.value as QuickStrategyType,
-                            ),
-                          })
-                        }
-                      >
-                        {QUICK_STRATEGY_METAS.map((meta) => (
-                          <option key={meta.type} value={meta.type}>
-                            {meta.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {vhMeta?.fields
-                      .filter((field) => field.key !== "type" && !field.hidden)
-                      .map((field) => (
-                        <div key={field.key} className="bot-builder-inline">
-                          <span className="bot-builder-inline-label">{field.label}</span>
-                          <input
-                            className="bot-builder-inline-input"
-                            disabled={running}
-                            type="number"
-                            min={field.min}
-                            max={field.max}
-                            step={field.step}
-                            value={Number(
-                              snapshot.quickStrategy?.[field.key] ?? field.defaultValue,
-                            )}
-                            onChange={(event) =>
-                              patchSnapshot({
-                                virtualHook: true,
-                                quickStrategy: {
-                                  ...(snapshot.quickStrategy ??
-                                    defaultQuickParams("martingale")),
-                                  [field.key]: Number(event.target.value),
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                      ))}
-                  </div>
-                ) : null}
-                <div className="bot-builder-nested">
-                  <p className="bot-builder-nested-title">Trade options</p>
-                  <div className="bot-builder-inline">
-                    <span className="bot-builder-inline-label">Duration</span>
-                    <select
-                      className="bot-builder-inline-select"
-                    disabled={running}
-                      value={snapshot.durationUnit}
-                      onChange={(event) =>
-                        patchSnapshot({ durationUnit: event.target.value as DurationUnit })
-                      }
-                    >
-                      {durationRule?.units.map((unit) => (
-                        <option key={unit} value={unit}>
-                          {DURATION_UNIT_LABELS[unit]}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className="bot-builder-inline-input"
-                      disabled={running}
-                      type="number"
-                      min={durationLimit.min}
-                      max={durationLimit.max}
-                      value={snapshot.duration}
-                      onChange={(event) => patchSnapshot({ duration: event.target.value })}
-                    />
-                    <span className="bot-builder-inline-sep">Stake</span>
-                    <input
-                      className="bot-builder-inline-input"
-                      disabled={running}
-                      type="number"
-                      min={0.35}
-                      step={0.01}
-                      value={snapshot.stake}
-                      onChange={(event) => patchSnapshot({ stake: event.target.value })}
-                    />
-                  </div>
-                </div>
-                <LaneChips chips={chips} lane="trade" />
-              </div>
-            </article>
-
-            <article
-              data-lane="purchase"
-              className={cn(
-                "bot-builder-block",
-                focusBlock === "purchase" && "bot-builder-block-focused",
-              )}
-              onClick={() => setFocusBlock("purchase")}
-            >
-              <BlockHead index="2" title="Purchase conditions" />
-              <div className="bot-builder-block-body">
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">Purchase</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.purchase}
-                    onChange={(event) => patchSnapshot({ purchase: event.target.value })}
-                  >
-                    {purchaseOptions.map((option) => (
-                      <option key={option}>{option}</option>
-                    ))}
-                  </select>
-                </div>
-                <LaneChips chips={chips} lane="purchase" />
-              </div>
-            </article>
-
-            <article
-              data-lane="sell"
-              className={cn("bot-builder-block", focusBlock === "sell" && "bot-builder-block-focused")}
-              onClick={() => setFocusBlock("sell")}
-            >
-              <BlockHead index="3" title="Sell conditions" />
-              <div className="bot-builder-block-body">
-                <p className="bot-builder-logic-line">
-                  <span className="bot-builder-logic-chip">If</span>
-                  Sell is available
-                  <span className="bot-builder-logic-chip">Then</span>
-                </p>
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">Action</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.sellAction}
-                    onChange={(event) =>
-                      patchSnapshot({
-                        sellAction: event.target.value as BotBuilderSnapshot["sellAction"],
-                      })
-                    }
-                  >
-                    <option value="none">No action</option>
-                    <option value="sell_at_market">Sell at market</option>
-                  </select>
-                </div>
-                <LaneChips chips={chips} lane="sell" />
-              </div>
-            </article>
-
-            <article
-              data-lane="restart"
-              className={cn(
-                "bot-builder-block",
-                focusBlock === "restart" && "bot-builder-block-focused",
-              )}
-              onClick={() => setFocusBlock("restart")}
-            >
-              <BlockHead index="4" title="Restart trading conditions" />
-              <div className="bot-builder-block-body">
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">After contract</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.restartAction}
-                    onChange={(event) =>
-                      patchSnapshot({
-                        restartAction: event.target.value as BotBuilderSnapshot["restartAction"],
-                      })
-                    }
-                  >
-                    <option value="trade_again">Trade again</option>
-                    <option value="stop">Stop after loss</option>
-                  </select>
-                </div>
-                <LaneChips chips={chips} lane="restart" />
-              </div>
-            </article>
+            <BuilderBlocklyBlocks
+              snapshot={snapshot}
+              running={running}
+              walletCurrency={walletCurrency}
+              marketGroups={marketGroups}
+              activeMarketGroup={activeMarketGroup}
+              tradeFamily={tradeFamily}
+              familyTypes={familyTypes}
+              purchaseOptions={purchaseOptions}
+              durationRule={durationRule}
+              durationLimit={durationLimit}
+              chips={chips}
+              focusBlock={focusBlock}
+              vhOpen={vhOpen}
+              onFocus={setFocusBlock}
+              onPatch={patchSnapshot}
+              onToggleVh={() => setVhOpen((open) => !open)}
+              onOpenVh={setVhOpen}
+            />
           </div>
           <button
             type="button"
