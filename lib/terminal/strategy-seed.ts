@@ -219,7 +219,11 @@ import {
   symbolLabel,
   SYMBOL_ID_PATTERN,
 } from "@/lib/markets/symbols";
-import { BUILDER_MARKET_TREE, findChartMarketPath } from "@/lib/terminal/chart-markets";
+import {
+  BUILDER_MARKET_TREE,
+  findBuilderMarketPath,
+  findChartMarketPath,
+} from "@/lib/terminal/chart-markets";
 
 export function builderMarketOptions() {
   return BUILDER_MARKET_TREE.flatMap((category) =>
@@ -239,7 +243,11 @@ export function builderGroupedMarketOptions() {
 }
 
 export function marketLabelForSymbol(symbol: string): string {
-  return findChartMarketPath(symbol)?.market.label ?? symbolLabel(symbol);
+  return (
+    findBuilderMarketPath(symbol)?.market.label ??
+    findChartMarketPath(symbol)?.market.label ??
+    symbolLabel(symbol)
+  );
 }
 
 export function symbolFromMarketLabel(label: string): string {
@@ -877,15 +885,30 @@ export function snapshotToXml(snapshot: BotBuilderSnapshot): string {
 }
 
 function xmlField(xml: string, name: string): string {
-  const match = xml.match(new RegExp(`<field name="${name}">([^<]*)</field>`, "i"));
-  return match?.[1]?.trim() ?? "";
+  const match = xml.match(
+    new RegExp(`<field\\b[^>]*\\bname="${name}"[^>]*>([\\s\\S]*?)</field>`, "i"),
+  );
+  const raw = match?.[1]?.trim() ?? "";
+  return raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").trim();
 }
 
 function xmlValueNum(xml: string, valueName: string): string {
   const match = xml.match(
-    new RegExp(`<value name="${valueName}"[^>]*>[\\s\\S]*?<field name="NUM">([^<]*)</field>`, "i"),
+    new RegExp(
+      `<value\\b[^>]*\\bname="${valueName}"[^>]*>[\\s\\S]*?<field\\b[^>]*\\bname="NUM"[^>]*>([^<]*)</field>`,
+      "i",
+    ),
   );
-  return match?.[1]?.trim() ?? "";
+  if (match?.[1]) return match[1].trim();
+  return xmlField(xml, valueName);
+}
+
+function isBlocklyStrategyXml(xml: string): boolean {
+  return (
+    /is_dbot\s*=\s*["']true["']/i.test(xml) ||
+    /<block\b[^>]*\btype=["']trade_definition/i.test(xml) ||
+    /<block\b[^>]*\btype=["']trade["']/i.test(xml)
+  );
 }
 
 function tradeTypeFromBlockly(code: string): BuilderTradeType {
@@ -949,7 +972,7 @@ function quickTypeFromBlockly(xml: string): QuickStrategyType | undefined {
 }
 
 function snapshotFromBlocklyXml(xml: string): BotBuilderSnapshot | null {
-  if (!/<block\b/i.test(xml) || !/trade_definition/i.test(xml)) return null;
+  if (!isBlocklyStrategyXml(xml)) return null;
   const symbol = xmlField(xml, "SYMBOL_LIST") || DEFAULT_BUILDER_SNAPSHOT.symbol;
   const tradeType = tradeTypeFromBlockly(
     xmlField(xml, "TRADETYPE_LIST") || xmlField(xml, "TRADETYPECAT_LIST"),
@@ -994,9 +1017,13 @@ function snapshotFromBlocklyXml(xml: string): BotBuilderSnapshot | null {
   });
 }
 
+export const STRATEGY_FILE_ACCEPT = ".xml,.json";
+
 export function snapshotFromXml(xml: string): BotBuilderSnapshot | null {
+  const text = xml.replace(/^\uFEFF/, "").trim();
+  if (!text) return null;
   try {
-    const match = xml.match(/<payload>([\s\S]*?)<\/payload>/i);
+    const match = text.match(/<payload>([\s\S]*?)<\/payload>/i);
     if (match) {
       const raw = match[1]!
         .replace(/&lt;/g, "<")
@@ -1006,12 +1033,11 @@ export function snapshotFromXml(xml: string): BotBuilderSnapshot | null {
       const parsed = JSON.parse(raw) as BotBuilderSnapshot;
       return normalizeLoadedSnapshot(parsed);
     }
-    const blockly = snapshotFromBlocklyXml(xml);
-    if (blockly) return blockly;
-    const parsed = JSON.parse(xml) as BotBuilderSnapshot;
+    if (isBlocklyStrategyXml(text)) return snapshotFromBlocklyXml(text);
+    const parsed = JSON.parse(text) as BotBuilderSnapshot;
     return normalizeLoadedSnapshot(parsed);
   } catch {
-    return snapshotFromBlocklyXml(xml);
+    return snapshotFromBlocklyXml(text);
   }
 }
 

@@ -210,6 +210,63 @@ describe("strategy seeds", () => {
     expect(snapshotFromXml("<strategy/>")).toBeNull();
   });
 
+  it("loads nested official Deriv Bot XML with BOM and extra field attributes", () => {
+    const xml = `\uFEFF<xml xmlns="https://developers.google.com/blockly/xml" is_dbot="true">
+      <block type="trade_definition" id="root" x="0" y="0">
+        <statement name="TRADE_OPTIONS">
+          <block type="trade_definition_market">
+            <field name="MARKET_LIST" id="m1">basket_index</field>
+            <field name="SUBMARKET_LIST" id="m2">forex_basket</field>
+            <field name="SYMBOL_LIST" id="s1">WLDAUD</field>
+            <next>
+              <block type="trade_definition_tradetype">
+                <field name="TRADETYPECAT_LIST">callput</field>
+                <field name="TRADETYPE_LIST">callput</field>
+                <next>
+                  <block type="trade_definition_contracttype">
+                    <field name="TYPE_LIST">both</field>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <statement name="SUBMARKET">
+          <block type="trade_definition_tradeoptions">
+            <field name="DURATIONTYPE_LIST">m</field>
+            <value name="DURATION" limit="1,60">
+              <shadow type="math_number_positive">
+                <field name="NUM" id="n1">5</field>
+              </shadow>
+            </value>
+            <value name="AMOUNT">
+              <shadow type="math_number_positive">
+                <field name="NUM">1</field>
+              </shadow>
+            </value>
+          </block>
+        </statement>
+      </block>
+      <block type="after_purchase">
+        <statement name="AFTERPURCHASE_STACK">
+          <block type="trade_again"></block>
+        </statement>
+      </block>
+      <block type="variables_get">
+        <field name="VAR">martingale:size</field>
+      </block>
+    </xml>`;
+    const snapshot = snapshotFromXml(xml);
+    expect(snapshot?.symbol).toBe("WLDAUD");
+    expect(snapshot?.market).toBe("AUD Basket");
+    expect(snapshot?.tradeType).toBe("Rise/Fall");
+    expect(snapshot?.duration).toBe("5");
+    expect(snapshot?.durationUnit).toBe("m");
+    expect(snapshot?.stake).toBe("1");
+    expect(snapshot?.virtualHook).toBe(true);
+    expect(snapshot?.quickStrategy?.type).toBe("martingale");
+  });
+
   it("uses official Deriv Derived groups on Bot Builder", () => {
     const path = findBuilderMarketPath("R_100");
     expect(path?.category.label).toBe("Derived");

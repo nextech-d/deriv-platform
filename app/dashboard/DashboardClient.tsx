@@ -585,6 +585,7 @@ export function DashboardClient({
 
   function applyBuilderSeed(snapshot: BotBuilderSnapshot) {
     seedingRef.current = true;
+    writeBuilderHandoff(snapshot);
     setBuilderSeed(snapshot);
     setBuilderSeedKey((key) => key + 1);
     setSymbol(snapshot.symbol);
@@ -858,6 +859,7 @@ export function DashboardClient({
           <BotBuilderDesk
               seed={builderSeed}
               seedKey={builderSeedKey}
+              onSeedChange={setBuilderSeed}
               onOpenAiBot={() => handleViewChange("ai-bot")}
               onRun={(config, snapshot) => {
                 setSymbol(snapshot.symbol);

@@ -32,6 +32,7 @@ import {
   snapshotFromXml,
   snapshotToBotConfig,
   snapshotToXml,
+  STRATEGY_FILE_ACCEPT,
   symbolFromMarketLabel,
   BUILDER_TRADE_TYPES,
   DIGIT_TRADE_TYPES,
@@ -53,7 +54,10 @@ import { QuickStrategyStudio } from "@/components/trading/QuickStrategyStudio";
 import {
   consumeBuilderHandoff,
   consumeBuilderRunAfter,
+  markBuilderHandoffApplied,
+  peekUnappliedBuilderHandoff,
   readBuilderWorkspace,
+  writeBuilderHandoff,
   writeBuilderWorkspace,
   clearBuilderWorkspace,
 } from "@/lib/terminal/desk-handoff";
@@ -84,6 +88,7 @@ interface JournalEntry {
 interface BotBuilderDeskProps {
   seed?: BotBuilderSnapshot | null;
   seedKey?: number;
+  onSeedChange?: (snapshot: BotBuilderSnapshot) => void;
   onOpenAiBot?: () => void;
   onRun?: (config: BotConfig, snapshot: BotBuilderSnapshot) => void;
   onStop?: () => void;
@@ -155,6 +160,7 @@ function chipsFromSnapshot(snapshot: BotBuilderSnapshot): CanvasChip[] {
 export function BotBuilderDesk({
   seed = null,
   seedKey = 0,
+  onSeedChange,
   onRun,
   onStop,
   running = false,
@@ -170,16 +176,30 @@ export function BotBuilderDesk({
 }: BotBuilderDeskProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const driveFileRef = useRef<HTMLInputElement>(null);
-  const skipFirstSeed = useRef(Boolean(seed));
+  const skipFirstSeed = useRef(true);
   const onSymbolChangeRef = useRef(onSymbolChange);
   onSymbolChangeRef.current = onSymbolChange;
+  const onSeedChangeRef = useRef(onSeedChange);
+  onSeedChangeRef.current = onSeedChange;
 
   const booted = useMemo(() => {
-    if (seed) {
-      const snapshot = normalizeLoadedSnapshot(seed);
+    const handed = peekUnappliedBuilderHandoff();
+    const initial = handed ?? seed;
+    if (initial) {
+      const snapshot = normalizeLoadedSnapshot(initial);
+      const chips = chipsFromSnapshot(snapshot);
+      markBuilderHandoffApplied();
+      writeBuilderWorkspace({
+        snapshot,
+        chips,
+        journal: [],
+        history: [snapshot],
+        historyIndex: 0,
+        focusBlock: "trade",
+      });
       return {
         snapshot,
-        chips: chipsFromSnapshot(snapshot),
+        chips,
         journal: [] as JournalEntry[],
         history: [snapshot],
         historyIndex: 0,
@@ -240,6 +260,7 @@ export function BotBuilderDesk({
   const [blocksMenuOpen, setBlocksMenuOpen] = useState(true);
   const [flyoutLearnOpen, setFlyoutLearnOpen] = useState(false);
   const [loadDragging, setLoadDragging] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -256,24 +277,21 @@ export function BotBuilderDesk({
   }
 
   useEffect(() => {
-    const handed = consumeBuilderHandoff();
     const runAfter = consumeBuilderRunAfter();
     if (skipFirstSeed.current) {
       skipFirstSeed.current = false;
-      if (seed) {
-        if (runAfter) {
-          installBot(seed, `${seed.sourceLabel} generated on the workspace`, true);
-        } else {
-          onSymbolChangeRef.current?.(seed.symbol);
-          setVhOpen(Boolean(seed.virtualHook));
-          const text = `${seed.sourceLabel} ready on the workspace`;
-          setNotice(text);
-          setFlash({ tone: "ok", text });
-        }
+      onSymbolChangeRef.current?.(snapshot.symbol);
+      setVhOpen(Boolean(snapshot.virtualHook));
+      if (runAfter) {
+        installBot(snapshot, `${snapshot.sourceLabel} generated on the workspace`, true);
+      } else if (seed) {
+        const text = `${seed.sourceLabel} ready on the workspace`;
+        setNotice(text);
+        setFlash({ tone: "ok", text });
       }
       return;
     }
-    const next = seed ?? handed;
+    const next = seed ?? consumeBuilderHandoff();
     if (!next) return;
     installBot(next, `${next.sourceLabel} ready on the workspace`, runAfter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -345,6 +363,9 @@ export function BotBuilderDesk({
 
   function installBot(next: BotBuilderSnapshot, message: string, thenRun = false) {
     const normalized = normalizeLoadedSnapshot(next);
+    writeBuilderHandoff(normalized);
+    markBuilderHandoffApplied();
+    onSeedChangeRef.current?.(normalized);
     applySnapshot(normalized, message, true);
     setChips(chipsFromSnapshot(normalized));
     setVhOpen(Boolean(normalized.virtualHook));
@@ -494,8 +515,10 @@ export function BotBuilderDesk({
       return;
     }
     if (id === "import") {
-      setLoadTab("recent");
+      setLoadError(null);
+      setLoadTab("local");
       setLoadOpen(true);
+      fileRef.current?.click();
       return;
     }
     if (id === "save") {
@@ -556,10 +579,15 @@ export function BotBuilderDesk({
     reader.onload = () => {
       const parsed = snapshotFromXml(String(reader.result ?? ""));
       if (!parsed) {
+        const text = `"${file.name}" is not a TradeCity strategy file. Export XML from Bot Builder or Deriv Bot, then try again.`;
+        setLoadError(text);
         setNotice("Could not parse strategy file");
-        setFlash({ tone: "ok", text: `"${file.name}" is not a Deriv or TradeCity strategy file` });
+        setFlash({ tone: "ok", text });
+        setLoadTab("local");
+        setLoadOpen(true);
         return;
       }
+      setLoadError(null);
       installBot(
         { ...parsed, sourceLabel: parsed.sourceLabel.startsWith("Loaded") ? parsed.sourceLabel : `Loaded · ${file.name}` },
         `Imported ${file.name} onto the workspace`,
@@ -568,7 +596,9 @@ export function BotBuilderDesk({
       setDriveOpen(false);
     };
     reader.onerror = () => {
+      setLoadError(`Could not read ${file.name}`);
       setFlash({ tone: "ok", text: `Could not read ${file.name}` });
+      setLoadOpen(true);
     };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = "";
@@ -651,7 +681,7 @@ export function BotBuilderDesk({
         id="tc-builder-xml-computer"
         ref={fileRef}
         type="file"
-        accept=".xml,application/xml,text/xml,application/json"
+        accept={STRATEGY_FILE_ACCEPT}
         className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleFile(event.target.files)}
@@ -660,7 +690,7 @@ export function BotBuilderDesk({
         id="tc-builder-xml-drive"
         ref={driveFileRef}
         type="file"
-        accept=".xml,application/xml,text/xml,application/json"
+        accept={STRATEGY_FILE_ACCEPT}
         className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleFile(event.target.files)}
@@ -1113,6 +1143,11 @@ export function BotBuilderDesk({
                 </button>
               ))}
             </div>
+            {loadError ? (
+              <p className="tc-modal-body" role="alert" style={{ color: "#991b1b" }}>
+                {loadError}
+              </p>
+            ) : null}
             {loadTab === "recent" ? (
               <div className="bot-builder-load-empty">
                 <p>You do not have any recent bots</p>
@@ -1150,9 +1185,13 @@ export function BotBuilderDesk({
                 <p>Importing XML files from Binary Bot and other third-party platforms may take longer.</p>
                 <p>Drag your XML file here</p>
                 <p>or, if you prefer...</p>
-                <label htmlFor="tc-builder-xml-computer" className="bot-builder-btn-primary">
+                <button
+                  type="button"
+                  className="bot-builder-btn-primary"
+                  onClick={() => fileRef.current?.click()}
+                >
                   Select an XML file from your device
-                </label>
+                </button>
               </div>
             ) : null}
             {loadTab === "drive" ? (

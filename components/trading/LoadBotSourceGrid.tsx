@@ -38,9 +38,17 @@ export function LoadBotSourceGrid({
         );
         if (source.id === "computer") {
           return (
-            <label key={source.id} htmlFor={computerInputId} className="tc-load-source">
+            <button
+              key={source.id}
+              type="button"
+              className="tc-load-source"
+              onClick={() => {
+                const input = document.getElementById(computerInputId);
+                if (input instanceof HTMLInputElement) input.click();
+              }}
+            >
               {inner}
-            </label>
+            </button>
           );
         }
         return (
@@ -89,9 +97,16 @@ export function DriveFileDialog({ inputId, open, onClose }: DriveFileDialogProps
           <button type="button" className="tc-btn tc-btn-ghost" onClick={onClose}>
             Cancel
           </button>
-          <label htmlFor={inputId} className="tc-btn tc-btn-solid" style={{ cursor: "pointer" }}>
+          <button
+            type="button"
+            className="tc-btn tc-btn-solid"
+            onClick={() => {
+              const input = document.getElementById(inputId);
+              if (input instanceof HTMLInputElement) input.click();
+            }}
+          >
             Choose from Google Drive
-          </label>
+          </button>
         </div>
       </div>
     </div>

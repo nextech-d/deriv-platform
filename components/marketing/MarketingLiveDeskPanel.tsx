@@ -30,7 +30,7 @@ import {
   snapshotToBotConfig,
   type BotBuilderSnapshot,
 } from "@/lib/terminal/strategy-seed";
-import { writeBuilderHandoff } from "@/lib/terminal/desk-handoff";
+import { peekUnappliedBuilderHandoff, writeBuilderHandoff } from "@/lib/terminal/desk-handoff";
 import { ULTIMATE_BOT_MARKETS } from "@/lib/terminal/chart-markets";
 import { saveBotConfig } from "@/lib/bot/settings";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
@@ -234,7 +234,9 @@ export function MarketingLiveDeskPanel({
   navId,
   onNavigate,
 }: MarketingLiveDeskPanelProps) {
-  const [builderSeed, setBuilderSeed] = useState<BotBuilderSnapshot | null>(null);
+  const [builderSeed, setBuilderSeed] = useState<BotBuilderSnapshot | null>(
+    () => peekUnappliedBuilderHandoff(),
+  );
   const [builderSeedKey, setBuilderSeedKey] = useState(0);
   const [previewConfig, setPreviewConfig] = useState(DEMO_BOT_CONFIG);
 
@@ -264,6 +266,7 @@ export function MarketingLiveDeskPanel({
           <BotBuilderDesk
             seed={builderSeed}
             seedKey={builderSeedKey}
+            onSeedChange={setBuilderSeed}
             onOpenAiBot={() => onNavigate?.("ai-bot", "ai-bot")}
             onRun={sendToRunner}
           />

@@ -18,6 +18,7 @@ import { writeBuilderHandoff, writeBuilderRunAfter, writeFreeBotsTier } from "@/
 import {
   snapshotFromXml,
   speedBotSnapshot,
+  STRATEGY_FILE_ACCEPT,
 } from "@/lib/terminal/strategy-seed";
 
 interface MarketingDashboardPanelProps {
@@ -91,23 +92,26 @@ export function MarketingDashboardPanel({
           `"${file.name}" is not a TradeCity strategy file. Export XML from Bot Builder, then try again.`,
         );
         setLoadOpen(false);
+        setDriveOpen(false);
         return;
       }
       writeBuilderHandoff({
         ...parsed,
         sourceLabel: `Dashboard · ${file.name}`,
       });
+      setLoadError(null);
       setLoadOpen(false);
+      setDriveOpen(false);
       go(onNavigate, "bot-builder");
     };
     reader.onerror = () => {
       setLoadError(`Could not read ${file.name}.`);
       setLoadOpen(false);
+      setDriveOpen(false);
     };
     reader.readAsText(file);
     if (xmlInputRef.current) xmlInputRef.current.value = "";
     if (driveInputRef.current) driveInputRef.current.value = "";
-    setDriveOpen(false);
   }
 
   return (
@@ -121,7 +125,7 @@ export function MarketingDashboardPanel({
         id="tc-marketing-xml"
         ref={xmlInputRef}
         type="file"
-        accept=".xml,application/xml,text/xml,application/json,.json"
+        accept={STRATEGY_FILE_ACCEPT}
         className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}
@@ -130,7 +134,7 @@ export function MarketingDashboardPanel({
         id="tc-marketing-xml-drive"
         ref={driveInputRef}
         type="file"
-        accept=".xml,application/xml,text/xml,application/json,.json"
+        accept={STRATEGY_FILE_ACCEPT}
         className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}

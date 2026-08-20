@@ -23,6 +23,7 @@ import { PLATFORM_NAV_ITEMS } from "@/lib/navigation/platform-nav";
 import {
   snapshotFromXml,
   speedBotSnapshot,
+  STRATEGY_FILE_ACCEPT,
   type BotBuilderSnapshot,
 } from "@/lib/terminal/strategy-seed";
 
@@ -88,8 +89,6 @@ const ANNOUNCEMENTS = [
     body: "Trading involves risk. Never trade money you cannot afford to lose. Past performance does not guarantee future results.",
   },
 ];
-
-const XML_ACCEPT = ".xml,application/xml,text/xml,application/json,.json";
 
 function viewLabel(view: AppView): string {
   return (
@@ -188,15 +187,17 @@ export function TerminalHomeView({
     const reader = new FileReader();
     reader.onload = () => {
       applyXml(String(reader.result ?? ""), file.name);
+      setLoadOpen(false);
+      setDriveOpen(false);
     };
     reader.onerror = () => {
       setLoadError(`Could not read ${file.name}.`);
+      setLoadOpen(false);
+      setDriveOpen(false);
     };
     reader.readAsText(file);
     if (xmlInputRef.current) xmlInputRef.current.value = "";
     if (driveInputRef.current) driveInputRef.current.value = "";
-    setDriveOpen(false);
-    setLoadOpen(false);
   }
 
   function openWindow(deskWindow: DashboardWindow) {
@@ -249,7 +250,7 @@ export function TerminalHomeView({
         id="tc-xml-computer"
         ref={xmlInputRef}
         type="file"
-        accept={XML_ACCEPT}
+        accept={STRATEGY_FILE_ACCEPT}
         className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}
@@ -258,7 +259,7 @@ export function TerminalHomeView({
         id="tc-xml-drive"
         ref={driveInputRef}
         type="file"
-        accept={XML_ACCEPT}
+        accept={STRATEGY_FILE_ACCEPT}
         className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}

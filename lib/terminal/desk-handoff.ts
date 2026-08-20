@@ -33,18 +33,58 @@ function clearKey(key: string) {
   window.sessionStorage.removeItem(key);
 }
 
+const BUILDER_SEED_NONCE_KEY = "tc-desk-builder-seed-nonce";
+const BUILDER_SEED_APPLIED_KEY = "tc-desk-builder-seed-applied";
+
+let pendingBuilderNonce: string | null = null;
+let pendingBuilderApplied: string | null = null;
+
+function readNonce(): string | null {
+  if (typeof window !== "undefined") {
+    return window.sessionStorage.getItem(BUILDER_SEED_NONCE_KEY) ?? pendingBuilderNonce;
+  }
+  return pendingBuilderNonce;
+}
+
+function readAppliedNonce(): string | null {
+  if (typeof window !== "undefined") {
+    return window.sessionStorage.getItem(BUILDER_SEED_APPLIED_KEY) ?? pendingBuilderApplied;
+  }
+  return pendingBuilderApplied;
+}
+
 export function writeBuilderHandoff(snapshot: BotBuilderSnapshot) {
   pendingBuilderSeed = snapshot;
+  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  pendingBuilderNonce = nonce;
+  pendingBuilderApplied = null;
   writeJson(BUILDER_SEED_KEY, snapshot);
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(BUILDER_SEED_NONCE_KEY, nonce);
+  window.sessionStorage.removeItem(BUILDER_SEED_APPLIED_KEY);
 }
 
 export function readBuilderHandoff(): BotBuilderSnapshot | null {
   return pendingBuilderSeed ?? readJson<BotBuilderSnapshot>(BUILDER_SEED_KEY);
 }
 
+export function peekUnappliedBuilderHandoff(): BotBuilderSnapshot | null {
+  const nonce = readNonce();
+  if (!nonce || nonce === readAppliedNonce()) return null;
+  return readBuilderHandoff();
+}
+
+export function markBuilderHandoffApplied() {
+  const nonce = readNonce();
+  if (!nonce) return;
+  pendingBuilderApplied = nonce;
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(BUILDER_SEED_APPLIED_KEY, nonce);
+}
+
 export function consumeBuilderHandoff(): BotBuilderSnapshot | null {
-  const next = readBuilderHandoff();
-  if (next) clearBuilderHandoff();
+  const next = peekUnappliedBuilderHandoff();
+  if (next) markBuilderHandoffApplied();
   return next;
 }
 
@@ -108,7 +148,11 @@ export function clearBuilderWorkspace() {
 
 export function clearBuilderHandoff() {
   pendingBuilderSeed = null;
+  pendingBuilderNonce = null;
+  pendingBuilderApplied = null;
   clearKey(BUILDER_SEED_KEY);
+  clearKey(BUILDER_SEED_NONCE_KEY);
+  clearKey(BUILDER_SEED_APPLIED_KEY);
 }
 
 export function writeFreeBotsTier(tier: FreeBotsTier) {
