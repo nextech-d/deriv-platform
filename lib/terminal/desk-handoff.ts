@@ -1,6 +1,8 @@
 import type { BotBuilderSnapshot } from "@/lib/terminal/strategy-seed";
+import type { BuilderLane } from "@/lib/terminal/builder-block-map";
 
 const BUILDER_SEED_KEY = "tc-desk-builder-seed";
+const BUILDER_WORKSPACE_KEY = "tc-desk-builder-workspace";
 const FREE_BOTS_TIER_KEY = "tc-desk-free-bots-tier";
 
 export type FreeBotsTier = "free" | "premium";
@@ -39,7 +41,48 @@ export function readBuilderHandoff(): BotBuilderSnapshot | null {
 }
 
 export function consumeBuilderHandoff(): BotBuilderSnapshot | null {
-  return readBuilderHandoff();
+  const next = readBuilderHandoff();
+  if (next) clearBuilderHandoff();
+  return next;
+}
+
+export interface BuilderWorkspaceChip {
+  id: string;
+  label: string;
+  category: string;
+  lane: BuilderLane;
+}
+
+export interface BuilderWorkspaceJournal {
+  id: string;
+  at: number;
+  text: string;
+}
+
+export interface BuilderWorkspace {
+  snapshot: BotBuilderSnapshot;
+  chips: BuilderWorkspaceChip[];
+  journal: BuilderWorkspaceJournal[];
+  history: BotBuilderSnapshot[];
+  historyIndex: number;
+  focusBlock: BuilderLane;
+}
+
+export function writeBuilderWorkspace(workspace: BuilderWorkspace) {
+  writeJson(BUILDER_WORKSPACE_KEY, {
+    ...workspace,
+    history: workspace.history.slice(-20),
+    journal: workspace.journal.slice(0, 40),
+    chips: workspace.chips.slice(0, 24),
+  });
+}
+
+export function readBuilderWorkspace(): BuilderWorkspace | null {
+  return readJson<BuilderWorkspace>(BUILDER_WORKSPACE_KEY);
+}
+
+export function clearBuilderWorkspace() {
+  clearKey(BUILDER_WORKSPACE_KEY);
 }
 
 export function clearBuilderHandoff() {

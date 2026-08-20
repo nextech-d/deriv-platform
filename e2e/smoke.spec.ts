@@ -172,6 +172,35 @@ test.describe("Dashboard (demo mode)", () => {
     await expect(page.getByRole("heading", { name: /Free bots:/i })).toBeVisible();
   });
 
+  test("builder keeps Speed Bot, shows wallet, and Run stays on the desk", async ({ page }) => {
+    await waitForLiveConnection(page);
+    await clickDashboardWindow(page, "Speed Bot");
+    await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
+    await expect(
+      page.locator(".bot-builder-status-chip").filter({ hasText: "Dashboard · Speed Bot" }),
+    ).toBeVisible();
+
+    await platformNav(page).getByRole("button", { name: "Charts" }).click();
+    await platformNav(page).getByRole("button", { name: "Bot Builder" }).click();
+    const skip = page.getByRole("button", { name: "Skip" });
+    if (await skip.isVisible()) await skip.click();
+    await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
+    await expect(
+      page.locator(".bot-builder-status-chip").filter({ hasText: "Dashboard · Speed Bot" }),
+    ).toBeVisible();
+    await expect(page.getByTestId("tc-builder-wallet")).toContainText("USD", { timeout: 15_000 });
+    await expect(page.locator(".bot-builder-summary-stat dd").first()).toContainText("USD");
+
+    await page.getByTestId("tc-builder-run").click();
+    await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
+    await expect(page.locator(".bot-builder-journal li").first()).toContainText(/Run ·/);
+    const runBtn = page.getByTestId("tc-builder-run");
+    if ((await runBtn.innerText()).includes("Stop")) {
+      await runBtn.click();
+      await expect(runBtn).toHaveText(/Run/);
+    }
+  });
+
   test("invalid XML stays on the desk with an error", async ({ page }) => {
     await waitForLiveConnection(page);
     await workspaceMain(page)

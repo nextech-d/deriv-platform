@@ -14,6 +14,7 @@ import {
   Save,
   Search,
   Sparkles,
+  Square,
   Trash2,
   Undo2,
   ZoomIn,
@@ -53,13 +54,17 @@ import {
   LoadBotSourceGrid,
   QuickStrategyDialog,
 } from "@/components/trading/LoadBotSourceGrid";
-import { consumeBuilderHandoff } from "@/lib/terminal/desk-handoff";
+import { consumeBuilderHandoff, readBuilderWorkspace, writeBuilderWorkspace, clearBuilderWorkspace } from "@/lib/terminal/desk-handoff";
+import { effectForBuilderBlock, type BuilderLane } from "@/lib/terminal/builder-block-map";
 import type { BotConfig, QuickStrategyType } from "@/lib/bot/types";
 import { QUICK_STRATEGY_METAS } from "@/lib/bot/types";
+import { lastDigitFromQuote } from "@/lib/terminal/analysis-tool";
+import { formatWalletBalance } from "@/lib/utils/format-wallet";
+import type { OpenContractRecord } from "@/lib/state/types";
 import { cn } from "@/lib/utils/cn";
 
 type SummaryTab = "summary" | "transactions" | "journal";
-type FocusBlock = "trade" | "purchase" | "sell" | "restart";
+type FocusBlock = BuilderLane;
 
 interface CanvasChip {
   id: string;
@@ -79,6 +84,14 @@ interface BotBuilderDeskProps {
   seedKey?: number;
   onOpenAiBot?: () => void;
   onRun?: (config: BotConfig, snapshot: BotBuilderSnapshot) => void;
+  onStop?: () => void;
+  running?: boolean;
+  blockReason?: string | null;
+  lastQuote?: number | null;
+  balance?: { amount: number; currency: string } | null;
+  accountCurrency?: string;
+  onSymbolChange?: (symbol: string) => void;
+  fills?: OpenContractRecord[];
   runStats?: {
     totalStake: number;
     totalPayout: number;
@@ -166,21 +179,67 @@ export function BotBuilderDesk({
   seedKey = 0,
   onOpenAiBot,
   onRun,
+  onStop,
+  running = false,
+  blockReason = null,
+  lastQuote = null,
+  balance = null,
+  accountCurrency = "USD",
+  onSymbolChange,
+  fills = [],
   runStats,
   recentJournal = [],
 }: BotBuilderDeskProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const driveFileRef = useRef<HTMLInputElement>(null);
+  const skipFirstSeed = useRef(Boolean(seed));
+  const onSymbolChangeRef = useRef(onSymbolChange);
+  onSymbolChangeRef.current = onSymbolChange;
+
+  const booted = useMemo(() => {
+    if (seed) {
+      const snapshot = normalizeLoadedSnapshot(seed);
+      return {
+        snapshot,
+        chips: [] as CanvasChip[],
+        journal: [] as JournalEntry[],
+        history: [snapshot],
+        historyIndex: 0,
+        focusBlock: "trade" as FocusBlock,
+      };
+    }
+    const saved = readBuilderWorkspace();
+    if (saved?.snapshot) {
+      const snapshot = normalizeLoadedSnapshot(saved.snapshot);
+      return {
+        snapshot,
+        chips: saved.chips ?? [],
+        journal: saved.journal ?? [],
+        history: saved.history?.length ? saved.history : [snapshot],
+        historyIndex: saved.historyIndex ?? 0,
+        focusBlock: saved.focusBlock ?? "trade",
+      };
+    }
+    return {
+      snapshot: DEFAULT_BUILDER_SNAPSHOT,
+      chips: [] as CanvasChip[],
+      journal: [] as JournalEntry[],
+      history: [DEFAULT_BUILDER_SNAPSHOT],
+      historyIndex: 0,
+      focusBlock: "trade" as FocusBlock,
+    };
+  }, []);
+
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] =
     useState<BuilderCategoryId>("trade-parameters");
   const [summaryTab, setSummaryTab] = useState<SummaryTab>("summary");
-  const [focusBlock, setFocusBlock] = useState<FocusBlock>("trade");
-  const [snapshot, setSnapshot] = useState<BotBuilderSnapshot>(DEFAULT_BUILDER_SNAPSHOT);
-  const [history, setHistory] = useState<BotBuilderSnapshot[]>([DEFAULT_BUILDER_SNAPSHOT]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-  const [journal, setJournal] = useState<JournalEntry[]>([]);
-  const [chips, setChips] = useState<CanvasChip[]>([]);
+  const [focusBlock, setFocusBlock] = useState<FocusBlock>(booted.focusBlock);
+  const [snapshot, setSnapshot] = useState<BotBuilderSnapshot>(booted.snapshot);
+  const [history, setHistory] = useState<BotBuilderSnapshot[]>(booted.history);
+  const [historyIndex, setHistoryIndex] = useState(booted.historyIndex);
+  const [journal, setJournal] = useState<JournalEntry[]>(booted.journal);
+  const [chips, setChips] = useState<CanvasChip[]>(booted.chips);
   const [compactLayout, setCompactLayout] = useState(false);
   const [notice, setNotice] = useState("Pick a category, then click a block in the flyout");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -207,12 +266,33 @@ export function BotBuilderDesk({
 
   useEffect(() => {
     const handed = consumeBuilderHandoff();
+    if (skipFirstSeed.current) {
+      skipFirstSeed.current = false;
+      if (seed) onSymbolChangeRef.current?.(seed.symbol);
+      return;
+    }
     const next = seed ?? handed;
     if (!next) return;
-    applySnapshot(next, `Loaded · ${next.sourceLabel}`);
+    applySnapshot(next, `Loaded · ${next.sourceLabel}`, true);
     setNotice(`Loaded · ${next.sourceLabel}`);
+    onSymbolChangeRef.current?.(next.symbol);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedKey]);
+
+  useEffect(() => {
+    writeBuilderWorkspace({
+      snapshot,
+      chips,
+      journal,
+      history,
+      historyIndex,
+      focusBlock,
+    });
+  }, [snapshot, chips, journal, history, historyIndex, focusBlock]);
+
+  useEffect(() => {
+    if (blockReason) setNotice(blockReason);
+  }, [blockReason]);
 
   useEffect(() => {
     if (!recentJournal.length) return;
@@ -237,10 +317,15 @@ export function BotBuilderDesk({
     });
   }
 
-  function applySnapshot(next: BotBuilderSnapshot, journalText?: string) {
+  function applySnapshot(next: BotBuilderSnapshot, journalText?: string, replace = false) {
     const normalized = normalizeLoadedSnapshot(next);
     setSnapshot(normalized);
-    pushHistory(normalized);
+    if (replace) {
+      setHistory([normalized]);
+      setHistoryIndex(0);
+    } else {
+      pushHistory(normalized);
+    }
     if (journalText) {
       setJournal((prev) =>
         [{ id: crypto.randomUUID(), at: Date.now(), text: journalText }, ...prev].slice(
@@ -249,6 +334,7 @@ export function BotBuilderDesk({
         ),
       );
     }
+    if (normalized.symbol) onSymbolChangeRef.current?.(normalized.symbol);
   }
 
   function patchSnapshot(partial: Partial<BotBuilderSnapshot>, journalText?: string) {
@@ -318,24 +404,18 @@ export function BotBuilderDesk({
   }
 
   function placeBlock(block: BuilderBlockDef) {
+    if (running) {
+      setNotice("Stop the bot to edit blocks");
+      return;
+    }
     const categoryLabel = activeCat?.label ?? "Blocks";
-
-    const chipLane: FocusBlock =
-      block.action === "focus-purchase"
-        ? "purchase"
-        : block.action === "focus-sell"
-          ? "sell"
-          : block.action === "focus-restart"
-            ? "restart"
-            : block.action === "focus-trade" ||
-                block.action === "set-even-odd" ||
-                block.action === "set-over-under" ||
-                block.action === "set-matches" ||
-                block.action === "set-rise-fall"
-              ? "trade"
-              : block.action.startsWith("add-")
-                ? "purchase"
-                : focusBlock;
+    const lastDigit =
+      lastQuote != null ? lastDigitFromQuote(lastQuote) : snapshot.digitTarget;
+    const effect = effectForBuilderBlock(block, {
+      snapshot,
+      lastDigit,
+      balance,
+    });
 
     setChips((prev) =>
       [
@@ -343,188 +423,27 @@ export function BotBuilderDesk({
           id: `${block.id}-${Date.now()}`,
           label: block.label,
           category: categoryLabel,
-          lane: chipLane,
+          lane: effect.lane,
         },
         ...prev,
       ].slice(0, 24),
     );
 
-    switch (block.action) {
-      case "focus-trade":
-        setFocusBlock("trade");
-        setNotice(`Opened · ${block.label}`);
-        break;
-      case "focus-purchase":
-        setFocusBlock("purchase");
-        setNotice(`Opened · ${block.label}`);
-        break;
-      case "focus-sell":
-        setFocusBlock("sell");
-        if (block.id !== "during-purchase") {
-          patchSnapshot({ sellAction: "sell_at_market" }, `Block · ${block.label}`);
-          setNotice(`Sell condition · ${block.label}`);
-        } else {
-          setNotice(`Opened · ${block.label}`);
-        }
-        break;
-      case "focus-restart":
-        setFocusBlock("restart");
-        patchSnapshot(
-          { restartAction: block.id === "stop-after-loss" ? "stop" : "trade_again" },
-          `Block · ${block.label}`,
-        );
-        setNotice(`Restart · ${block.label}`);
-        break;
-      case "set-even-odd":
-        setFocusBlock("trade");
-        patchSnapshot(
-          { tradeType: "Even/Odd", purchase: "Even", botStrategy: "parity_bias" },
-          `Block · ${block.label}`,
-        );
-        setNotice(`Lane set · Even/Odd`);
-        break;
-      case "set-over-under":
-        setFocusBlock("trade");
-        patchSnapshot(
-          { tradeType: "Over/Under", purchase: "Over", botStrategy: "barrier_edge" },
-          `Block · ${block.label}`,
-        );
-        setNotice(`Lane set · Over/Under`);
-        break;
-      case "set-matches":
-        setFocusBlock("trade");
-        patchSnapshot(
-          { tradeType: "Matches", purchase: "Matches", botStrategy: "digit_match" },
-          `Block · ${block.label}`,
-        );
-        setNotice(`Lane set · Matches`);
-        break;
-      case "set-rise-fall":
-        setFocusBlock("trade");
-        patchSnapshot(
-          { tradeType: "Rise/Fall", purchase: "Rise", botStrategy: "ma_cross" },
-          `Block · ${block.label}`,
-        );
-        setNotice(`Lane set · Rise/Fall`);
-        break;
-      case "add-tick": {
-        // In DBot these would be connected to placeholders; in our simplified builder we
-        // map the most important indicator blocks to actual `BotConfig` parameters.
-        if (block.id.startsWith("ind-")) {
-          if (block.id === "ind-rsi" || block.id === "ind-rsia") {
-            patchSnapshot(
-              {
-                botStrategy: "rsi_threshold",
-                rsiPeriod: 14,
-                rsiOversold: 30,
-                rsiOverbought: 70,
-              },
-              `Indicator · ${block.label}`,
-            );
-            setNotice(`Indicator · RSI (14)`);
-            break;
-          }
-
-          const maPeriods: { fast: number; slow: number } =
-            block.id === "ind-macda" ? { fast: 12, slow: 26 } : { fast: 5, slow: 20 };
-
-          patchSnapshot(
-            {
-              botStrategy: "ma_cross",
-              fastPeriod: maPeriods.fast,
-              slowPeriod: maPeriods.slow,
-            },
-            `Indicator · ${block.label}`,
-          );
-          setNotice(`Indicator · MA cross (${maPeriods.fast}/${maPeriods.slow})`);
-          break;
-        }
-
-        // Tick/candle "sources" are not represented by our simplified bot runner yet.
-        log(`Added tick source · ${block.label}`);
-        setNotice(`Tick source · ${block.label}`);
-        break;
-      }
-      case "add-logic": {
-        // Minimal functional mapping for sell-related logic.
-        if (block.id === "contract-check-sell") {
-          setFocusBlock("sell");
-          patchSnapshot({ sellAction: "sell_at_market" }, `Block · ${block.label}`);
-          setNotice(`Sell is available · ${block.label}`);
-          break;
-        }
-
-        log(`Added logic · ${block.label}`);
-        setNotice(`Logic · ${block.label}`);
-        break;
-      }
-      case "add-loop": {
-        // Map "wait" blocks to our bot cooldown gate.
-        if (block.id === "time-timeout") {
-          patchSnapshot({ cooldownTicks: 10 }, `Block · ${block.label}`);
-          setNotice(`Cooldown set · ${block.label}`);
-          break;
-        }
-        if (block.id === "time-tickdelay") {
-          patchSnapshot({ cooldownTicks: 3 }, `Block · ${block.label}`);
-          setNotice(`Cooldown set · ${block.label}`);
-          break;
-        }
-
-        log(`Added loop · ${block.label}`);
-        setNotice(`Loop · ${block.label}`);
-        break;
-      }
-      case "add-math":
-        log(`Added math · ${block.label}`);
-        setNotice(`Math · ${block.label}`);
-        break;
-      case "add-notify":
-        log(`Added notify · ${block.label}`);
-        setNotice(`Notify · ${block.label}`);
-        break;
-      case "add-variable":
-        log(`Added variable · ${block.label}`);
-        setNotice(`Variable · ${block.label}`);
-        break;
-      case "noop":
-        if (block.id === "virtual-hook-switcher") {
-          patchSnapshot(
-            {
-              virtualHook: !snapshot.virtualHook,
-              quickStrategy: snapshot.virtualHook
-                ? undefined
-                : (snapshot.quickStrategy ?? defaultQuickParams("martingale")),
-            },
-            `Block · ${block.label}`,
-          );
-          setNotice(snapshot.virtualHook ? "Virtual hook off" : "Virtual hook on");
-          break;
-        }
-        if (block.id === "barrier-settings") {
-          setFocusBlock("trade");
-          setNotice("Set barrier in Trade parameters");
-          break;
-        }
-        if (block.id === "contract-modifiers") {
-          setFocusBlock("trade");
-          setNotice("Adjust contract type in Trade parameters");
-          break;
-        }
-        log(`Added · ${categoryLabel} › ${block.label}`);
-        setNotice(`Added · ${block.label}`);
-        break;
-      default:
-        log(`Added · ${categoryLabel} › ${block.label}`);
-        setNotice(`Added · ${block.label}`);
-        break;
+    if (effect.focus) setFocusBlock(effect.focus);
+    if (effect.summaryTab) setSummaryTab(effect.summaryTab);
+    if (effect.patch) {
+      patchSnapshot(effect.patch, effect.journal ?? `Block · ${block.label}`);
+    } else if (effect.journal) {
+      log(effect.journal);
     }
-    setSummaryTab("journal");
+    setNotice(effect.notice);
+    if (!effect.summaryTab) setSummaryTab("journal");
   }
 
   function handleTool(id: keyof typeof TOOLBAR_ICONS) {
     if (id === "refresh") {
-      applySnapshot(DEFAULT_BUILDER_SNAPSHOT, "Workspace reset");
+      clearBuilderWorkspace();
+      applySnapshot(DEFAULT_BUILDER_SNAPSHOT, "Workspace reset", true);
       setChips([]);
       setFocusBlock("trade");
       setNotice("Workspace reset");
@@ -613,20 +532,31 @@ export function BotBuilderDesk({
   }
 
   function handleRun() {
+    if (running) {
+      onStop?.();
+      log("Stop");
+      setNotice("Bot stopped");
+      return;
+    }
     onRun?.(snapshotToBotConfig(snapshot), snapshot);
-    log(`Run → Trading bot · ${snapshot.tradeType} · ${snapshot.symbol}`);
+    onSymbolChangeRef.current?.(snapshot.symbol);
+    log(`Run · ${snapshot.tradeType} · ${snapshot.symbol}`);
     setSummaryTab("journal");
-    setNotice("Sent to Trading bot runner");
+    setNotice("Running on this workspace");
   }
 
+  const walletCurrency = balance?.currency ?? accountCurrency;
+  const walletLabel = balance
+    ? formatWalletBalance(balance.amount, balance.currency)
+    : `… ${walletCurrency}`;
   const purchaseOptions = purchasesForTradeType(snapshot.tradeType);
   const stats = [
-    { label: "Total stake", value: `${(runStats?.totalStake ?? 0).toFixed(2)} AUD` },
-    { label: "Total payout", value: `${(runStats?.totalPayout ?? 0).toFixed(2)} AUD` },
+    { label: "Total stake", value: `${(runStats?.totalStake ?? 0).toFixed(2)} ${walletCurrency}` },
+    { label: "Total payout", value: `${(runStats?.totalPayout ?? 0).toFixed(2)} ${walletCurrency}` },
     { label: "No. of runs", value: String(runStats?.runs ?? 0) },
     { label: "Contracts lost", value: String(runStats?.lost ?? 0) },
     { label: "Contracts won", value: String(runStats?.won ?? 0) },
-    { label: "Total profit/loss", value: `${(runStats?.pnl ?? 0).toFixed(2)} AUD` },
+    { label: "Total profit/loss", value: `${(runStats?.pnl ?? 0).toFixed(2)} ${walletCurrency}` },
   ];
   const marketGroups = builderGroupedMarketOptions();
   const activeMarketGroup =
@@ -895,6 +825,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-label">Market</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={activeMarketGroup?.group ?? ""}
                     onChange={(event) => {
                       const group = marketGroups.find((item) => item.group === event.target.value);
@@ -911,6 +842,7 @@ export function BotBuilderDesk({
                   </select>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.market}
                     onChange={(event) => patchSnapshot({ market: event.target.value }, "Market updated")}
                   >
@@ -925,6 +857,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-label">Trade type</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={tradeFamily}
                     onChange={(event) => {
                       const family = event.target.value;
@@ -945,6 +878,7 @@ export function BotBuilderDesk({
                   </select>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.tradeType}
                     onChange={(event) =>
                       patchSnapshot({ tradeType: event.target.value as BuilderTradeType })
@@ -961,6 +895,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-label">Contract type</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.contractType}
                     onChange={(event) =>
                       patchSnapshot({
@@ -975,6 +910,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-sep">Default candle interval</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.candleInterval}
                     onChange={(event) =>
                       patchSnapshot({
@@ -994,6 +930,7 @@ export function BotBuilderDesk({
                     <span className="bot-builder-inline-label">Barrier</span>
                     <input
                       className="bot-builder-inline-input"
+                      disabled={running}
                       type="number"
                       step={0.01}
                       value={snapshot.barrier}
@@ -1010,6 +947,7 @@ export function BotBuilderDesk({
                     </span>
                     <input
                       className="bot-builder-inline-input"
+                      disabled={running}
                       type="number"
                       min={0}
                       max={9}
@@ -1074,6 +1012,7 @@ export function BotBuilderDesk({
                       <span className="bot-builder-inline-label">Recovery</span>
                       <select
                         className="bot-builder-inline-select"
+                    disabled={running}
                         value={snapshot.quickStrategy?.type ?? "martingale"}
                         onChange={(event) =>
                           patchSnapshot({
@@ -1098,6 +1037,7 @@ export function BotBuilderDesk({
                           <span className="bot-builder-inline-label">{field.label}</span>
                           <input
                             className="bot-builder-inline-input"
+                            disabled={running}
                             type="number"
                             min={field.min}
                             max={field.max}
@@ -1126,6 +1066,7 @@ export function BotBuilderDesk({
                     <span className="bot-builder-inline-label">Duration</span>
                     <select
                       className="bot-builder-inline-select"
+                    disabled={running}
                       value={snapshot.durationUnit}
                       onChange={(event) =>
                         patchSnapshot({ durationUnit: event.target.value as DurationUnit })
@@ -1139,6 +1080,7 @@ export function BotBuilderDesk({
                     </select>
                     <input
                       className="bot-builder-inline-input"
+                      disabled={running}
                       type="number"
                       min={durationLimit.min}
                       max={durationLimit.max}
@@ -1148,6 +1090,7 @@ export function BotBuilderDesk({
                     <span className="bot-builder-inline-sep">Stake</span>
                     <input
                       className="bot-builder-inline-input"
+                      disabled={running}
                       type="number"
                       min={0.35}
                       step={0.01}
@@ -1174,6 +1117,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-label">Purchase</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.purchase}
                     onChange={(event) => patchSnapshot({ purchase: event.target.value })}
                   >
@@ -1202,6 +1146,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-label">Action</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.sellAction}
                     onChange={(event) =>
                       patchSnapshot({
@@ -1231,6 +1176,7 @@ export function BotBuilderDesk({
                   <span className="bot-builder-inline-label">After contract</span>
                   <select
                     className="bot-builder-inline-select"
+                    disabled={running}
                     value={snapshot.restartAction}
                     onChange={(event) =>
                       patchSnapshot({
@@ -1262,10 +1208,18 @@ export function BotBuilderDesk({
 
         <aside className="bot-builder-summary">
           <div className="bot-builder-run-bar">
-            <button type="button" className="bot-builder-run" onClick={handleRun}>
-              <Play strokeWidth={2} />
-              Run
+            <button
+              type="button"
+              className={cn("bot-builder-run", running && "is-stop")}
+              data-testid="tc-builder-run"
+              onClick={handleRun}
+            >
+              {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
+              {running ? "Stop" : "Run"}
             </button>
+            <span className="bot-builder-wallet" data-testid="tc-builder-wallet" title="Selected wallet">
+              {walletLabel}
+            </span>
             <label className="bot-builder-fast">
               <span>Fast</span>
               <button
@@ -1286,6 +1240,7 @@ export function BotBuilderDesk({
           </div>
           <p className="bot-builder-run-meta">
             {snapshot.market} · {snapshot.tradeType}
+            {running ? " · Running" : ""}
           </p>
           <div className="bot-builder-summary-tabs">
             {(["summary", "transactions", "journal"] as const).map((id) => (
@@ -1337,11 +1292,25 @@ export function BotBuilderDesk({
                 </div>
               </dl>
             ) : summaryTab === "transactions" ? (
-              <p className="bot-builder-summary-empty">
-                {runStats && runStats.runs > 0
-                  ? `${runStats.runs} runs · ${runStats.won} won · ${runStats.lost} lost`
-                  : "Fills appear here after the bot places trades."}
-              </p>
+              fills.length ? (
+                <ul className="bot-builder-journal">
+                  {fills.slice(0, 12).map((fill) => (
+                    <li key={fill.contractId}>
+                      <span>{new Date(fill.updatedAt).toLocaleTimeString()}</span>
+                      <span>
+                        {fill.symbol} · {(fill.profit ?? 0) >= 0 ? "+" : ""}
+                        {(fill.profit ?? 0).toFixed(2)} {walletCurrency}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="bot-builder-summary-empty">
+                  {runStats && runStats.runs > 0
+                    ? `${runStats.runs} runs · ${runStats.won} won · ${runStats.lost} lost`
+                    : "Fills appear here after the bot places trades."}
+                </p>
+              )
             ) : journal.length ? (
               <ul className="bot-builder-journal">
                 {journal.map((entry) => (

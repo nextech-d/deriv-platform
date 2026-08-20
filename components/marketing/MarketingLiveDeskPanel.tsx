@@ -250,7 +250,6 @@ export function MarketingLiveDeskPanel({
     const next = { ...config, enabled: false, paused: false };
     saveBotConfig(next);
     setPreviewConfig(next);
-    onNavigate?.("trading-bot", "trading-bot");
   }
 
   return (

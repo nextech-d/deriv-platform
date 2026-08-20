@@ -506,21 +506,39 @@ export function aiBriefToSnapshot(brief: string): BotBuilderSnapshot {
   };
 }
 
+const COURSE_QUICK_TYPE: Record<string, QuickStrategyType> = {
+  martingale: "martingale",
+  dalembert: "dalembert",
+  "oscars-grind": "oscars_grind",
+  "reverse-martingale": "reverse_martingale",
+  "reverse-dalembert": "reverse_dalembert",
+  "one-three-two-six": "one_three_two_six",
+};
+
 export function courseStrategyToSnapshot(
   strategy: CourseStrategyGuide,
   values?: Record<string, number>,
 ): BotBuilderSnapshot {
   const stake = values?.stake ?? strategy.params.find((p) => p.key === "stake")?.defaultValue ?? 1;
+  const type = COURSE_QUICK_TYPE[strategy.id];
+  const quick = type
+    ? {
+        ...defaultQuickParams(type),
+        ...(values?.multiplier != null ? { size: values.multiplier } : {}),
+        ...(values?.unit != null ? { unit: values.unit } : {}),
+        ...(values?.maxStake != null ? { maxStake: values.maxStake } : {}),
+        ...(values?.takeProfit != null ? { profitThreshold: values.takeProfit } : {}),
+        ...(values?.stopLoss != null ? { lossThreshold: values.stopLoss } : {}),
+      }
+    : undefined;
   return {
     ...DEFAULT_BUILDER_SNAPSHOT,
     tradeType: "Rise/Fall",
     purchase: "Rise",
     stake: String(stake),
     duration: "5",
-    virtualHook:
-      strategy.id === "martingale" ||
-      strategy.id === "reverse-martingale" ||
-      strategy.id.includes("dalembert"),
+    virtualHook: Boolean(type),
+    quickStrategy: quick,
     restartOnError: true,
     sourceLabel: `Deriv Course · ${strategy.title}`,
     botStrategy: "rsi_threshold",

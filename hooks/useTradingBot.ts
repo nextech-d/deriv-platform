@@ -125,6 +125,7 @@ export function useTradingBot({
   }, [demoMode, config.enabled, config.paused]);
 
   const setConfig = useCallback((next: BotConfig) => {
+    configRef.current = next;
     setConfigState(next);
     saveBotConfig(next);
     setHeartbeat((prev) => ({
@@ -133,7 +134,12 @@ export function useTradingBot({
     }));
   }, []);
 
-  const start = useCallback(() => {
+  const start = useCallback((override?: BotConfig) => {
+    const base = override ?? configRef.current;
+    configRef.current = { ...base, enabled: false, paused: false };
+    saveBotConfig(configRef.current);
+    setConfigState(configRef.current);
+
     if (!canEnableLiveBot(demoMode, demoRuntimeRef.current)) {
       const remaining = demoRuntimeRemainingMs(demoRuntimeRef.current);
       const hours = Math.ceil(remaining / (60 * 60 * 1000));
@@ -144,7 +150,7 @@ export function useTradingBot({
       }));
       return;
     }
-    const next = { ...configRef.current, enabled: true, paused: false };
+    const next = { ...base, enabled: true, paused: false };
     progressionRef.current = next.quickStrategy
       ? initProgressionState(next.stake)
       : null;

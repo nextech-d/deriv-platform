@@ -13,6 +13,7 @@ import { BrandMark, BrandWord } from "@/components/navigation/BrandLockup";
 import { ThemeToggle } from "@/components/trading/ThemeToggle";
 import type { DerivAccount } from "@/lib/session/types";
 import { cn } from "@/lib/utils/cn";
+import { formatWalletBalance } from "@/lib/utils/format-wallet";
 
 const SPLIT_AFTER = new Set<PlatformNavId>(["free-bots", "copy-trading", "edging-2"]);
 const TICK_WIDTH = 18;
@@ -28,15 +29,6 @@ interface ProductNavbarProps {
   demoMode?: boolean;
   onLogout?: () => void;
   balance?: { amount: number; currency: string } | null;
-}
-
-function formatWalletBalance(amount: number, currency: string): string {
-  const crypto = /BTC|ETH|LTC|XRP|SOL|USDT|USDC/i.test(currency);
-  const formatted = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: crypto ? 8 : 2,
-  }).format(amount);
-  return `${formatted} ${currency}`;
 }
 
 function NavbarAccountSwitch({

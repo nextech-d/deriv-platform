@@ -39,7 +39,7 @@ import {
   snapshotToBotConfig,
   type BotBuilderSnapshot,
 } from "@/lib/terminal/strategy-seed";
-import { clearBuilderHandoff, writeFreeBotsTier } from "@/lib/terminal/desk-handoff";
+import { clearBuilderHandoff, writeBuilderHandoff, writeFreeBotsTier } from "@/lib/terminal/desk-handoff";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
 import { WalletPanel } from "@/components/trading/WalletPanel";
 import { SettingsPanel } from "@/components/trading/SettingsPanel";
@@ -736,10 +736,7 @@ export function DashboardClient({
     );
 
     const handleAutoTraderLaunch = (card: AutoTraderCard) => {
-      const snapshot = autoTraderCardToSnapshot(card);
-      bot.setConfig(snapshotToBotConfig(snapshot, bot.config));
-      setSymbol(snapshot.symbol);
-      handleViewChange("trading-bot");
+      applyBuilderSeed(autoTraderCardToSnapshot(card));
     };
 
     const botContracts = contracts.filter((contract) => contract.source === "bot");
@@ -863,10 +860,21 @@ export function DashboardClient({
               seedKey={builderSeedKey}
               onOpenAiBot={() => handleViewChange("ai-bot")}
               onRun={(config, snapshot) => {
-                bot.setConfig({ ...config, enabled: false, paused: false });
                 setSymbol(snapshot.symbol);
-                handleViewChange("trading-bot");
+                bot.start(config);
               }}
+              onStop={() => bot.stop()}
+              running={bot.config.enabled && !bot.config.paused}
+              blockReason={bot.heartbeat.blockReason}
+              lastQuote={
+                tickHistory.filter((tick) => tick.symbol === symbol).at(-1)?.quote ??
+                lastTick?.quote ??
+                null
+              }
+              balance={balance}
+              accountCurrency={activeAccount?.currency ?? "USD"}
+              onSymbolChange={setSymbol}
+              fills={botContracts}
               runStats={builderRunStats}
               recentJournal={
                 bot.heartbeat.lastSignalLabel
@@ -941,6 +949,7 @@ export function DashboardClient({
               quotes={tickHistory.map((tick) => ({ quote: tick.quote }))}
               onApplyAssist={(snapshot) => applyBuilderSeed(snapshot)}
               onRunPack={(snapshot) => {
+                writeBuilderHandoff(snapshot);
                 bot.setConfig({
                   ...snapshotToBotConfig(snapshot, bot.config),
                   enabled: false,
