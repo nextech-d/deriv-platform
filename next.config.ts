@@ -12,7 +12,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Docker/ECS needs standalone. Vercel traces its own output and fails
+  // looking for `.next/next-server.js.nft.json` when standalone is set.
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   turbopack: {},
   async headers() {
     return [

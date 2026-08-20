@@ -32,7 +32,7 @@ async function ensureDataFile(): Promise<string> {
   }
 
   try {
-    await readFile(target, "utf8");
+    await readFile(/* turbopackIgnore: true */ target, "utf8");
     return target;
   } catch {
     // Seed from bundled default or data-seed (Docker)
@@ -56,7 +56,7 @@ async function ensureDataFile(): Promise<string> {
 export async function loadPartnerAgents(): Promise<PartnerAgent[]> {
   try {
     const file = await ensureDataFile();
-    const raw = await readFile(file, "utf8");
+    const raw = await readFile(/* turbopackIgnore: true */ file, "utf8");
     return JSON.parse(raw) as PartnerAgent[];
   } catch {
     return [];

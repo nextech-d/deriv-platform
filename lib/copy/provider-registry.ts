@@ -33,7 +33,7 @@ async function ensureDataFile(): Promise<string> {
   }
 
   try {
-    await readFile(target, "utf8");
+    await readFile(/* turbopackIgnore: true */ target, "utf8");
     return target;
   } catch {
     // seed from bundled default or data-seed (Docker)
@@ -61,7 +61,7 @@ async function ensureDataFile(): Promise<string> {
 export async function loadCopyProviderRecords(): Promise<CopyProviderRecord[]> {
   try {
     const file = await ensureDataFile();
-    const raw = await readFile(file, "utf8");
+    const raw = await readFile(/* turbopackIgnore: true */ file, "utf8");
     const parsed = JSON.parse(raw) as CopyProviderRecord[];
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return curatedAsRecords();
