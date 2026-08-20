@@ -394,6 +394,27 @@ export function defaultQuickParams(type: QuickStrategyType): QuickStrategyParams
   return params;
 }
 
+export interface QuickStrategyInput {
+  type: QuickStrategyType;
+  market?: string;
+  symbol?: string;
+  tradeType?: BuilderTradeType;
+  purchase?: string;
+  duration?: string;
+  durationUnit?: DurationUnit;
+  stake?: string;
+  digitTarget?: number;
+  barrier?: number;
+  params?: Partial<QuickStrategyParams>;
+}
+
+export function botStrategyForTradeType(tradeType: BuilderTradeType): BotStrategy {
+  if (tradeType === "Even/Odd") return "parity_bias";
+  if (tradeType === "Over/Under") return "barrier_edge";
+  if (tradeType === "Matches") return "digit_match";
+  return "ma_cross";
+}
+
 /** Dashboard Speed Bot window — Martingale recovery on Volatility 100. */
 export function speedBotSnapshot(): BotBuilderSnapshot {
   const catalog =
@@ -410,17 +431,113 @@ export function speedBotSnapshot(): BotBuilderSnapshot {
 }
 
 export function quickStrategyToSnapshot(
-  type: QuickStrategyType,
+  typeOrInput: QuickStrategyType | QuickStrategyInput,
 ): BotBuilderSnapshot {
-  const meta = QUICK_STRATEGY_METAS.find((item) => item.type === type);
-  return {
+  const input: QuickStrategyInput =
+    typeof typeOrInput === "string" ? { type: typeOrInput } : typeOrInput;
+  const meta = QUICK_STRATEGY_METAS.find((item) => item.type === input.type);
+  const tradeType = input.tradeType ?? DEFAULT_BUILDER_SNAPSHOT.tradeType;
+  const symbol = input.symbol ?? (input.market ? symbolFromMarketLabel(input.market) : DEFAULT_BUILDER_SNAPSHOT.symbol);
+  const market = input.market ?? marketLabelForSymbol(symbol);
+  const purchase = normalizePurchase(tradeType, input.purchase ?? purchasesForTradeType(tradeType)[0]!);
+  const durationUnit = input.durationUnit ?? DURATION_RULES[tradeType]?.defaultUnit ?? "t";
+  const bounds = durationBounds(tradeType, durationUnit);
+  const duration = input.duration ?? String(bounds.min);
+  return normalizeLoadedSnapshot({
     ...DEFAULT_BUILDER_SNAPSHOT,
-    duration: "1",
-    stake: "0.60",
+    market,
+    symbol,
+    tradeType,
+    purchase,
+    duration,
+    durationUnit,
+    stake: input.stake ?? "0.60",
+    digitTarget: input.digitTarget ?? DEFAULT_BUILDER_SNAPSHOT.digitTarget,
+    barrier: input.barrier ?? DEFAULT_BUILDER_SNAPSHOT.barrier,
+    botStrategy: botStrategyForTradeType(tradeType),
     virtualHook: true,
-    quickStrategy: defaultQuickParams(type),
-    sourceLabel: `Quick strategy · ${meta?.label ?? type}`,
-  };
+    quickStrategy: {
+      ...defaultQuickParams(input.type),
+      ...input.params,
+      type: input.type,
+    },
+    sourceLabel: `Quick strategy · ${meta?.label ?? input.type}`,
+  });
+}
+
+export function validateQuickStrategy(snapshot: BotBuilderSnapshot): string | null {
+  const stake = Number(snapshot.stake);
+  if (!Number.isFinite(stake) || stake < 0.35) {
+    return "Initial stake must be at least 0.35";
+  }
+  const bounds = durationBounds(snapshot.tradeType, snapshot.durationUnit);
+  const duration = Number(snapshot.duration);
+  if (!Number.isFinite(duration) || duration < bounds.min || duration > bounds.max) {
+    return `Duration must be ${bounds.min}–${bounds.max} ${DURATION_UNIT_LABELS[snapshot.durationUnit].toLowerCase()}`;
+  }
+  const qs = snapshot.quickStrategy;
+  if (!qs) return "Choose a recovery strategy";
+  if (qs.profitThreshold < 0 || qs.lossThreshold < 0) {
+    return "Profit and loss thresholds cannot be negative";
+  }
+  if (qs.size != null && qs.size <= 1) return "Size must be greater than 1";
+  if (qs.unit != null && qs.unit <= 0) return "Unit must be greater than 0";
+  if (qs.maxStake != null && qs.maxStake > 0 && qs.maxStake < stake) {
+    return "Max stake must be at least the initial stake";
+  }
+  const spec = BUILDER_TRADE_TYPES[snapshot.tradeType];
+  if (spec?.needsDigit) {
+    if (
+      !Number.isInteger(snapshot.digitTarget) ||
+      snapshot.digitTarget < 0 ||
+      snapshot.digitTarget > 9
+    ) {
+      return "Last digit must be an integer from 0 to 9";
+    }
+  }
+  if (spec?.needsBarrier && !Number.isFinite(snapshot.barrier)) {
+    return "Barrier must be a number";
+  }
+  return null;
+}
+
+export function workspaceChipsForSnapshot(snapshot: BotBuilderSnapshot) {
+  const recovery =
+    QUICK_STRATEGY_METAS.find((item) => item.type === snapshot.quickStrategy?.type)?.label ??
+    (snapshot.restartAction === "stop" ? "Stop after loss" : "Trade again");
+  return [
+    { label: snapshot.tradeType, category: "Trade parameters", lane: "trade" as const },
+    { label: snapshot.market, category: "Trade parameters", lane: "trade" as const },
+    {
+      label: `${snapshot.duration} ${DURATION_UNIT_LABELS[snapshot.durationUnit]}`,
+      category: "Trade parameters",
+      lane: "trade" as const,
+    },
+    {
+      label: `Stake ${snapshot.stake}`,
+      category: "Trade parameters",
+      lane: "trade" as const,
+    },
+    {
+      label: `Purchase ${snapshot.purchase}`,
+      category: "Purchase conditions",
+      lane: "purchase" as const,
+    },
+    ...(snapshot.sellAction === "sell_at_market"
+      ? [
+          {
+            label: "Sell at market",
+            category: "Sell conditions",
+            lane: "sell" as const,
+          },
+        ]
+      : []),
+    {
+      label: snapshot.virtualHook ? `${recovery} recovery` : recovery,
+      category: "Restart trading conditions",
+      lane: "restart" as const,
+    },
+  ];
 }
 
 export function aiGeneratorToSnapshot(input: {

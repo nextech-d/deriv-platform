@@ -3,11 +3,13 @@ import type { BuilderLane } from "@/lib/terminal/builder-block-map";
 
 const BUILDER_SEED_KEY = "tc-desk-builder-seed";
 const BUILDER_WORKSPACE_KEY = "tc-desk-builder-workspace";
+const BUILDER_RUN_AFTER_KEY = "tc-desk-builder-run-after";
 const FREE_BOTS_TIER_KEY = "tc-desk-free-bots-tier";
 
 export type FreeBotsTier = "free" | "premium";
 
 let pendingBuilderSeed: BotBuilderSnapshot | null = null;
+let pendingBuilderRunAfter = false;
 let pendingFreeBotsTier: FreeBotsTier | null = null;
 
 function readJson<T>(key: string): T | null {
@@ -43,6 +45,25 @@ export function readBuilderHandoff(): BotBuilderSnapshot | null {
 export function consumeBuilderHandoff(): BotBuilderSnapshot | null {
   const next = readBuilderHandoff();
   if (next) clearBuilderHandoff();
+  return next;
+}
+
+export function writeBuilderRunAfter(run = true) {
+  pendingBuilderRunAfter = run;
+  if (typeof window === "undefined") return;
+  if (run) window.sessionStorage.setItem(BUILDER_RUN_AFTER_KEY, "1");
+  else window.sessionStorage.removeItem(BUILDER_RUN_AFTER_KEY);
+}
+
+export function consumeBuilderRunAfter(): boolean {
+  const stored =
+    typeof window !== "undefined" &&
+    window.sessionStorage.getItem(BUILDER_RUN_AFTER_KEY) === "1";
+  const next = pendingBuilderRunAfter || stored;
+  pendingBuilderRunAfter = false;
+  if (typeof window !== "undefined") {
+    window.sessionStorage.removeItem(BUILDER_RUN_AFTER_KEY);
+  }
   return next;
 }
 

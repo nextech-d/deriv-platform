@@ -12,16 +12,15 @@ import { TourDialog } from "@/components/trading/TourDialog";
 import {
   DriveFileDialog,
   LoadBotSourceGrid,
-  QuickStrategyDialog,
 } from "@/components/trading/LoadBotSourceGrid";
+import { QuickStrategyStudio } from "@/components/trading/QuickStrategyStudio";
 import {
   DASHBOARD_WINDOWS,
   type DashboardWindow,
 } from "@/lib/terminal/dashboard-windows";
-import { writeFreeBotsTier, type FreeBotsTier } from "@/lib/terminal/desk-handoff";
+import { writeFreeBotsTier, writeBuilderRunAfter, type FreeBotsTier } from "@/lib/terminal/desk-handoff";
 import { PLATFORM_NAV_ITEMS } from "@/lib/navigation/platform-nav";
 import {
-  quickStrategyToSnapshot,
   snapshotFromXml,
   speedBotSnapshot,
   type BotBuilderSnapshot,
@@ -590,12 +589,13 @@ export function TerminalHomeView({
         open={driveOpen}
         onClose={() => setDriveOpen(false)}
       />
-      <QuickStrategyDialog
+      <QuickStrategyStudio
         open={quickOpen}
         onClose={() => setQuickOpen(false)}
-        onPick={(type) => {
-          setQuickOpen(false);
-          onApplySnapshot(quickStrategyToSnapshot(type));
+        onCreate={(snapshot) => onApplySnapshot(snapshot)}
+        onRun={(snapshot) => {
+          writeBuilderRunAfter();
+          onApplySnapshot(snapshot);
         }}
       />
 

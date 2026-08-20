@@ -17,6 +17,7 @@ import {
   Square,
   Trash2,
   Undo2,
+  Workflow,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -43,7 +44,7 @@ import {
   normalizeLoadedSnapshot,
   normalizePurchase,
   purchasesForTradeType,
-  quickStrategyToSnapshot,
+  workspaceChipsForSnapshot,
   type BotBuilderSnapshot,
   type BuilderTradeType,
   type DurationUnit,
@@ -52,9 +53,15 @@ import { TourDialog } from "@/components/trading/TourDialog";
 import {
   DriveFileDialog,
   LoadBotSourceGrid,
-  QuickStrategyDialog,
 } from "@/components/trading/LoadBotSourceGrid";
-import { consumeBuilderHandoff, readBuilderWorkspace, writeBuilderWorkspace, clearBuilderWorkspace } from "@/lib/terminal/desk-handoff";
+import { QuickStrategyStudio } from "@/components/trading/QuickStrategyStudio";
+import {
+  consumeBuilderHandoff,
+  consumeBuilderRunAfter,
+  readBuilderWorkspace,
+  writeBuilderWorkspace,
+  clearBuilderWorkspace,
+} from "@/lib/terminal/desk-handoff";
 import { effectForBuilderBlock, type BuilderLane } from "@/lib/terminal/builder-block-map";
 import type { BotConfig, QuickStrategyType } from "@/lib/bot/types";
 import { QUICK_STRATEGY_METAS } from "@/lib/bot/types";
@@ -162,7 +169,7 @@ function LaneChips({ chips, lane }: { chips: CanvasChip[]; lane: FocusBlock }) {
   const shown = chips.filter((chip) => chip.lane === lane).slice(0, 10);
   if (!shown.length) return null;
   return (
-    <div className="bot-builder-chips">
+    <div className="bot-builder-chips" data-testid={`tc-builder-chips-${lane}`}>
       {shown.map((chip) => (
         <span key={chip.id} className="bot-builder-chip">
           {chip.label}
@@ -173,6 +180,13 @@ function LaneChips({ chips, lane }: { chips: CanvasChip[]; lane: FocusBlock }) {
 }
 
 const ALL_TRADE_TYPES = Object.keys(BUILDER_TRADE_TYPES) as BuilderTradeType[];
+
+function chipsFromSnapshot(snapshot: BotBuilderSnapshot): CanvasChip[] {
+  return workspaceChipsForSnapshot(snapshot).map((chip, index) => ({
+    id: `${chip.lane}-${index}-${chip.label}`,
+    ...chip,
+  }));
+}
 
 export function BotBuilderDesk({
   seed = null,
@@ -201,7 +215,7 @@ export function BotBuilderDesk({
       const snapshot = normalizeLoadedSnapshot(seed);
       return {
         snapshot,
-        chips: [] as CanvasChip[],
+        chips: chipsFromSnapshot(snapshot),
         journal: [] as JournalEntry[],
         history: [snapshot],
         historyIndex: 0,
@@ -249,6 +263,7 @@ export function BotBuilderDesk({
   const [loadOpen, setLoadOpen] = useState(false);
   const [driveOpen, setDriveOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -266,16 +281,25 @@ export function BotBuilderDesk({
 
   useEffect(() => {
     const handed = consumeBuilderHandoff();
+    const runAfter = consumeBuilderRunAfter();
     if (skipFirstSeed.current) {
       skipFirstSeed.current = false;
-      if (seed) onSymbolChangeRef.current?.(seed.symbol);
+      if (seed) {
+        if (runAfter) {
+          installBot(seed, `${seed.sourceLabel} generated on the workspace`, true);
+        } else {
+          onSymbolChangeRef.current?.(seed.symbol);
+          setVhOpen(Boolean(seed.virtualHook));
+          const text = `${seed.sourceLabel} ready on the workspace`;
+          setNotice(text);
+          setFlash({ tone: "ok", text });
+        }
+      }
       return;
     }
     const next = seed ?? handed;
     if (!next) return;
-    applySnapshot(next, `Loaded · ${next.sourceLabel}`, true);
-    setNotice(`Loaded · ${next.sourceLabel}`);
-    onSymbolChangeRef.current?.(next.symbol);
+    installBot(next, `${next.sourceLabel} ready on the workspace`, runAfter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedKey]);
 
@@ -293,6 +317,12 @@ export function BotBuilderDesk({
   useEffect(() => {
     if (blockReason) setNotice(blockReason);
   }, [blockReason]);
+
+  useEffect(() => {
+    if (!flash) return;
+    const timer = window.setTimeout(() => setFlash(null), 4_500);
+    return () => window.clearTimeout(timer);
+  }, [flash]);
 
   useEffect(() => {
     if (!recentJournal.length) return;
@@ -335,6 +365,26 @@ export function BotBuilderDesk({
       );
     }
     if (normalized.symbol) onSymbolChangeRef.current?.(normalized.symbol);
+  }
+
+  function installBot(next: BotBuilderSnapshot, message: string, thenRun = false) {
+    const normalized = normalizeLoadedSnapshot(next);
+    applySnapshot(normalized, message, true);
+    setChips(chipsFromSnapshot(normalized));
+    setVhOpen(Boolean(normalized.virtualHook));
+    setFocusBlock("trade");
+    setNotice(message);
+    if (thenRun) {
+      onRun?.(snapshotToBotConfig(normalized), normalized);
+      onSymbolChangeRef.current?.(normalized.symbol);
+      setSummaryTab("journal");
+      const runningText = `Bot running · ${normalized.purchase} ${normalized.tradeType} · ${normalized.market}`;
+      setNotice(runningText);
+      setFlash({ tone: "run", text: runningText });
+      log(`Run · ${normalized.tradeType} · ${normalized.symbol}`);
+      return;
+    }
+    setFlash({ tone: "ok", text: message });
   }
 
   function patchSnapshot(partial: Partial<BotBuilderSnapshot>, journalText?: string) {
@@ -516,13 +566,13 @@ export function BotBuilderDesk({
       const parsed = snapshotFromXml(String(reader.result ?? ""));
       if (!parsed) {
         setNotice("Could not parse strategy file");
+        setFlash({ tone: "ok", text: "Could not parse strategy file" });
         return;
       }
-      applySnapshot(
+      installBot(
         { ...parsed, sourceLabel: `Loaded · ${file.name}` },
-        `Imported ${file.name}`,
+        `Imported ${file.name} onto the workspace`,
       );
-      setNotice(`Loaded ${file.name}`);
     };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = "";
@@ -536,13 +586,16 @@ export function BotBuilderDesk({
       onStop?.();
       log("Stop");
       setNotice("Bot stopped");
+      setFlash({ tone: "ok", text: "Bot stopped" });
       return;
     }
     onRun?.(snapshotToBotConfig(snapshot), snapshot);
     onSymbolChangeRef.current?.(snapshot.symbol);
     log(`Run · ${snapshot.tradeType} · ${snapshot.symbol}`);
     setSummaryTab("journal");
-    setNotice("Running on this workspace");
+    const text = `Bot running · ${snapshot.purchase} ${snapshot.tradeType} · ${snapshot.market}`;
+    setNotice(text);
+    setFlash({ tone: "run", text });
   }
 
   const walletCurrency = balance?.currency ?? accountCurrency;
@@ -620,6 +673,21 @@ export function BotBuilderDesk({
       />
 
       <header className="bot-builder-toolbar">
+        <div className="bot-builder-toolbar-run">
+          <button
+            type="button"
+            className={cn("bot-builder-run", running && "is-stop")}
+            data-testid="tc-builder-run"
+            aria-label={running ? "Stop bot" : "Run bot"}
+            onClick={handleRun}
+          >
+            {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
+            {running ? "Stop" : "Run"}
+          </button>
+          <span className="bot-builder-run-state" data-testid="tc-builder-run-state">
+            {running ? "Bot is running" : "Bot is not running"}
+          </span>
+        </div>
         <div className="bot-builder-toolbar-tools">
           {TOOL_GROUPS.map((group) => (
             <div key={group.id} className={cn("bot-builder-tool-group", `is-${group.id}`)}>
@@ -648,13 +716,31 @@ export function BotBuilderDesk({
         <div className="bot-builder-toolbar-status">
           <p className="bot-builder-notice">{notice}</p>
           <span className="bot-builder-status-chip">{snapshot.sourceLabel}</span>
-          <span className="bot-builder-status-chip is-zoom">{snapshot.zoom.toFixed(2)}×</span>
         </div>
       </header>
+
+      {flash ? (
+        <p
+          className={cn("bot-builder-flash", flash.tone === "run" && "is-run")}
+          role="status"
+          data-testid="tc-builder-flash"
+        >
+          {flash.text}
+        </p>
+      ) : null}
 
       <div className="bot-builder-shell">
         <aside className="bot-builder-menu">
           <div className="bot-builder-menu-head">
+            <button
+              type="button"
+              className="bot-builder-qs-btn"
+              data-testid="tc-builder-qs"
+              onClick={() => setQuickOpen(true)}
+            >
+              <Workflow strokeWidth={2} />
+              Quick strategy
+            </button>
             {onOpenAiBot ? (
               <button type="button" className="bot-builder-ai-btn" onClick={onOpenAiBot}>
                 <Sparkles strokeWidth={2} />
@@ -1211,7 +1297,7 @@ export function BotBuilderDesk({
             <button
               type="button"
               className={cn("bot-builder-run", running && "is-stop")}
-              data-testid="tc-builder-run"
+              data-testid="tc-builder-run-summary"
               onClick={handleRun}
             >
               {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
@@ -1385,13 +1471,15 @@ export function BotBuilderDesk({
         open={driveOpen}
         onClose={() => setDriveOpen(false)}
       />
-      <QuickStrategyDialog
+      <QuickStrategyStudio
         open={quickOpen}
         onClose={() => setQuickOpen(false)}
-        onPick={(type) => {
-          setQuickOpen(false);
-          applySnapshot(quickStrategyToSnapshot(type), `Quick strategy · ${type}`);
-        }}
+        onCreate={(next) =>
+          installBot(next, `${next.sourceLabel} generated on the workspace`)
+        }
+        onRun={(next) =>
+          installBot(next, `${next.sourceLabel} generated on the workspace`, true)
+        }
       />
 
       {tourOpen ? (

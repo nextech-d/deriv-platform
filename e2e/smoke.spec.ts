@@ -201,6 +201,34 @@ test.describe("Dashboard (demo mode)", () => {
     }
   });
 
+  test("quick strategy generates the bot, shows Run, and confirms success", async ({ page }) => {
+    await waitForLiveConnection(page);
+    await clickDashboardWindow(page, "Load Bot");
+    const loadDialog = page.getByRole("dialog", { name: "Load Bot" });
+    await expect(loadDialog).toBeVisible();
+    await loadDialog.getByText("Quick strategy", { exact: true }).click();
+    const studio = page.getByTestId("tc-qs-studio");
+    await expect(studio).toBeVisible();
+    await expect(studio.getByTestId("tc-qs-type-martingale")).toBeVisible();
+    await studio.getByTestId("tc-qs-create").click();
+    await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
+    const skip = page.getByRole("button", { name: "Skip" });
+    if (await skip.isVisible()) await skip.click();
+    await expect(page.getByTestId("tc-builder-flash")).toContainText(/Quick strategy/);
+    await expect(page.getByTestId("tc-builder-chips-trade")).toContainText("Rise/Fall");
+    await expect(page.getByTestId("tc-builder-run")).toBeVisible();
+    await expect(page.getByTestId("tc-builder-run-state")).toHaveText("Bot is not running");
+
+    await page.getByTestId("tc-builder-qs").click();
+    await expect(page.getByTestId("tc-qs-studio")).toBeVisible();
+    await page.getByTestId("tc-qs-type-dalembert").click();
+    await page.getByTestId("tc-qs-create").click();
+    await expect(page.getByTestId("tc-builder-flash")).toContainText(
+      /D'Alembert generated on the workspace/,
+    );
+    await expect(page.getByTestId("tc-builder-chips-restart")).toContainText("D'Alembert");
+  });
+
   test("invalid XML stays on the desk with an error", async ({ page }) => {
     await waitForLiveConnection(page);
     await workspaceMain(page)

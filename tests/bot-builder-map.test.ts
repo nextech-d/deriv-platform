@@ -5,12 +5,17 @@ import {
   writeBuilderHandoff,
   consumeBuilderHandoff,
   clearBuilderHandoff,
+  writeBuilderRunAfter,
+  consumeBuilderRunAfter,
 } from "@/lib/terminal/desk-handoff";
 import {
   DEFAULT_BUILDER_SNAPSHOT,
   courseStrategyToSnapshot,
   snapshotToBotConfig,
   speedBotSnapshot,
+  quickStrategyToSnapshot,
+  validateQuickStrategy,
+  workspaceChipsForSnapshot,
 } from "@/lib/terminal/strategy-seed";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
 
@@ -106,11 +111,55 @@ describe("strategy seeds", () => {
     expect(snapshot.quickStrategy?.profitThreshold).toBe(12);
     expect(snapshotToBotConfig(snapshot).stake).toBe(0.5);
   });
+
+  it("maps quick strategy parameters onto the snapshot, chips, and runner", () => {
+    const snapshot = quickStrategyToSnapshot({
+      type: "martingale",
+      market: "Volatility 75 Index",
+      tradeType: "Even/Odd",
+      purchase: "Odd",
+      duration: "5",
+      durationUnit: "t",
+      stake: "1.25",
+      params: { size: 2.1, profitThreshold: 20, lossThreshold: 8, maxStake: 40 },
+    });
+    expect(validateQuickStrategy(snapshot)).toBeNull();
+    expect(snapshot.symbol).toBe("R_75");
+    expect(snapshot.botStrategy).toBe("parity_bias");
+    expect(snapshot.virtualHook).toBe(true);
+    expect(snapshot.sourceLabel).toBe("Quick strategy · Martingale");
+    const config = snapshotToBotConfig(snapshot);
+    expect(config.strategy).toBe("parity_bias");
+    expect(config.stake).toBe(1.25);
+    expect(config.duration).toBe(5);
+    expect(config.quickStrategy?.size).toBe(2.1);
+    expect(config.quickStrategy?.profitThreshold).toBe(20);
+    expect(config.purchase).toBe("Odd");
+    const chips = workspaceChipsForSnapshot(snapshot);
+    expect(chips.map((chip) => chip.label)).toEqual(
+      expect.arrayContaining(["Even/Odd", "Volatility 75 Index", "Purchase Odd", "Martingale recovery"]),
+    );
+  });
+
+  it("rejects invalid quick strategy stake and size", () => {
+    expect(
+      validateQuickStrategy(quickStrategyToSnapshot({ type: "martingale", stake: "0.10" })),
+    ).toMatch(/0\.35/);
+    expect(
+      validateQuickStrategy(
+        quickStrategyToSnapshot({
+          type: "martingale",
+          params: { size: 1 },
+        }),
+      ),
+    ).toMatch(/greater than 1/);
+  });
 });
 
 describe("builder handoff", () => {
   beforeEach(() => {
     clearBuilderHandoff();
+    writeBuilderRunAfter(false);
   });
 
   it("consumeBuilderHandoff returns once then clears", () => {
@@ -118,5 +167,11 @@ describe("builder handoff", () => {
     const first = consumeBuilderHandoff();
     expect(first?.sourceLabel).toBe("Dashboard · Speed Bot");
     expect(consumeBuilderHandoff()).toBeNull();
+  });
+
+  it("consumeBuilderRunAfter returns once then clears", () => {
+    writeBuilderRunAfter();
+    expect(consumeBuilderRunAfter()).toBe(true);
+    expect(consumeBuilderRunAfter()).toBe(false);
   });
 });

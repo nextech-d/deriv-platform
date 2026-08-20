@@ -6,17 +6,16 @@ import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButton
 import {
   DriveFileDialog,
   LoadBotSourceGrid,
-  QuickStrategyDialog,
 } from "@/components/trading/LoadBotSourceGrid";
+import { QuickStrategyStudio } from "@/components/trading/QuickStrategyStudio";
 import {
   isPlatformNavId,
   platformSectionIdFromNavId,
   type PlatformNavId,
 } from "@/lib/navigation/platform-nav";
 import { DASHBOARD_WINDOWS, type DashboardWindow } from "@/lib/terminal/dashboard-windows";
-import { writeBuilderHandoff, writeFreeBotsTier } from "@/lib/terminal/desk-handoff";
+import { writeBuilderHandoff, writeBuilderRunAfter, writeFreeBotsTier } from "@/lib/terminal/desk-handoff";
 import {
-  quickStrategyToSnapshot,
   snapshotFromXml,
   speedBotSnapshot,
 } from "@/lib/terminal/strategy-seed";
@@ -280,12 +279,16 @@ export function MarketingDashboardPanel({
         open={driveOpen}
         onClose={() => setDriveOpen(false)}
       />
-      <QuickStrategyDialog
+      <QuickStrategyStudio
         open={quickOpen}
         onClose={() => setQuickOpen(false)}
-        onPick={(type) => {
-          setQuickOpen(false);
-          writeBuilderHandoff(quickStrategyToSnapshot(type));
+        onCreate={(snapshot) => {
+          writeBuilderHandoff(snapshot);
+          go(onNavigate, "bot-builder");
+        }}
+        onRun={(snapshot) => {
+          writeBuilderRunAfter();
+          writeBuilderHandoff(snapshot);
           go(onNavigate, "bot-builder");
         }}
       />
