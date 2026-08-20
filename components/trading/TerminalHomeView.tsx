@@ -724,18 +724,14 @@ export function TerminalHomeView({
           onClick={() => setQuickOpen(false)}
         >
           <div
-            style={{
-              background: "#fff",
-              width: "min(460px, calc(100vw - 32px))",
-              borderRadius: 8,
-              padding: 20,
-            }}
+            className="tc-modal"
+            style={{ width: "min(460px, calc(100vw - 32px))" }}
             onClick={(event) => event.stopPropagation()}
           >
-            <p id="tc-quick-title" style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 16 }}>
+            <p className="tc-modal-title" id="tc-quick-title">
               Quick strategy
             </p>
-            <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+            <p className="tc-modal-body">
               Pick a ready-made stake progression. Trade parameters open in Bot Builder so you can
               tweak them before you run.
             </p>
@@ -753,16 +749,17 @@ export function TerminalHomeView({
                     style={{
                       textAlign: "left",
                       padding: "12px 14px",
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid var(--dg-border)",
                       borderRadius: 8,
-                      background: "#fff",
+                      background: "var(--dg-surface)",
                       cursor: "pointer",
+                      color: "var(--dg-text)",
                     }}
                   >
-                    <strong style={{ display: "block", fontSize: 14, color: "#111" }}>
+                    <strong style={{ display: "block", fontSize: 14, color: "var(--dg-text)" }}>
                       {meta?.label ?? type}
                     </strong>
-                    <span style={{ fontSize: 12, color: "#6b7280" }}>{meta?.description}</span>
+                    <span style={{ fontSize: 12, color: "var(--dg-muted)" }}>{meta?.description}</span>
                   </button>
                 );
               })}
@@ -770,16 +767,8 @@ export function TerminalHomeView({
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
               <button
                 type="button"
+                className="tc-btn tc-btn-ghost"
                 onClick={() => setQuickOpen(false)}
-                style={{
-                  padding: "8px 16px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 4,
-                  background: "#fff",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
               >
                 Cancel
               </button>

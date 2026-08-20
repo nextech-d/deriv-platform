@@ -35,9 +35,9 @@ export function RunSidebar({
   const tabs: SidebarTab[] = ["summary", "transactions", "journal"];
 
   return (
-    <aside style={{ width: 260, flexShrink: 0, borderLeft: "1px solid #e5e7eb", background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <aside style={{ width: 260, flexShrink: 0, borderLeft: "1px solid var(--dg-border)", background: "var(--dg-surface)", color: "var(--dg-text)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* Run bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderBottom: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderBottom: "1px solid var(--dg-border)" }}>
         <button
           type="button"
           onClick={onRun}
@@ -46,8 +46,8 @@ export function RunSidebar({
           ▶ Run
         </button>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-          <span style={{ color: "#6b7280" }}>Execution</span>
-          <span style={{ fontWeight: 700, color: "#333" }}>FAST</span>
+          <span style={{ color: "var(--dg-muted)" }}>Execution</span>
+          <span style={{ fontWeight: 700, color: "var(--dg-text)" }}>FAST</span>
           <button
             type="button"
             onClick={() => setFast(!fast)}
@@ -59,7 +59,7 @@ export function RunSidebar({
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--dg-border)" }}>
         {tabs.map((t) => (
           <button
             key={t}
@@ -67,9 +67,9 @@ export function RunSidebar({
             onClick={() => setTab(t)}
             style={{
               flex: 1, padding: "10px 0", textAlign: "center", fontSize: 13, cursor: "pointer",
-              color: tab === t ? "#333" : "#6b7280",
+              color: tab === t ? "var(--dg-text)" : "var(--dg-muted)",
               background: "transparent", border: "none",
-              borderBottom: tab === t ? "2px solid #333" : "2px solid transparent",
+              borderBottom: tab === t ? "2px solid var(--dg-text)" : "2px solid transparent",
               fontWeight: tab === t ? 600 : 400,
             }}
           >
@@ -99,8 +99,8 @@ export function RunSidebar({
                 ["Total profit/loss", `${totalPnl.toFixed(2)} ${currency}`],
               ].map(([label, value]) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>{label}</span>
-                  <span style={{ color: "#333" }}>{value}</span>
+                  <span style={{ fontSize: 11, color: "var(--dg-muted)", fontWeight: 600 }}>{label}</span>
+                  <span style={{ color: "var(--dg-text)" }}>{value}</span>
                 </div>
               ))}
             </div>
@@ -108,19 +108,19 @@ export function RunSidebar({
               type="button"
               onClick={onReset}
               disabled={runs === 0}
-              style={{ width: "100%", marginTop: 16, padding: 8, border: "1px solid #e5e7eb", borderRadius: 4, background: "#fff", color: "#6b7280", fontSize: 13, cursor: "pointer", opacity: runs === 0 ? 0.4 : 1 }}
+              style={{ width: "100%", marginTop: 16, padding: 8, border: "1px solid var(--dg-border)", borderRadius: 4, background: "var(--dg-surface)", color: "var(--dg-muted)", fontSize: 13, cursor: "pointer", opacity: runs === 0 ? 0.4 : 1 }}
             >
               Reset
             </button>
           </>
         )}
         {tab === "transactions" && (
-          <div style={{ textAlign: "center", color: "#6b7280", padding: "40px 16px", fontSize: 14 }}>
+          <div style={{ textAlign: "center", color: "var(--dg-muted)", padding: "40px 16px", fontSize: 14 }}>
             No transactions yet.
           </div>
         )}
         {tab === "journal" && (
-          <div style={{ textAlign: "center", color: "#6b7280", padding: "40px 16px", fontSize: 14 }}>
+          <div style={{ textAlign: "center", color: "var(--dg-muted)", padding: "40px 16px", fontSize: 14 }}>
             Journal entries will appear here.
           </div>
         )}

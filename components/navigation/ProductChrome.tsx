@@ -149,7 +149,7 @@ export function ProductNavbar({
         </Link>
         <div className="tc-navbar-top-right">
           <ThemeToggle variant="navbar" />
-          {onAccountChange ? (
+          {onAccountChange && (accounts?.length ?? 0) > 0 ? (
             <NavbarAccountSwitch
               accounts={accounts ?? []}
               activeAccountId={activeAccountId}

@@ -50,18 +50,18 @@ const PRESETS = [
 const field: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
-  border: "1px solid #d1d5db",
+  border: "1px solid var(--dg-border)",
   borderRadius: 6,
   fontSize: 14,
-  background: "#fff",
-  color: "#333",
+  background: "var(--dg-input-bg)",
+  color: "var(--dg-text)",
 };
 
 const label: React.CSSProperties = {
   display: "block",
   fontSize: 12,
   fontWeight: 600,
-  color: "#374151",
+  color: "var(--dg-muted)",
   marginBottom: 6,
 };
 
@@ -112,9 +112,9 @@ export function AiBotDesk({ onSendToBuilder }: AiBotDeskProps) {
     <div style={{ padding: "28px 32px 40px", maxWidth: 720 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <Sparkles style={{ width: 18, height: 18, color: "#dc3545" }} />
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111" }}>AI Bot Generator</h1>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--dg-text)" }}>AI Bot Generator</h1>
       </div>
-      <p style={{ margin: "0 0 18px", fontSize: 14, color: "#6b7280", lineHeight: 1.55 }}>
+      <p style={{ margin: "0 0 18px", fontSize: 14, color: "var(--dg-muted)", lineHeight: 1.55 }}>
         Pick market, contract, and stake. tradecity.trade fills Bot Builder trade parameters so you
         can drop blocks and hit Run.
       </p>
@@ -127,13 +127,13 @@ export function AiBotDesk({ onSendToBuilder }: AiBotDeskProps) {
             onClick={() => applyPreset(preset.id)}
             style={{
               padding: "6px 12px",
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--dg-border)",
               borderRadius: 999,
-              background: "#fff",
+              background: "var(--dg-surface)",
               fontSize: 12,
               fontWeight: 700,
               cursor: "pointer",
-              color: "#374151",
+              color: "var(--dg-text)",
             }}
           >
             {preset.label}

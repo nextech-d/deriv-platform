@@ -123,9 +123,15 @@ test.describe("Dashboard (demo mode)", () => {
     await expect(workspaceMain(page).getByText("Load Bot")).toBeVisible();
     await expect(workspaceMain(page).getByText("Analysis tool")).toBeVisible();
     await expect(page.getByRole("button", { name: /Switch to (dark|light) theme/i })).toBeVisible();
-    await expect(page.getByTestId("tc-account-switch")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Demo", exact: true })).toBeVisible();
-    await expect(page.getByTestId("tc-account-switch").getByText("Real", { exact: true })).toBeVisible();
+    const loginid = page.locator(".tc-loginid");
+    if ((await loginid.count()) > 0) {
+      await expect(page.getByTestId("tc-account-switch")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Demo", exact: true })).toBeVisible();
+      await expect(page.getByTestId("tc-account-switch").getByText("Real", { exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByTestId("tc-account-switch")).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Log in" }).first()).toBeVisible();
+    }
   });
 
   test("product nav includes Copy Trader", async ({ page }) => {
