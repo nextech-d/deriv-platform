@@ -34,6 +34,9 @@ function mapLoginError(error: string): string {
   if (lower.includes("cloudflare") || lower.includes("blocked")) {
     return "Deriv OAuth blocked your network (Cloudflare). Use Personal Access Token sign-in below, or try a VPN.";
   }
+  if (lower.includes("invalid_scope")) {
+    return "Deriv rejected the login scopes. In Application Manager enable Trade, Account manage, and Payment, then try again.";
+  }
   if (lower.includes("failed to fetch") || lower.includes("network")) {
     return "Network error reaching Deriv OAuth. Check connection or use PAT sign-in below.";
   }

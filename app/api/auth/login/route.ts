@@ -25,14 +25,13 @@ export async function GET(request: NextRequest) {
   const redirectUri = getAppRedirectUri(request.nextUrl.origin);
 
   const params = new URLSearchParams({
-    scope: "trade account_manage payments",
+    scope: derivConfig.oauthScopes,
     response_type: "code",
     client_id: derivConfig.oauthClientId,
     redirect_uri: redirectUri,
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
-    app_id: derivConfig.appId,
   });
 
   if (derivConfig.affiliateToken) {
