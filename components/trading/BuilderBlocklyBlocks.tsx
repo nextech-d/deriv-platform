@@ -9,7 +9,7 @@ import {
   type DurationRule,
   type DurationUnit,
 } from "@/lib/terminal/strategy-seed";
-import { CHART_MARKET_TREE, findChartMarketPath } from "@/lib/terminal/chart-markets";
+import { BUILDER_MARKET_TREE, findBuilderMarketPath } from "@/lib/terminal/chart-markets";
 import { cn } from "@/lib/utils/cn";
 
 type FocusBlock = "trade" | "purchase" | "sell" | "restart";
@@ -71,10 +71,6 @@ function Caret() {
   );
 }
 
-function categoryLabel(id: string, fallback: string) {
-  return id === "synthetics" ? "Derived" : fallback;
-}
-
 export function BuilderBlocklyBlocks({
   snapshot,
   running,
@@ -91,9 +87,9 @@ export function BuilderBlocklyBlocks({
 }: BuilderBlocklyBlocksProps) {
   const hidden = snapshot.hideTradeParameters;
   const marketPath =
-    findChartMarketPath(snapshot.symbol) ??
-    findChartMarketPath(snapshot.market) ??
-    findChartMarketPath("1HZ100V")!;
+    findBuilderMarketPath(snapshot.symbol) ??
+    findBuilderMarketPath(snapshot.market) ??
+    findBuilderMarketPath("1HZ100V")!;
 
   function pickMarket(symbol: string, label: string, journal: string) {
     onPatch({ symbol, market: label }, journal);
@@ -116,15 +112,15 @@ export function BuilderBlocklyBlocks({
               aria-label="Market category"
               value={marketPath.category.id}
               onChange={(event) => {
-                const category = CHART_MARKET_TREE.find((item) => item.id === event.target.value);
+                const category = BUILDER_MARKET_TREE.find((item) => item.id === event.target.value);
                 const group = category?.groups[0];
                 const market = group?.markets[0];
                 if (market) pickMarket(market.id, market.label, "Market category changed");
               }}
             >
-              {CHART_MARKET_TREE.map((category) => (
+              {BUILDER_MARKET_TREE.map((category) => (
                 <option key={category.id} value={category.id}>
-                  {categoryLabel(category.id, category.label)}
+                  {category.label}
                 </option>
               ))}
             </select>

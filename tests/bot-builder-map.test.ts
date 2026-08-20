@@ -19,7 +19,7 @@ import {
   symbolFromMarketLabel,
   marketLabelForSymbol,
 } from "@/lib/terminal/strategy-seed";
-import { findChartMarketPath } from "@/lib/terminal/chart-markets";
+import { findChartMarketPath, findBuilderMarketPath, BUILDER_MARKET_TREE } from "@/lib/terminal/chart-markets";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
 
 function block(id: string) {
@@ -181,6 +181,28 @@ describe("strategy seeds", () => {
     expect(symbolFromMarketLabel("EUR/USD")).toBe("frxEURUSD");
     expect(marketLabelForSymbol("frxXAUUSD")).toBe("Gold/USD");
     expect(findChartMarketPath("Crash 500 Index")?.group.label).toBe("Crash Index");
+  });
+
+  it("uses official Deriv Derived groups on Bot Builder", () => {
+    const path = findBuilderMarketPath("R_100");
+    expect(path?.category.label).toBe("Derived");
+    expect(path?.group.label).toBe("Continuous Indices");
+    expect(findBuilderMarketPath("CRASH500")?.group.label).toBe("Crash/Boom Indices");
+    expect(findBuilderMarketPath("JD10")?.group.label).toBe("Jump Indices");
+    expect(findBuilderMarketPath("RB100")?.group.label).toBe("Range Break Indices");
+    expect(findBuilderMarketPath("WLDAUD")?.group.label).toBe("Forex Basket");
+    expect(findBuilderMarketPath("WLDXAU")?.group.label).toBe("Commodities Basket");
+    expect(findBuilderMarketPath("stpRNG")?.group.label).toBe("Step Indices");
+    expect(BUILDER_MARKET_TREE[0]?.groups.map((group) => group.label)).toEqual([
+      "Continuous Indices",
+      "Crash/Boom Indices",
+      "Jump Indices",
+      "Range Break Indices",
+      "Daily Reset Indices",
+      "Forex Basket",
+      "Commodities Basket",
+      "Step Indices",
+    ]);
   });
 
   it("maps trade-each-tick onto a zero cooldown", () => {

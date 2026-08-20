@@ -219,10 +219,10 @@ import {
   symbolLabel,
   SYMBOL_ID_PATTERN,
 } from "@/lib/markets/symbols";
-import { CHART_MARKET_TREE, findChartMarketPath } from "@/lib/terminal/chart-markets";
+import { BUILDER_MARKET_TREE, findChartMarketPath } from "@/lib/terminal/chart-markets";
 
 export function builderMarketOptions() {
-  return CHART_MARKET_TREE.flatMap((category) =>
+  return BUILDER_MARKET_TREE.flatMap((category) =>
     category.groups.flatMap((group) =>
       group.markets.map((market) => ({ label: market.label, symbol: market.id })),
     ),
@@ -230,7 +230,7 @@ export function builderMarketOptions() {
 }
 
 export function builderGroupedMarketOptions() {
-  return CHART_MARKET_TREE.map((category) => ({
+  return BUILDER_MARKET_TREE.map((category) => ({
     group: category.label,
     options: category.groups.flatMap((group) =>
       group.markets.map((market) => ({ label: market.label, symbol: market.id })),

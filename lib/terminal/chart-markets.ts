@@ -235,6 +235,58 @@ export const CHART_MARKET_TREE: ChartMarketCategory[] = [
   },
 ];
 
+function chartGroup(categoryId: string, groupId: string): ChartMarketGroup {
+  const group = CHART_MARKET_TREE.find((category) => category.id === categoryId)?.groups.find(
+    (item) => item.id === groupId,
+  );
+  if (!group) {
+    throw new Error(`Missing market group ${categoryId}/${groupId}`);
+  }
+  return group;
+}
+
+/** Bot Builder market strip — labels and grouping match bot.deriv.com, not dangote. */
+export const BUILDER_MARKET_TREE: ChartMarketCategory[] = [
+  {
+    id: "derived",
+    label: "Derived",
+    groups: [
+      { ...chartGroup("synthetics", "continuous"), label: "Continuous Indices" },
+      { ...chartGroup("synthetics", "crash"), label: "Crash/Boom Indices" },
+      { ...chartGroup("synthetics", "jump"), label: "Jump Indices" },
+      { ...chartGroup("synthetics", "range"), label: "Range Break Indices" },
+      { ...chartGroup("synthetics", "daily-reset"), label: "Daily Reset Indices" },
+      { ...chartGroup("baskets", "forex-basket"), label: "Forex Basket" },
+      { ...chartGroup("baskets", "commodity-basket"), label: "Commodities Basket" },
+      { ...chartGroup("synthetics", "step"), label: "Step Indices" },
+    ],
+  },
+  {
+    id: "forex",
+    label: "Forex",
+    groups: CHART_MARKET_TREE.find((category) => category.id === "forex")?.groups ?? [],
+  },
+  {
+    id: "otc",
+    label: "Stock Indices",
+    groups: [
+      { ...chartGroup("otc", "americas"), label: "American indices" },
+      { ...chartGroup("otc", "asia"), label: "Asian indices" },
+      { ...chartGroup("otc", "europe"), label: "European indices" },
+    ],
+  },
+  {
+    id: "crypto",
+    label: "Cryptocurrencies",
+    groups: [{ ...chartGroup("crypto", "non-stable"), label: "Cryptocurrencies" }],
+  },
+  {
+    id: "metals",
+    label: "Commodities",
+    groups: CHART_MARKET_TREE.find((category) => category.id === "metals")?.groups ?? [],
+  },
+];
+
 const OTC_IDS = new Set(
   CHART_MARKET_TREE.find((c) => c.id === "otc")?.groups.flatMap((g) => g.markets.map((m) => m.id)) ?? [],
 );
@@ -255,6 +307,20 @@ export function findChartMarketPath(symbolOrLabel: string) {
   const needle = symbolOrLabel.trim().toLowerCase();
   if (!needle) return undefined;
   for (const category of CHART_MARKET_TREE) {
+    for (const group of category.groups) {
+      const market = group.markets.find(
+        (item) => item.id.toLowerCase() === needle || item.label.toLowerCase() === needle,
+      );
+      if (market) return { category, group, market };
+    }
+  }
+  return undefined;
+}
+
+export function findBuilderMarketPath(symbolOrLabel: string) {
+  const needle = symbolOrLabel.trim().toLowerCase();
+  if (!needle) return undefined;
+  for (const category of BUILDER_MARKET_TREE) {
     for (const group of category.groups) {
       const market = group.markets.find(
         (item) => item.id.toLowerCase() === needle || item.label.toLowerCase() === needle,
