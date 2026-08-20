@@ -13,7 +13,6 @@ import {
   RefreshCw,
   Save,
   Search,
-  Sparkles,
   Square,
   Trash2,
   Undo2,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import {
   BOT_BUILDER_FLYOUT_HELP,
+  BOT_BUILDER_FLYOUT_LEARN,
   BOT_BUILDER_STATS_HELP,
   BOT_BUILDER_TOOLBOX,
   type BuilderBlockDef,
@@ -154,7 +154,6 @@ function chipsFromSnapshot(snapshot: BotBuilderSnapshot): CanvasChip[] {
 export function BotBuilderDesk({
   seed = null,
   seedKey = 0,
-  onOpenAiBot,
   onRun,
   onStop,
   running = false,
@@ -238,6 +237,8 @@ export function BotBuilderDesk({
   const [recentWhyOpen, setRecentWhyOpen] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
   const [blocksMenuOpen, setBlocksMenuOpen] = useState(true);
+  const [flyoutLearnOpen, setFlyoutLearnOpen] = useState(false);
+  const [loadDragging, setLoadDragging] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -684,12 +685,6 @@ export function BotBuilderDesk({
             >
               Quick strategy
             </button>
-            {onOpenAiBot ? (
-              <button type="button" className="bot-builder-ai-btn" onClick={onOpenAiBot}>
-                <Sparkles strokeWidth={2} />
-                AI Bot Generator
-              </button>
-            ) : null}
             <button
               type="button"
               className="bot-builder-menu-title"
@@ -747,6 +742,7 @@ export function BotBuilderDesk({
                         else if (item.id === "sell-conditions") setFocusBlock("sell");
                         else if (item.id === "restart-conditions") setFocusBlock("restart");
                         setOpenGroup({ cat: item.id, group: item.label });
+                        setFlyoutLearnOpen(false);
                       }
                     }}
                   >
@@ -785,6 +781,7 @@ export function BotBuilderDesk({
                             )}
                             onClick={() => {
                               setOpenGroup({ cat: item.id, group });
+                              setFlyoutLearnOpen(false);
                               setNotice(group);
                             }}
                           >
@@ -822,7 +819,10 @@ export function BotBuilderDesk({
                 <button
                   type="button"
                   className="bot-builder-flyout-close"
-                  onClick={() => setOpenGroup(null)}
+                  onClick={() => {
+                    setOpenGroup(null);
+                    setFlyoutLearnOpen(false);
+                  }}
                 >
                   Close
                 </button>
@@ -830,14 +830,23 @@ export function BotBuilderDesk({
               {BOT_BUILDER_FLYOUT_HELP[openGroup.group] ? (
                 <div className="bot-builder-flyout-help">
                   <p>{BOT_BUILDER_FLYOUT_HELP[openGroup.group]}</p>
-                  <a
+                  <button
+                    type="button"
                     className="bot-builder-flyout-learn"
-                    href="https://www.deriv.com/help-centre"
-                    target="_blank"
-                    rel="noreferrer"
+                    onClick={() => setFlyoutLearnOpen((open) => !open)}
                   >
                     Learn more
-                  </a>
+                  </button>
+                  {flyoutLearnOpen ? (
+                    <div className="bot-builder-flyout-learn-body">
+                      {(BOT_BUILDER_FLYOUT_LEARN[openGroup.group] ?? [
+                        BOT_BUILDER_FLYOUT_HELP[openGroup.group]!,
+                        "Click a block to add it to the matching hat on the workspace. Analysis blocks feed purchase conditions; utility blocks log, wait, or change values while the bot runs.",
+                      ]).map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
               <ul className="bot-builder-flyout-list">
@@ -933,6 +942,15 @@ export function BotBuilderDesk({
         </section>
 
         <aside className="bot-builder-summary">
+          <button
+            type="button"
+            className="bot-builder-drawer-toggle"
+            aria-label={compactLayout ? "Expand run panel" : "Collapse run panel"}
+            title={compactLayout ? "Expand" : "Collapse"}
+            onClick={() => setCompactLayout((open) => !open)}
+          >
+            {compactLayout ? "<<" : ">>"}
+          </button>
           <div className="bot-builder-run-bar">
             <button
               type="button"
@@ -956,23 +974,6 @@ export function BotBuilderDesk({
             </div>
           </div>
           <div className="bot-builder-drawer" data-testid="drawer">
-            <label className="bot-builder-fast">
-              <span>Fast</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={snapshot.fastExecution}
-                className={cn("bot-builder-switch", snapshot.fastExecution && "is-on")}
-                onClick={() =>
-                  patchSnapshot(
-                    { fastExecution: !snapshot.fastExecution },
-                    snapshot.fastExecution ? "Fast off" : "Fast on",
-                  )
-                }
-              >
-                <span />
-              </button>
-            </label>
           <p className="bot-builder-run-meta">
             {snapshot.market} · {snapshot.tradeType}
             {running ? " · Running" : ""}
@@ -1126,7 +1127,19 @@ export function BotBuilderDesk({
               </div>
             ) : null}
             {loadTab === "local" ? (
-              <div className="bot-builder-load-empty">
+              <div
+                className={cn("bot-builder-load-empty bot-builder-dropzone", loadDragging && "is-over")}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setLoadDragging(true);
+                }}
+                onDragLeave={() => setLoadDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setLoadDragging(false);
+                  handleFile(event.dataTransfer.files);
+                }}
+              >
                 <p>Importing XML files from Binary Bot and other third-party platforms may take longer.</p>
                 <p>Drag your XML file here</p>
                 <p>or, if you prefer...</p>

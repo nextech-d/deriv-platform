@@ -148,6 +148,13 @@ export interface BotBuilderSnapshot {
   bulkTradeCount: number;
   /** Stake progression applied when the snapshot is sent to the runner. */
   quickStrategy?: QuickStrategyParams;
+  /** Nested Trade options block: vanilla duration/stake, multiplier, or accumulator. */
+  tradeOptionsMode: "vanilla" | "multiplier" | "accumulator";
+  growthRate: string;
+  takeProfitAmount: string;
+  stopLossAmount: string;
+  tickCount: string;
+  sellByTicks: boolean;
   /**
    * Indicator / utility parameters that feed into `BotConfig` during `snapshotToBotConfig()`.
    * DBot uses these to parametrize analysis blocks; our bot runner uses `BotConfig`.
@@ -192,6 +199,12 @@ export const DEFAULT_BUILDER_SNAPSHOT: BotBuilderSnapshot = {
   runOnceAtStart: false,
   allowBulkPurchase: false,
   bulkTradeCount: 1,
+  tradeOptionsMode: "vanilla",
+  growthRate: "1%",
+  takeProfitAmount: "10",
+  stopLossAmount: "10",
+  tickCount: "5",
+  sellByTicks: false,
   fastPeriod: DEFAULT_BOT_CONFIG.fastPeriod,
   slowPeriod: DEFAULT_BOT_CONFIG.slowPeriod,
   rsiPeriod: DEFAULT_BOT_CONFIG.rsiPeriod,
@@ -308,6 +321,15 @@ export function normalizeLoadedSnapshot(
     sellAction: merged.sellAction === "sell_at_market" ? "sell_at_market" : "none",
     restartAction: merged.restartAction === "stop" ? "stop" : "trade_again",
     zoom: Math.min(1.2, Math.max(0.85, Number(merged.zoom) || 1)),
+    tradeOptionsMode:
+      merged.tradeOptionsMode === "multiplier" || merged.tradeOptionsMode === "accumulator"
+        ? merged.tradeOptionsMode
+        : "vanilla",
+    growthRate: merged.growthRate || DEFAULT_BUILDER_SNAPSHOT.growthRate,
+    takeProfitAmount: merged.takeProfitAmount || DEFAULT_BUILDER_SNAPSHOT.takeProfitAmount,
+    stopLossAmount: merged.stopLossAmount || DEFAULT_BUILDER_SNAPSHOT.stopLossAmount,
+    tickCount: merged.tickCount || DEFAULT_BUILDER_SNAPSHOT.tickCount,
+    sellByTicks: Boolean(merged.sellByTicks),
     quickStrategy: merged.virtualHook
       ? (merged.quickStrategy ?? defaultQuickParams("martingale"))
       : undefined,

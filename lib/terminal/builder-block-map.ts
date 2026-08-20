@@ -69,6 +69,34 @@ export function effectForBuilderBlock(
 
   switch (block.action) {
     case "focus-trade":
+      if (
+        block.id === "multiplier-options" ||
+        block.id === "take-profit-multiplier" ||
+        block.id === "stop-loss-multiplier"
+      ) {
+        return patchEffect(
+          block,
+          { tradeOptionsMode: "multiplier" },
+          `Trade options · ${block.label}`,
+          { focus: "trade" },
+        );
+      }
+      if (block.id === "accumulator-options" || block.id === "take-profit-accumulator") {
+        return patchEffect(
+          block,
+          { tradeOptionsMode: "accumulator" },
+          `Trade options · ${block.label}`,
+          { focus: "trade" },
+        );
+      }
+      if (block.id === "trade-options") {
+        return patchEffect(
+          block,
+          { tradeOptionsMode: "vanilla" },
+          "Trade options · Duration and stake",
+          { focus: "trade" },
+        );
+      }
       return marker(block, `Opened · ${block.label}`, { focus: "trade" });
     case "focus-purchase":
       return marker(block, `Opened · ${block.label}`, { focus: "purchase" });

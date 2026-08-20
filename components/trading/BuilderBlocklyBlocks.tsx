@@ -269,47 +269,152 @@ export function BuilderBlocklyBlocks({
 
           {!hidden ? (
             <div className="bot-builder-subblock">
-              <header>Trade options:</header>
+              <header>
+                {snapshot.tradeOptionsMode === "multiplier"
+                  ? "Multiplier trade options:"
+                  : snapshot.tradeOptionsMode === "accumulator"
+                    ? "Accumulator trade options:"
+                    : "Trade options:"}
+              </header>
               <div className="bot-builder-subblock-body">
-                <div className="bot-builder-inline">
-                  <span className="bot-builder-inline-label">Duration:</span>
-                  <select
-                    className="bot-builder-inline-select"
-                    disabled={running}
-                    value={snapshot.durationUnit}
-                    onChange={(event) =>
-                      onPatch({ durationUnit: event.target.value as DurationUnit })
-                    }
-                  >
-                    {(durationRule?.units ?? (["t"] as DurationUnit[])).map((unit) => (
-                      <option key={unit} value={unit}>
-                        {DURATION_UNIT_LABELS[unit]}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    className="bot-builder-inline-input"
-                    disabled={running}
-                    type="number"
-                    min={durationLimit.min}
-                    max={durationLimit.max}
-                    value={snapshot.duration}
-                    onChange={(event) => onPatch({ duration: event.target.value })}
-                  />
-                  <span className="bot-builder-inline-label">Stake:</span>
-                  <select className="bot-builder-inline-select" disabled value={walletCurrency}>
-                    <option value={walletCurrency}>{walletCurrency}</option>
-                  </select>
-                  <input
-                    className="bot-builder-inline-input"
-                    disabled={running}
-                    type="number"
-                    min={0.35}
-                    step={0.01}
-                    value={snapshot.stake}
-                    onChange={(event) => onPatch({ stake: event.target.value })}
-                  />
-                </div>
+                {snapshot.tradeOptionsMode === "multiplier" ? (
+                  <>
+                    <div className="bot-builder-inline">
+                      <span className="bot-builder-inline-label">Stake:</span>
+                      <select className="bot-builder-inline-select" disabled value={walletCurrency}>
+                        <option value={walletCurrency}>{walletCurrency}</option>
+                      </select>
+                      <input
+                        className="bot-builder-inline-input"
+                        disabled={running}
+                        type="number"
+                        min={0.35}
+                        step={0.01}
+                        value={snapshot.stake}
+                        onChange={(event) => onPatch({ stake: event.target.value })}
+                      />
+                    </div>
+                    <div className="bot-builder-inline">
+                      <span className="bot-builder-inline-label">Take Profit:</span>
+                      <input
+                        className="bot-builder-inline-input"
+                        disabled={running}
+                        type="number"
+                        min={0.35}
+                        step={0.01}
+                        value={snapshot.takeProfitAmount}
+                        onChange={(event) => onPatch({ takeProfitAmount: event.target.value })}
+                      />
+                      <span className="bot-builder-inline-label">Stop loss:</span>
+                      <input
+                        className="bot-builder-inline-input"
+                        disabled={running}
+                        type="number"
+                        min={0.35}
+                        step={0.01}
+                        value={snapshot.stopLossAmount}
+                        onChange={(event) => onPatch({ stopLossAmount: event.target.value })}
+                      />
+                    </div>
+                  </>
+                ) : snapshot.tradeOptionsMode === "accumulator" ? (
+                  <>
+                    <div className="bot-builder-inline">
+                      <span className="bot-builder-inline-label">Initial stake:</span>
+                      <select className="bot-builder-inline-select" disabled value={walletCurrency}>
+                        <option value={walletCurrency}>{walletCurrency}</option>
+                      </select>
+                      <input
+                        className="bot-builder-inline-input"
+                        disabled={running}
+                        type="number"
+                        min={0.35}
+                        step={0.01}
+                        value={snapshot.stake}
+                        onChange={(event) => onPatch({ stake: event.target.value })}
+                      />
+                    </div>
+                    <div className="bot-builder-inline">
+                      <span className="bot-builder-inline-label">Growth rate:</span>
+                      <select
+                        className="bot-builder-inline-select"
+                        disabled={running}
+                        value={snapshot.growthRate}
+                        onChange={(event) => onPatch({ growthRate: event.target.value })}
+                      >
+                        {["1%", "2%", "3%", "4%", "5%"].map((rate) => (
+                          <option key={rate}>{rate}</option>
+                        ))}
+                      </select>
+                      {snapshot.sellByTicks ? (
+                        <>
+                          <span className="bot-builder-inline-label">Tick count:</span>
+                          <input
+                            className="bot-builder-inline-input"
+                            disabled={running}
+                            type="number"
+                            min={1}
+                            value={snapshot.tickCount}
+                            onChange={(event) => onPatch({ tickCount: event.target.value })}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <span className="bot-builder-inline-label">Take Profit:</span>
+                          <input
+                            className="bot-builder-inline-input"
+                            disabled={running}
+                            type="number"
+                            min={0.35}
+                            step={0.01}
+                            value={snapshot.takeProfitAmount}
+                            onChange={(event) => onPatch({ takeProfitAmount: event.target.value })}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="bot-builder-inline">
+                    <span className="bot-builder-inline-label">Duration:</span>
+                    <select
+                      className="bot-builder-inline-select"
+                      disabled={running}
+                      value={snapshot.durationUnit}
+                      onChange={(event) =>
+                        onPatch({ durationUnit: event.target.value as DurationUnit })
+                      }
+                    >
+                      {(durationRule?.units ?? (["t"] as DurationUnit[])).map((unit) => (
+                        <option key={unit} value={unit}>
+                          {DURATION_UNIT_LABELS[unit]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      className="bot-builder-inline-input"
+                      disabled={running}
+                      type="number"
+                      min={durationLimit.min}
+                      max={durationLimit.max}
+                      value={snapshot.duration}
+                      onChange={(event) => onPatch({ duration: event.target.value })}
+                    />
+                    <span className="bot-builder-inline-label">Stake:</span>
+                    <select className="bot-builder-inline-select" disabled value={walletCurrency}>
+                      <option value={walletCurrency}>{walletCurrency}</option>
+                    </select>
+                    <input
+                      className="bot-builder-inline-input"
+                      disabled={running}
+                      type="number"
+                      min={0.35}
+                      step={0.01}
+                      value={snapshot.stake}
+                      onChange={(event) => onPatch({ stake: event.target.value })}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ) : null}

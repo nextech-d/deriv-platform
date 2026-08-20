@@ -274,6 +274,50 @@ export const BOT_BUILDER_FLYOUT_HELP: Record<string, string> = {
     "This is where you sell your contracts before they expire. You can use this block with Sell is available.",
   "Restart trading conditions":
     "This is where you decide what to do after a contract. Restart trading conditions are optional.",
+  Indicators: "These blocks analyse ticks and candles so your purchase conditions can react to the market.",
+  "Tick and candle analysis":
+    "Read the latest ticks, last digits, candle values, and market direction to decide when to buy.",
+  Contract: "Read details of the current or last contract: profit, payout, entry spot, and whether it can be sold.",
+  "Tick Trade Results": "Inspect results from the latest tick trades, including profit and win/loss counts.",
+  "Hedge Results": "Inspect results from hedge trades when your strategy opens more than one position.",
+  Stats: "Read running totals for profit, number of runs, and account balance.",
+  "Custom functions": "Define reusable functions and call them from purchase, sell, or restart conditions.",
+  Variables: "Create, rename, and update variables that persist while the bot is running.",
+  Notifications: "Send a notification, Telegram message, or sound when a condition is met.",
+  Time: "Work with timestamps, delays, and tick waits.",
+  Math: "Numbers, arithmetic, rounding, lists, and random values for your conditions.",
+  Text: "Build, join, and inspect text used in notifications and comparisons.",
+  Logic: "Compare values and combine conditions with if / and / or / not.",
+  Lists: "Create and inspect lists of ticks, digits, or candle values.",
+  Loops: "Repeat actions, iterate lists, and break out of a loop.",
+  Miscellaneous: "Extra helpers such as console logging, offsets, and contract modifiers.",
+};
+
+export const BOT_BUILDER_FLYOUT_LEARN: Record<string, string[]> = {
+  "Trade parameters": [
+    "This block is mandatory. It's added to your strategy by default when you create a new strategy. You cannot add more than one copy of this block to the canvas.",
+    "1. Market — Select your desired market and asset type. For example, Derived > Continuous Indices > Volatility 100 Index.",
+    "2. Trade Type — Select your desired trade type. For example, Up/Down > Rise/Fall.",
+    "3. Contract Type — Choose Rise, Fall, or Both. This determines the options on the Purchase block.",
+    "4. Default Candle Interval — Sets the default time interval for blocks that read a list of candles.",
+    "5. Restart buy/sell on error — Restarts the bot when an error is encountered.",
+    "6. Restart last trade on error — Repeats the previous trade when an error is encountered.",
+    "7. Run Once at Start — Place blocks here to perform tasks once when your bot starts running.",
+    "8. Trade Options — Duration, stake, prediction, and/or barrier(s) for the contract. Use Multiplier or Accumulator trade options for those contract types.",
+  ],
+  "Purchase conditions": [
+    "This block is mandatory. Only one copy is allowed.",
+    "Place a Purchase block here, plus any analysis or logic that decides when to buy.",
+    "Purchase Rise / Fall (or Even / Odd, Over / Under, and so on) sends the order once the conditions are true.",
+  ],
+  "Sell conditions (optional)": [
+    "Sell contracts before they expire.",
+    "Use Sell is available to check whether Deriv will accept a sell, then Sell at market to close the contract.",
+  ],
+  "Restart trading conditions": [
+    "Decide what happens after a contract finishes.",
+    "Trade again restarts the strategy. Stop after loss ends the run.",
+  ],
 };
 
 export const BOT_BUILDER_STATS_HELP = [
