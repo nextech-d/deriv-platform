@@ -3183,6 +3183,47 @@ html[data-boot-hold] body {
   color: #1f2937;
 }
 
+.bot-builder-check-end {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.bot-builder-block[data-lane="trade"],
+.bot-builder-block[data-lane="purchase"] {
+  --bb-body: #064e72;
+  color: #fff;
+}
+
+.bot-builder-block[data-lane="trade"] .bot-builder-inline-label,
+.bot-builder-block[data-lane="purchase"] .bot-builder-inline-label,
+.bot-builder-block[data-lane="trade"] .bot-builder-check,
+.bot-builder-block[data-lane="purchase"] .bot-builder-check,
+.bot-builder-block[data-lane="trade"] .bot-builder-statement,
+.bot-builder-block[data-lane="trade"] .bot-builder-caret {
+  color: #fff;
+}
+
+.bot-builder-block[data-lane="trade"] .bot-builder-subblock {
+  background: #053a56;
+}
+
+.bot-builder-block[data-lane="trade"] .bot-builder-subblock-body {
+  background: #064e72;
+}
+
+.bot-builder-block[data-lane="trade"] .bot-builder-statement-slot {
+  background: color-mix(in srgb, #fff 14%, #064e72);
+  min-height: 2rem;
+}
+
+html[data-theme] .bot-builder-block[data-lane="trade"],
+html[data-theme] .bot-builder-block[data-lane="trade"] .bot-builder-block-body,
+html[data-theme] .bot-builder-block[data-lane="purchase"],
+html[data-theme] .bot-builder-block[data-lane="purchase"] .bot-builder-block-body {
+  background: #064e72;
+  color: #fff;
+}
+
 .bot-builder-nested {
   padding: 0.65rem 0.7rem 0.75rem;
   border: 1px solid var(--border);
