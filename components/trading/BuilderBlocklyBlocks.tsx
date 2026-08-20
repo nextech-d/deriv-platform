@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  CircleDollarSign,
-  LayoutGrid,
-  Plus,
-  Repeat,
-  ShoppingBag,
-  type LucideIcon,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { QUICK_STRATEGY_METAS, type QuickStrategyType } from "@/lib/bot/types";
 import {
   BUILDER_TRADE_TYPES,
@@ -52,15 +45,12 @@ interface BuilderBlocklyBlocksProps {
 function BlockHead({
   index,
   title,
-  icon: Icon,
 }: {
   index: string;
   title: string;
-  icon: LucideIcon;
 }) {
   return (
     <header className="bot-builder-block-head">
-      <Icon className="bot-builder-block-icon" strokeWidth={2} />
       <h3>
         {index}. {title}
       </h3>
@@ -140,7 +130,7 @@ export function BuilderBlocklyBlocks({
         className={cn("bot-builder-block", focusBlock === "trade" && "bot-builder-block-focused")}
         onClick={() => onFocus("trade")}
       >
-        <BlockHead index="1" title="Trade parameters" icon={LayoutGrid} />
+        <BlockHead index="1" title="Trade parameters" />
         <div className="bot-builder-block-body">
           <div className="bot-builder-inline bot-builder-market-strip">
             <span className="bot-builder-inline-label">Market:</span>
@@ -535,7 +525,7 @@ export function BuilderBlocklyBlocks({
         )}
         onClick={() => onFocus("purchase")}
       >
-        <BlockHead index="2" title="Purchase conditions" icon={ShoppingBag} />
+        <BlockHead index="2" title="Purchase conditions" />
         <div className="bot-builder-block-body">
           <div className="bot-builder-inline">
             <span className="bot-builder-inline-label">Purchase:</span>
@@ -596,7 +586,7 @@ export function BuilderBlocklyBlocks({
         className={cn("bot-builder-block", focusBlock === "sell" && "bot-builder-block-focused")}
         onClick={() => onFocus("sell")}
       >
-        <BlockHead index="3" title="Sell conditions" icon={CircleDollarSign} />
+        <BlockHead index="3" title="Sell conditions" />
         <div className="bot-builder-block-body">
           <p className="bot-builder-logic-line">
             <span className="bot-builder-logic-chip">if</span>
@@ -655,7 +645,7 @@ export function BuilderBlocklyBlocks({
         )}
         onClick={() => onFocus("restart")}
       >
-        <BlockHead index="4" title="Restart trading conditions" icon={Repeat} />
+        <BlockHead index="4" title="Restart trading conditions" />
         <div className="bot-builder-block-body">
           <div className="bot-builder-inline">
             <select

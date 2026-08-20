@@ -1,4 +1,4 @@
-/** Blockly-style toolbox used by Bot builder (Binarytool / D-Bot shape). */
+/** Official Deriv Bot toolbox (bot.deriv.com/#bot_builder). */
 
 export type BuilderCategoryId =
   | "analysis-logics"
@@ -56,34 +56,16 @@ export interface BuilderCategory {
 
 export const BOT_BUILDER_TOOLBOX: BuilderCategory[] = [
   {
-    id: "analysis-logics",
-    label: "Analysis Logics",
-    accent: true,
-    icon: "🔥",
-    blocks: [
-      { id: "parity-logic", label: "Even / Odd bias", action: "set-even-odd", hint: "Prefers parity lane from last digits" },
-      { id: "barrier-logic", label: "Over / Under bias", action: "set-over-under", hint: "Barrier digit comparison" },
-      { id: "match-logic", label: "Matches / Differs", action: "set-matches", hint: "Target digit match lane" },
-      { id: "streak-logic", label: "Streak flip", action: "set-even-odd", hint: "Flip after same-parity streak" },
-    ],
-  },
-  {
-    id: "market-structure",
-    label: "Market Structure",
-    accent: true,
-    icon: "🏗️",
-    blocks: [
-      { id: "rise-fall-structure", label: "Rise / Fall structure", action: "set-rise-fall" },
-      { id: "tick-window", label: "Tick window filter", action: "add-tick" },
-      { id: "volatility-gate", label: "Volatility gate", action: "add-logic" },
-    ],
-  },
-  {
     id: "trade-parameters",
     label: "Trade parameters",
     blocks: [
-      { id: "trade-definition", label: "Trade definition", action: "focus-trade" },
+      { id: "trade-definition", label: "1. Trade parameters", action: "focus-trade" },
       { id: "trade-options", label: "Trade options", action: "focus-trade" },
+      { id: "multiplier-options", label: "Multiplier trade options", action: "focus-trade" },
+      { id: "take-profit-multiplier", label: "Take Profit (Multiplier)", action: "focus-trade" },
+      { id: "stop-loss-multiplier", label: "Stop loss (Multiplier)", action: "focus-trade" },
+      { id: "accumulator-options", label: "Accumulator trade options", action: "focus-trade" },
+      { id: "take-profit-accumulator", label: "Take Profit (Accumulator)", action: "focus-trade" },
       { id: "market", label: "Market", action: "focus-trade" },
       { id: "trade-type", label: "Trade type", action: "focus-trade" },
       { id: "contract-type", label: "Contract type", action: "focus-trade" },
@@ -95,7 +77,7 @@ export const BOT_BUILDER_TOOLBOX: BuilderCategory[] = [
     id: "purchase-conditions",
     label: "Purchase conditions",
     blocks: [
-      { id: "before-purchase", label: "Before purchase", action: "focus-purchase" },
+      { id: "before-purchase", label: "2. Purchase conditions", action: "focus-purchase" },
       { id: "purchase", label: "Purchase", action: "focus-purchase" },
       { id: "purchase-condition", label: "Purchase condition", action: "focus-purchase" },
     ],
@@ -123,6 +105,13 @@ export const BOT_BUILDER_TOOLBOX: BuilderCategory[] = [
     label: "Analysis",
     expandable: true,
     blocks: [
+      { id: "parity-logic", label: "Even / Odd bias", action: "set-even-odd", hint: "Tick and candle analysis" },
+      { id: "barrier-logic", label: "Over / Under bias", action: "set-over-under", hint: "Tick and candle analysis" },
+      { id: "match-logic", label: "Matches / Differs", action: "set-matches", hint: "Tick and candle analysis" },
+      { id: "streak-logic", label: "Streak flip", action: "set-even-odd", hint: "Tick and candle analysis" },
+      { id: "rise-fall-structure", label: "Rise / Fall structure", action: "set-rise-fall", hint: "Tick and candle analysis" },
+      { id: "tick-window", label: "Tick window filter", action: "add-tick", hint: "Tick and candle analysis" },
+      { id: "volatility-gate", label: "Volatility gate", action: "add-logic", hint: "Tick and candle analysis" },
       // ── Indicators ──
       { id: "ind-sma", label: "Simple Moving Average (SMA)", action: "add-tick", hint: "Indicators" },
       { id: "ind-smaa", label: "Simple Moving Average Array (SMAA)", action: "add-tick", hint: "Indicators" },
@@ -269,20 +258,50 @@ export const BOT_BUILDER_TOOLBOX: BuilderCategory[] = [
       { id: "misc-loader", label: "Block loader", action: "noop", hint: "Miscellaneous" },
       { id: "misc-barrier-offset", label: "Offset +", action: "add-math", hint: "Miscellaneous" },
       { id: "misc-block-holder", label: "Ignore", action: "noop", hint: "Miscellaneous" },
-    ],
-  },
-  {
-    id: "custom-tools",
-    label: "tradecity.trade Tools",
-    expandable: true,
-    blocks: [
-      { id: "virtual-hook-switcher", label: "Virtual Hook Switcher", action: "noop" },
-      { id: "custom-notification", label: "Custom Notification", action: "add-notify" },
-      { id: "contract-modifiers", label: "Contract modifiers", action: "noop" },
-      { id: "barrier-settings", label: "Barrier Settings", action: "noop" },
+      { id: "virtual-hook-switcher", label: "Virtual Hook Switcher", action: "noop", hint: "Miscellaneous" },
+      { id: "custom-notification", label: "Custom Notification", action: "add-notify", hint: "Miscellaneous" },
+      { id: "contract-modifiers", label: "Contract modifiers", action: "noop", hint: "Miscellaneous" },
+      { id: "barrier-settings", label: "Barrier Settings", action: "noop", hint: "Miscellaneous" },
     ],
   },
 ];
+
+export const BOT_BUILDER_FLYOUT_HELP: Record<string, string> = {
+  "Trade parameters": "Here is where you define the parameters of your contract.",
+  "Purchase conditions":
+    "This block is mandatory. Only one copy of this block is allowed. You can place the Purchase block (see below) here as well as conditional blocks to define your purchase conditions.",
+  "Sell conditions (optional)":
+    "This is where you sell your contracts before they expire. You can use this block with Sell is available.",
+  "Restart trading conditions":
+    "This is where you decide what to do after a contract. Restart trading conditions are optional.",
+};
+
+export const BOT_BUILDER_STATS_HELP = [
+  {
+    label: "Total stake",
+    body: "Total stake since you last cleared your stats.",
+  },
+  {
+    label: "Total payout",
+    body: "Total payout since you last cleared your stats.",
+  },
+  {
+    label: "No. of runs",
+    body: "The number of times your bot has run since you last cleared your stats. Each run includes the execution of all the root blocks.",
+  },
+  {
+    label: "Contracts lost",
+    body: "The number of contracts you have lost since you last cleared your stats.",
+  },
+  {
+    label: "Contracts won",
+    body: "The number of contracts you have won since you last cleared your stats.",
+  },
+  {
+    label: "Total profit/loss",
+    body: "Your total profit/loss since you last cleared your stats. It is the difference between your total payout and your total stake.",
+  },
+] as const;
 
 /** @deprecated — use BOT_BUILDER_TOOLBOX */
 export const BOT_BUILDER_BLOCK_CATEGORIES = BOT_BUILDER_TOOLBOX.map((cat) => ({
@@ -305,9 +324,9 @@ export const BOT_BUILDER_TOOLBAR = [
   { id: "reset", label: "Reset" },
   { id: "import", label: "Import" },
   { id: "save", label: "Save" },
-  { id: "sort", label: "Sort" },
+  { id: "sort", label: "Sort blocks" },
   { id: "charts", label: "Charts" },
-  { id: "tradingview", label: "TradingView" },
+  { id: "tradingview", label: "TradingView Chart" },
   { id: "undo", label: "Undo" },
   { id: "redo", label: "Redo" },
   { id: "zoom-in", label: "Zoom in" },

@@ -259,7 +259,7 @@ export const PLATFORM_SECTIONS: PlatformSectionContent[] = [
     title: "Visual blocks for trade, purchase, sell, and restart",
     summary:
       "Assemble strategy windows with a blocks menu, AI Bot Generator, and a live run summary.",
-    body: "Bot builder mirrors a Deriv-style canvas: search Analysis Logics and Market Structure, configure Trade parameters and Purchase conditions, then track stake, payout, and win/loss on the Summary desk.",
+    body: "Bot builder matches Deriv Bot: Quick strategy, the Blocks menu, Trade parameters through Utility, the workspace toolbar, and a live Run summary.",
     meta: ["Blocks menu", "AI generator", "Run summary"],
     features: [
       {

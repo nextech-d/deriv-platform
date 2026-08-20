@@ -21,6 +21,8 @@ import {
   ZoomOut,
 } from "lucide-react";
 import {
+  BOT_BUILDER_FLYOUT_HELP,
+  BOT_BUILDER_STATS_HELP,
   BOT_BUILDER_TOOLBOX,
   type BuilderBlockDef,
   type BuilderCategoryId,
@@ -33,7 +35,6 @@ import {
   symbolFromMarketLabel,
   BUILDER_TRADE_TYPES,
   DURATION_RULES,
-  DURATION_UNIT_LABELS,
   clampSnapshotDuration,
   defaultQuickParams,
   durationBounds,
@@ -117,38 +118,24 @@ const TOOLBAR_ICONS = {
   "zoom-out": ZoomOut,
 } as const;
 
-const TOOL_GROUPS = [
-  {
-    id: "file",
-    items: [
-      ["reset", "Reset"],
-      ["import", "Import"],
-      ["save", "Save"],
-      ["sort", "Sort"],
-    ],
-  },
-  {
-    id: "charts",
-    items: [
-      ["charts", "Charts"],
-      ["tradingview", "TradingView"],
-    ],
-  },
-  {
-    id: "history",
-    items: [
-      ["undo", "Undo"],
-      ["redo", "Redo"],
-    ],
-  },
-  {
-    id: "zoom",
-    items: [
-      ["zoom-in", "Zoom in"],
-      ["zoom-out", "Zoom out"],
-    ],
-  },
-] as const;
+const TOOLBAR_STRIP: Array<
+  | { kind: "btn"; id: keyof typeof TOOLBAR_ICONS; label: string }
+  | { kind: "div" }
+> = [
+  { kind: "btn", id: "reset", label: "Reset" },
+  { kind: "btn", id: "import", label: "Import" },
+  { kind: "btn", id: "save", label: "Save" },
+  { kind: "btn", id: "sort", label: "Sort blocks" },
+  { kind: "div" },
+  { kind: "btn", id: "charts", label: "Charts" },
+  { kind: "btn", id: "tradingview", label: "TradingView Chart" },
+  { kind: "div" },
+  { kind: "btn", id: "undo", label: "Undo" },
+  { kind: "btn", id: "redo", label: "Redo" },
+  { kind: "div" },
+  { kind: "btn", id: "zoom-in", label: "Zoom in" },
+  { kind: "btn", id: "zoom-out", label: "Zoom out" },
+];
 
 function botFileName(name: string) {
   const slug = name.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "strategy";
@@ -247,6 +234,8 @@ export function BotBuilderDesk({
   const [saveTarget, setSaveTarget] = useState<"local" | "drive">("local");
   const [chartOpen, setChartOpen] = useState(false);
   const [tvOpen, setTvOpen] = useState(false);
+  const [statsHelpOpen, setStatsHelpOpen] = useState(false);
+  const [recentWhyOpen, setRecentWhyOpen] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
   const [blocksMenuOpen, setBlocksMenuOpen] = useState(true);
 
@@ -669,65 +658,6 @@ export function BotBuilderDesk({
         onChange={(event) => handleFile(event.target.files)}
       />
 
-      <header className="bot-builder-toolbar">
-        <div className="bot-builder-toolbar-qs">
-          <button
-            type="button"
-            className="bot-builder-qs-btn"
-            data-testid="tc-builder-qs"
-            onClick={() => setQuickOpen(true)}
-          >
-            Quick strategy
-          </button>
-        </div>
-        <div className="bot-builder-toolbar-tools">
-          {TOOL_GROUPS.map((group) => (
-            <div key={group.id} className={cn("bot-builder-tool-group", `is-${group.id}`)}>
-              {group.items.map(([id, label]) => {
-                const Icon = TOOLBAR_ICONS[id];
-                const disabled =
-                  (id === "undo" && historyIndex <= 0) ||
-                  (id === "redo" && historyIndex >= history.length - 1);
-                const on =
-                  (id === "charts" && chartOpen) || (id === "tradingview" && tvOpen);
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={on || undefined}
-                    disabled={disabled}
-                    className={cn("bot-builder-tool", on && "is-on", disabled && "is-disabled")}
-                    onClick={() => handleTool(id)}
-                  >
-                    <Icon strokeWidth={1.75} />
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        <div className="bot-builder-toolbar-run">
-          <button
-            type="button"
-            className={cn("bot-builder-run", running && "is-stop")}
-            data-testid="tc-builder-run"
-            aria-label={running ? "Stop bot" : "Run bot"}
-            onClick={handleRun}
-          >
-            {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
-            {running ? "Stop" : "Run"}
-          </button>
-          <div className="bot-builder-toolbar-run-meta">
-            <span className="bot-builder-run-state" data-testid="tc-builder-run-state">
-              {running ? "Bot is running" : "Bot is not running"}
-            </span>
-            <span className="bot-builder-status-chip">{snapshot.sourceLabel}</span>
-          </div>
-        </div>
-      </header>
-
       <p className="bot-builder-live" role="status">
         {notice}
       </p>
@@ -743,8 +673,17 @@ export function BotBuilderDesk({
       ) : null}
 
       <div className="bot-builder-shell">
-        <aside className="bot-builder-menu">
+        <aside className="bot-builder-menu" data-testid="dashboard__toolbox">
           <div className="bot-builder-menu-head">
+            <button
+              type="button"
+              id="db-toolbar__get-started-button"
+              className="bot-builder-qs-btn"
+              data-testid="tc-builder-qs"
+              onClick={() => setQuickOpen(true)}
+            >
+              Quick strategy
+            </button>
             {onOpenAiBot ? (
               <button type="button" className="bot-builder-ai-btn" onClick={onOpenAiBot}>
                 <Sparkles strokeWidth={2} />
@@ -754,8 +693,12 @@ export function BotBuilderDesk({
             <button
               type="button"
               className="bot-builder-menu-title"
+              data-testid="db-toolbox__title"
               aria-expanded={blocksMenuOpen}
-              onClick={() => setBlocksMenuOpen((open) => !open)}
+              onClick={() => {
+                setBlocksMenuOpen((open) => !open);
+                if (blocksMenuOpen) setOpenGroup(null);
+              }}
             >
               Blocks menu
               {blocksMenuOpen ? <ChevronUp strokeWidth={2} /> : <ChevronDown strokeWidth={2} />}
@@ -798,15 +741,11 @@ export function BotBuilderDesk({
                       if (item.expandable) {
                         toggleExpanded(item.id);
                         setOpenGroup(null);
-                      } else if (item.id === "trade-parameters") {
-                        setFocusBlock("trade");
-                      } else if (item.id === "purchase-conditions") {
-                        setFocusBlock("purchase");
-                      } else if (item.id === "sell-conditions") {
-                        setFocusBlock("sell");
-                      } else if (item.id === "restart-conditions") {
-                        setFocusBlock("restart");
                       } else {
+                        if (item.id === "trade-parameters") setFocusBlock("trade");
+                        else if (item.id === "purchase-conditions") setFocusBlock("purchase");
+                        else if (item.id === "sell-conditions") setFocusBlock("sell");
+                        else if (item.id === "restart-conditions") setFocusBlock("restart");
                         setOpenGroup({ cat: item.id, group: item.label });
                       }
                     }}
@@ -888,6 +827,19 @@ export function BotBuilderDesk({
                   Close
                 </button>
               </div>
+              {BOT_BUILDER_FLYOUT_HELP[openGroup.group] ? (
+                <div className="bot-builder-flyout-help">
+                  <p>{BOT_BUILDER_FLYOUT_HELP[openGroup.group]}</p>
+                  <a
+                    className="bot-builder-flyout-learn"
+                    href="https://www.deriv.com/help-centre"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Learn more
+                  </a>
+                </div>
+              ) : null}
               <ul className="bot-builder-flyout-list">
                 {flyoutBlocks.map((block) => (
                   <li key={block.id}>
@@ -911,7 +863,38 @@ export function BotBuilderDesk({
           ) : null}
         </aside>
 
-        <section className="bot-builder-canvas" data-scroll-pane>
+        <section className="bot-builder-workspace">
+          <header className="bot-builder-toolbar" data-testid="dt_dashboard_toolbar">
+            <div className="bot-builder-tool-group" data-testid="dt_toolbar_group_btn">
+              {TOOLBAR_STRIP.map((item, index) => {
+                if (item.kind === "div") {
+                  return <span key={`div-${index}`} className="bot-builder-tool-divider" />;
+                }
+                const Icon = TOOLBAR_ICONS[item.id];
+                const disabled =
+                  (item.id === "undo" && historyIndex <= 0) ||
+                  (item.id === "redo" && historyIndex >= history.length - 1);
+                const on =
+                  (item.id === "charts" && chartOpen) || (item.id === "tradingview" && tvOpen);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    id={`db-toolbar__${item.id === "zoom-out" ? "zoom-out" : `${item.id}-button`}`}
+                    title={item.label}
+                    aria-label={item.label}
+                    aria-pressed={on || undefined}
+                    disabled={disabled}
+                    className={cn("bot-builder-tool", on && "is-on", disabled && "is-disabled")}
+                    onClick={() => handleTool(item.id)}
+                  >
+                    <Icon strokeWidth={1.75} />
+                  </button>
+                );
+              })}
+            </div>
+          </header>
+          <section className="bot-builder-canvas" data-scroll-pane>
           <div
             className="bot-builder-canvas-grid"
             style={{ transform: `scale(${snapshot.zoom})`, transformOrigin: "top left" }}
@@ -947,21 +930,32 @@ export function BotBuilderDesk({
             <Trash2 strokeWidth={2} />
           </button>
         </section>
+        </section>
 
         <aside className="bot-builder-summary">
           <div className="bot-builder-run-bar">
             <button
               type="button"
+              id="db-animation__run-button"
               className={cn("bot-builder-run", running && "is-stop")}
-              data-testid="tc-builder-run-summary"
+              data-testid="tc-builder-run"
+              aria-label={running ? "Stop bot" : "Run bot"}
               onClick={handleRun}
             >
               {running ? <Square strokeWidth={2} /> : <Play strokeWidth={2} />}
               {running ? "Stop" : "Run"}
             </button>
-            <span className="bot-builder-wallet" data-testid="tc-builder-wallet" title="Selected wallet">
-              {walletLabel}
-            </span>
+            <div className="bot-builder-animation">
+              <span className="bot-builder-run-state" data-testid="tc-builder-run-state">
+                {running ? "Bot is running" : "Bot is not running"}
+              </span>
+              <span className="bot-builder-status-chip">{snapshot.sourceLabel}</span>
+              <span className="bot-builder-wallet" data-testid="tc-builder-wallet" title="Selected wallet">
+                {walletLabel}
+              </span>
+            </div>
+          </div>
+          <div className="bot-builder-drawer" data-testid="drawer">
             <label className="bot-builder-fast">
               <span>Fast</span>
               <button
@@ -979,7 +973,6 @@ export function BotBuilderDesk({
                 <span />
               </button>
             </label>
-          </div>
           <p className="bot-builder-run-meta">
             {snapshot.market} · {snapshot.tradeType}
             {running ? " · Running" : ""}
@@ -989,50 +982,25 @@ export function BotBuilderDesk({
               <button
                 key={id}
                 type="button"
+                id={`db-run-panel-tab__${id}`}
                 className={cn(
                   "bot-builder-summary-tab",
                   summaryTab === id && "bot-builder-summary-tab-active",
                 )}
                 onClick={() => setSummaryTab(id)}
               >
-                {id === "transactions" ? "Fills" : id}
+                {id === "summary" ? "Summary" : id === "transactions" ? "Transactions" : "Journal"}
               </button>
             ))}
           </div>
           <div className="bot-builder-summary-body" data-scroll-pane>
             {summaryTab === "summary" ? (
-              <dl className="bot-builder-recap">
-                <div>
-                  <dt>Market</dt>
-                  <dd>{snapshot.market}</dd>
-                </div>
-                <div>
-                  <dt>Type</dt>
-                  <dd>{snapshot.tradeType}</dd>
-                </div>
-                <div>
-                  <dt>Duration</dt>
-                  <dd>
-                    {snapshot.duration} {DURATION_UNIT_LABELS[snapshot.durationUnit]}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Stake</dt>
-                  <dd>{snapshot.stake}</dd>
-                </div>
-                <div>
-                  <dt>Purchase</dt>
-                  <dd>{snapshot.purchase}</dd>
-                </div>
-                <div>
-                  <dt>Contract</dt>
-                  <dd>{snapshot.contractType}</dd>
-                </div>
-                <div>
-                  <dt>Fast</dt>
-                  <dd>{snapshot.fastExecution ? "On" : "Off"}</dd>
-                </div>
-              </dl>
+              <div className="bot-builder-summary-empty" data-testid="mock-summary">
+                <p>
+                  When you’re ready to trade, hit <strong>Run</strong>. You’ll be able to track your
+                  bot’s performance here.
+                </p>
+              </div>
             ) : summaryTab === "transactions" ? (
               fills.length ? (
                 <ul className="bot-builder-journal">
@@ -1047,11 +1015,14 @@ export function BotBuilderDesk({
                   ))}
                 </ul>
               ) : (
-                <p className="bot-builder-summary-empty">
-                  {runStats && runStats.runs > 0
-                    ? `${runStats.runs} runs · ${runStats.won} won · ${runStats.lost} lost`
-                    : "Fills appear here after the bot places trades."}
-                </p>
+                <div className="bot-builder-summary-empty">
+                  <p>There are no transactions to display</p>
+                  <p>Here are the possible reasons:</p>
+                  <ul>
+                    <li>The bot is not running</li>
+                    <li>The stats are cleared</li>
+                  </ul>
+                </div>
               )
             ) : journal.length ? (
               <ul className="bot-builder-journal">
@@ -1063,27 +1034,48 @@ export function BotBuilderDesk({
                 ))}
               </ul>
             ) : (
-              <p className="bot-builder-summary-empty">Placements and events stream here.</p>
+              <div className="bot-builder-summary-empty">
+                <p>There are no messages to display</p>
+                <p>Here are the possible reasons:</p>
+                <ul>
+                  <li>The bot is not running</li>
+                  <li>The stats are cleared</li>
+                  <li>All messages are filtered out</li>
+                </ul>
+              </div>
             )}
           </div>
-          <dl className="bot-builder-summary-stats">
-            {stats.map((stat) => (
-              <div key={stat.label} className="bot-builder-summary-stat">
-                <dt>{stat.label}</dt>
-                <dd className="font-mono">{stat.value}</dd>
-              </div>
-            ))}
-          </dl>
+          {summaryTab !== "journal" ? (
+            <div className="bot-builder-stats-wrap">
+              <button
+                type="button"
+                className="bot-builder-whats-this"
+                onClick={() => setStatsHelpOpen(true)}
+              >
+                What&apos;s this?
+              </button>
+              <dl className="bot-builder-summary-stats">
+                {stats.map((stat) => (
+                  <div key={stat.label} className="bot-builder-summary-stat">
+                    <dt>{stat.label}</dt>
+                    <dd className="font-mono">{stat.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
           <button
             type="button"
+            id="db-run-panel__clear-button"
             className="bot-builder-reset"
             onClick={() => {
               setJournal([]);
-              setNotice("Journal cleared");
+              setNotice("Stats cleared");
             }}
           >
-            Clear journal
+            Reset
           </button>
+          </div>
         </aside>
       </div>
 
@@ -1117,28 +1109,47 @@ export function BotBuilderDesk({
               <div className="bot-builder-load-empty">
                 <p>You do not have any recent bots</p>
                 <p>Create one or upload one from your local drive or Google Drive.</p>
+                <button
+                  type="button"
+                  className="bot-builder-flyout-learn"
+                  onClick={() => setRecentWhyOpen((open) => !open)}
+                >
+                  Why can&apos;t I see my recent bots?
+                </button>
+                {recentWhyOpen ? (
+                  <p>
+                    If you&apos;ve recently used bots but don&apos;t see them in this list, it may be
+                    because you logged in from a different device, a different browser, or cleared
+                    your browser cache.
+                  </p>
+                ) : null}
               </div>
             ) : null}
             {loadTab === "local" ? (
               <div className="bot-builder-load-empty">
-                <p>Import an XML strategy from this computer.</p>
-                <label htmlFor="tc-builder-xml-computer" className="tc-btn tc-btn-solid">
-                  Open
+                <p>Importing XML files from Binary Bot and other third-party platforms may take longer.</p>
+                <p>Drag your XML file here</p>
+                <p>or, if you prefer...</p>
+                <label htmlFor="tc-builder-xml-computer" className="bot-builder-btn-primary">
+                  Select an XML file from your device
                 </label>
               </div>
             ) : null}
             {loadTab === "drive" ? (
               <div className="bot-builder-load-empty">
-                <p>Choose a bot XML saved from Google Drive.</p>
+                <p>To import your bot from your Google Drive, you&apos;ll need to sign in to your Google account.</p>
+                <p>
+                  To know how Google Drive handles your data, please review Deriv’s Privacy policy.
+                </p>
                 <button
                   type="button"
-                  className="tc-btn tc-btn-solid"
+                  className="bot-builder-btn-primary"
                   onClick={() => {
                     setLoadOpen(false);
                     setDriveOpen(true);
                   }}
                 >
-                  Connect
+                  Sign in
                 </button>
               </div>
             ) : null}
@@ -1172,7 +1183,7 @@ export function BotBuilderDesk({
               </button>
               <button
                 type="button"
-                className="tc-btn tc-btn-solid"
+                className="bot-builder-btn-primary"
                 onClick={() => {
                   setResetOpen(false);
                   resetWorkspace();
@@ -1230,7 +1241,7 @@ export function BotBuilderDesk({
               </button>
               <button
                 type="button"
-                className="tc-btn tc-btn-solid"
+                className="bot-builder-btn-primary"
                 onClick={() => {
                   downloadStrategy(saveName.trim() || "Untitled Bot");
                   setSaveOpen(false);
@@ -1250,7 +1261,7 @@ export function BotBuilderDesk({
         <div className="chart-desk-modal" role="dialog" aria-modal="true" onClick={() => setChartOpen(false)}>
           <div onClick={(event) => event.stopPropagation()}>
             <header>
-              <span>Charts · {snapshot.market}</span>
+              <span>Chart</span>
               <button type="button" onClick={() => setChartOpen(false)}>
                 Close
               </button>
@@ -1269,15 +1280,42 @@ export function BotBuilderDesk({
         <div className="chart-desk-modal" role="dialog" aria-modal="true" onClick={() => setTvOpen(false)}>
           <div onClick={(event) => event.stopPropagation()}>
             <header>
-              <span>Trading View · {snapshot.market}</span>
+              <span>TradingView Chart</span>
               <button type="button" onClick={() => setTvOpen(false)}>
                 Close
               </button>
             </header>
             <iframe
-              title="Trading View"
+              title="TradingView Chart"
               src={`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(snapshot.symbol)}&interval=1&hidesidetoolbar=0&theme=light`}
             />
+          </div>
+        </div>
+      ) : null}
+
+      {statsHelpOpen ? (
+        <div
+          className="tc-modal-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-builder-stats-help-title"
+          onClick={() => setStatsHelpOpen(false)}
+        >
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-builder-stats-help-title">
+              What&apos;s this?
+            </p>
+            <dl className="bot-builder-stats-help">
+              {BOT_BUILDER_STATS_HELP.map((item) => (
+                <div key={item.label}>
+                  <dt>{item.label}</dt>
+                  <dd>{item.body}</dd>
+                </div>
+              ))}
+            </dl>
+            <button type="button" className="tc-btn tc-btn-ghost" onClick={() => setStatsHelpOpen(false)}>
+              Close
+            </button>
           </div>
         </div>
       ) : null}
@@ -1340,7 +1378,7 @@ function BuilderSparkline({ ticks }: { ticks: TickEvent[] }) {
     .join(" ");
   return (
     <svg className="bot-builder-sparkline" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-      <path d={d} fill="none" stroke="#2d46c6" strokeWidth="1.4" />
+      <path d={d} fill="none" stroke="#064e72" strokeWidth="1.4" />
     </svg>
   );
 }
