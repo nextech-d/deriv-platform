@@ -302,14 +302,14 @@ export const BOT_BUILDER_SUMMARY_STATS = [
 ] as const;
 
 export const BOT_BUILDER_TOOLBAR = [
-  { id: "refresh", label: "Reset workspace" },
-  { id: "open", label: "Load XML" },
-  { id: "save", label: "Save strategy" },
-  { id: "layout", label: "Block layout" },
-  { id: "line", label: "Line chart" },
-  { id: "candle", label: "Candlestick chart" },
+  { id: "reset", label: "Reset" },
+  { id: "import", label: "Import" },
+  { id: "save", label: "Save" },
+  { id: "sort", label: "Sort" },
+  { id: "charts", label: "Charts" },
+  { id: "tradingview", label: "TradingView" },
   { id: "undo", label: "Undo" },
   { id: "redo", label: "Redo" },
-  { id: "zoom-out", label: "Zoom out" },
   { id: "zoom-in", label: "Zoom in" },
+  { id: "zoom-out", label: "Zoom out" },
 ] as const;

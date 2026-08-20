@@ -2226,9 +2226,10 @@ html[data-boot-hold] body {
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface);
+  gap: 0.45rem;
+  padding: 0.15rem 0;
+  border: none;
+  background: transparent;
 }
 
 .bot-builder-toolbar-run {
@@ -2263,39 +2264,50 @@ html[data-boot-hold] body {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  border-right: 1px solid var(--border);
-}
-
-.bot-builder-tool-group:last-child {
-  border-right: none;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
 }
 
 .bot-builder-tool {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
+  width: 2.5rem;
   height: 2rem;
   border: none;
+  border-right: 1px solid var(--border);
   border-radius: 0;
   color: #5c6b7a;
   background: transparent;
   cursor: pointer;
 }
 
-.bot-builder-tool svg {
-  width: 15px;
-  height: 15px;
+.bot-builder-tool:last-child {
+  border-right: none;
 }
 
-.bot-builder-tool:hover {
+.bot-builder-tool svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bot-builder-tool:hover:not(:disabled) {
   color: var(--foreground);
   background: color-mix(in srgb, var(--foreground) 5%, var(--surface));
 }
 
 .bot-builder-tool.is-on {
   color: #2d46c6;
-  background: color-mix(in srgb, #2d46c6 12%, var(--surface));
+  background: color-mix(in srgb, #2d46c6 10%, var(--surface));
+}
+
+.bot-builder-tool.is-disabled,
+.bot-builder-tool:disabled {
+  opacity: 0.32;
+  cursor: default;
+  color: #9aa3af;
 }
 
 .bot-builder-status-chip {
@@ -2320,6 +2332,117 @@ html[data-boot-hold] body {
   font-size: 0.6875rem;
   letter-spacing: 0;
   color: #0f766e;
+}
+
+.bot-builder-load-modal {
+  max-width: 28rem;
+}
+
+.bot-builder-load-tabs {
+  display: flex;
+  gap: 1.1rem;
+  margin: 0.35rem 0 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bot-builder-load-tab {
+  padding: 0.45rem 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bot-builder-load-tab.is-on {
+  color: var(--foreground);
+  border-bottom-color: #0f766e;
+}
+
+.bot-builder-load-empty {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: start;
+  min-height: 8rem;
+  padding: 0.5rem 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.bot-builder-load-empty p {
+  margin: 0;
+}
+
+.bot-builder-save-name {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.bot-builder-save-name input {
+  min-height: 2.35rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.bot-builder-save-targets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin-bottom: 0.35rem;
+}
+
+.bot-builder-save-target {
+  min-height: 5.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bot-builder-save-target.is-on {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 1px #0f766e;
+}
+
+.bot-builder-chart-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  flex: 1;
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.bot-builder-chart-quote {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.bot-builder-chart-empty {
+  margin: auto 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.bot-builder-sparkline {
+  width: 100%;
+  height: 12rem;
 }
 
 @media (min-width: 960px) {

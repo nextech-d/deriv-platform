@@ -871,6 +871,7 @@ export function DashboardClient({
                 lastTick?.quote ??
                 null
               }
+              tickHistory={tickHistory}
               balance={balance}
               accountCurrency={activeAccount?.currency ?? "USD"}
               onSymbolChange={setSymbol}

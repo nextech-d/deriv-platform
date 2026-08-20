@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlignLeft,
   CandlestickChart,
   ChevronDown,
   ChevronUp,
   FolderOpen,
-  LayoutGrid,
   LineChart,
   Play,
   Redo2,
@@ -45,10 +45,7 @@ import {
   type BuilderTradeType,
 } from "@/lib/terminal/strategy-seed";
 import { TourDialog } from "@/components/trading/TourDialog";
-import {
-  DriveFileDialog,
-  LoadBotSourceGrid,
-} from "@/components/trading/LoadBotSourceGrid";
+import { DriveFileDialog } from "@/components/trading/LoadBotSourceGrid";
 import { BuilderBlocklyBlocks } from "@/components/trading/BuilderBlocklyBlocks";
 import { QuickStrategyStudio } from "@/components/trading/QuickStrategyStudio";
 import {
@@ -63,6 +60,7 @@ import type { BotConfig } from "@/lib/bot/types";
 import { lastDigitFromQuote } from "@/lib/terminal/analysis-tool";
 import { formatWalletBalance } from "@/lib/utils/format-wallet";
 import type { OpenContractRecord } from "@/lib/state/types";
+import type { TickEvent } from "@/lib/ws/protocol";
 import { cn } from "@/lib/utils/cn";
 
 type SummaryTab = "summary" | "transactions" | "journal";
@@ -103,36 +101,37 @@ interface BotBuilderDeskProps {
     pnl: number;
   };
   recentJournal?: string[];
+  tickHistory?: TickEvent[];
 }
 
 const TOOLBAR_ICONS = {
-  refresh: RefreshCw,
-  open: FolderOpen,
+  reset: RefreshCw,
+  import: FolderOpen,
   save: Save,
-  layout: LayoutGrid,
-  line: LineChart,
-  candle: CandlestickChart,
+  sort: AlignLeft,
+  charts: LineChart,
+  tradingview: CandlestickChart,
   undo: Undo2,
   redo: Redo2,
-  "zoom-out": ZoomOut,
   "zoom-in": ZoomIn,
+  "zoom-out": ZoomOut,
 } as const;
 
 const TOOL_GROUPS = [
   {
     id: "file",
     items: [
-      ["refresh", "Reset workspace"],
-      ["open", "Load XML"],
-      ["save", "Save strategy"],
+      ["reset", "Reset"],
+      ["import", "Import"],
+      ["save", "Save"],
+      ["sort", "Sort"],
     ],
   },
   {
-    id: "view",
+    id: "charts",
     items: [
-      ["layout", "Block layout"],
-      ["line", "Line chart"],
-      ["candle", "Candlestick chart"],
+      ["charts", "Charts"],
+      ["tradingview", "TradingView"],
     ],
   },
   {
@@ -145,11 +144,16 @@ const TOOL_GROUPS = [
   {
     id: "zoom",
     items: [
-      ["zoom-out", "Zoom out"],
       ["zoom-in", "Zoom in"],
+      ["zoom-out", "Zoom out"],
     ],
   },
 ] as const;
+
+function botFileName(name: string) {
+  const slug = name.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "strategy";
+  return `${slug}.xml`;
+}
 
 const ALL_TRADE_TYPES = Object.keys(BUILDER_TRADE_TYPES) as BuilderTradeType[];
 
@@ -175,6 +179,7 @@ export function BotBuilderDesk({
   fills = [],
   runStats,
   recentJournal = [],
+  tickHistory = [],
 }: BotBuilderDeskProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const driveFileRef = useRef<HTMLInputElement>(null);
@@ -233,8 +238,15 @@ export function BotBuilderDesk({
   const [vhOpen, setVhOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [loadOpen, setLoadOpen] = useState(false);
+  const [loadTab, setLoadTab] = useState<"recent" | "local" | "drive">("recent");
   const [driveOpen, setDriveOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState("Untitled Bot");
+  const [saveTarget, setSaveTarget] = useState<"local" | "drive">("local");
+  const [chartOpen, setChartOpen] = useState(false);
+  const [tvOpen, setTvOpen] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
   const [blocksMenuOpen, setBlocksMenuOpen] = useState(true);
 
@@ -462,55 +474,71 @@ export function BotBuilderDesk({
     if (!effect.summaryTab) setSummaryTab("journal");
   }
 
+  function downloadStrategy(name: string) {
+    const xml = snapshotToXml(snapshot);
+    const blob = new Blob([xml], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = botFileName(name);
+    anchor.click();
+    URL.revokeObjectURL(url);
+    log(`Strategy saved · ${anchor.download}`);
+    setNotice("Strategy downloaded");
+  }
+
+  function resetWorkspace() {
+    clearBuilderWorkspace();
+    applySnapshot(DEFAULT_BUILDER_SNAPSHOT, "Workspace reset", true);
+    setChips([]);
+    setFocusBlock("trade");
+    setChartOpen(false);
+    setTvOpen(false);
+    setNotice("Workspace reset");
+  }
+
   function handleTool(id: keyof typeof TOOLBAR_ICONS) {
-    if (id === "refresh") {
-      clearBuilderWorkspace();
-      applySnapshot(DEFAULT_BUILDER_SNAPSHOT, "Workspace reset", true);
-      setChips([]);
-      setFocusBlock("trade");
-      setNotice("Workspace reset");
+    if (id === "reset") {
+      setResetOpen(true);
       return;
     }
-    if (id === "open") {
+    if (id === "import") {
+      setLoadTab("recent");
       setLoadOpen(true);
       return;
     }
     if (id === "save") {
-      const xml = snapshotToXml(snapshot);
-      const blob = new Blob([xml], { type: "application/xml" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `tradecity-strategy-${Date.now()}.xml`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      log("Strategy saved as XML");
-      setNotice("Strategy downloaded");
+      setSaveName(snapshot.sourceLabel.replace(/^.*·\s*/, "") || "Untitled Bot");
+      setSaveTarget("local");
+      setSaveOpen(true);
       return;
     }
-    if (id === "layout") {
-      setCompactLayout((v) => !v);
-      setNotice(compactLayout ? "Expanded layout" : "Compact layout");
+    if (id === "sort") {
+      setCompactLayout(false);
+      patchSnapshot({ zoom: 1 }, "Blocks sorted");
+      setNotice("Blocks sorted");
       return;
     }
-    if (id === "line") {
-      patchSnapshot({ chartMode: "line" }, "Chart mode · line");
-      setNotice("Chart mode · line");
+    if (id === "charts") {
+      setTvOpen(false);
+      setChartOpen((open) => !open);
       return;
     }
-    if (id === "candle") {
-      patchSnapshot({ chartMode: "candle" }, "Chart mode · candle");
-      setNotice("Chart mode · candle");
+    if (id === "tradingview") {
+      setChartOpen(false);
+      setTvOpen((open) => !open);
       return;
     }
-    if (id === "undo" && historyIndex > 0) {
+    if (id === "undo") {
+      if (historyIndex <= 0) return;
       const nextIndex = historyIndex - 1;
       setHistoryIndex(nextIndex);
       setSnapshot(history[nextIndex]!);
       setNotice("Undo");
       return;
     }
-    if (id === "redo" && historyIndex < history.length - 1) {
+    if (id === "redo") {
+      if (historyIndex >= history.length - 1) return;
       const nextIndex = historyIndex + 1;
       setHistoryIndex(nextIndex);
       setSnapshot(history[nextIndex]!);
@@ -545,6 +573,8 @@ export function BotBuilderDesk({
         { ...parsed, sourceLabel: `Loaded · ${file.name}` },
         `Imported ${file.name} onto the workspace`,
       );
+      setLoadOpen(false);
+      setDriveOpen(false);
     };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = "";
@@ -602,6 +632,9 @@ export function BotBuilderDesk({
   });
   const durationRule = DURATION_RULES[snapshot.tradeType];
   const durationLimit = durationBounds(snapshot.tradeType, snapshot.durationUnit);
+  const chartTicks = tickHistory
+    .filter((tick) => tick.symbol === snapshot.symbol)
+    .slice(-80);
   const flyoutBlocks = (() => {
     if (!openGroup) return [];
     const cat = categories.find((item) => item.id === openGroup.cat);
@@ -652,17 +685,20 @@ export function BotBuilderDesk({
             <div key={group.id} className={cn("bot-builder-tool-group", `is-${group.id}`)}>
               {group.items.map(([id, label]) => {
                 const Icon = TOOLBAR_ICONS[id];
+                const disabled =
+                  (id === "undo" && historyIndex <= 0) ||
+                  (id === "redo" && historyIndex >= history.length - 1);
                 const on =
-                  (id === "line" && snapshot.chartMode === "line") ||
-                  (id === "candle" && snapshot.chartMode === "candle") ||
-                  (id === "layout" && compactLayout);
+                  (id === "charts" && chartOpen) || (id === "tradingview" && tvOpen);
                 return (
                   <button
                     key={id}
                     type="button"
                     title={label}
                     aria-label={label}
-                    className={cn("bot-builder-tool", on && "is-on")}
+                    aria-pressed={on || undefined}
+                    disabled={disabled}
+                    className={cn("bot-builder-tool", on && "is-on", disabled && "is-disabled")}
                     onClick={() => handleTool(id)}
                   >
                     <Icon strokeWidth={1.75} />
@@ -1059,22 +1095,53 @@ export function BotBuilderDesk({
           aria-labelledby="tc-builder-load-title"
           onClick={() => setLoadOpen(false)}
         >
-          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+          <div className="tc-modal bot-builder-load-modal" onClick={(event) => event.stopPropagation()}>
             <p className="tc-modal-title" id="tc-builder-load-title">
-              Load Bot
+              Load strategy
             </p>
-            <p className="tc-modal-body">
-              Import XML from your computer or Google Drive, or start with a quick strategy.
-            </p>
-            <LoadBotSourceGrid
-              computerInputId="tc-builder-xml-computer"
-              sources={["computer", "drive", "quick"]}
-              onSelect={(source) => {
-                setLoadOpen(false);
-                if (source === "drive") setDriveOpen(true);
-                else if (source === "quick") setQuickOpen(true);
-              }}
-            />
+            <div className="bot-builder-load-tabs" role="tablist">
+              {(["recent", "local", "drive"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={loadTab === tab}
+                  className={cn("bot-builder-load-tab", loadTab === tab && "is-on")}
+                  onClick={() => setLoadTab(tab)}
+                >
+                  {tab === "recent" ? "Recent" : tab === "local" ? "Local" : "Google Drive"}
+                </button>
+              ))}
+            </div>
+            {loadTab === "recent" ? (
+              <div className="bot-builder-load-empty">
+                <p>You do not have any recent bots</p>
+                <p>Create one or upload one from your local drive or Google Drive.</p>
+              </div>
+            ) : null}
+            {loadTab === "local" ? (
+              <div className="bot-builder-load-empty">
+                <p>Import an XML strategy from this computer.</p>
+                <label htmlFor="tc-builder-xml-computer" className="tc-btn tc-btn-solid">
+                  Open
+                </label>
+              </div>
+            ) : null}
+            {loadTab === "drive" ? (
+              <div className="bot-builder-load-empty">
+                <p>Choose a bot XML saved from Google Drive.</p>
+                <button
+                  type="button"
+                  className="tc-btn tc-btn-solid"
+                  onClick={() => {
+                    setLoadOpen(false);
+                    setDriveOpen(true);
+                  }}
+                >
+                  Connect
+                </button>
+              </div>
+            ) : null}
             <button
               type="button"
               className="tc-btn tc-btn-ghost"
@@ -1082,6 +1149,135 @@ export function BotBuilderDesk({
             >
               Cancel
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {resetOpen ? (
+        <div
+          className="tc-modal-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-builder-reset-title"
+          onClick={() => setResetOpen(false)}
+        >
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-builder-reset-title">
+              Are you sure?
+            </p>
+            <p className="tc-modal-body">Any unsaved changes will be lost.</p>
+            <div className="tc-load-dialog-actions">
+              <button type="button" className="tc-btn tc-btn-ghost" onClick={() => setResetOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="tc-btn tc-btn-solid"
+                onClick={() => {
+                  setResetOpen(false);
+                  resetWorkspace();
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {saveOpen ? (
+        <div
+          className="tc-modal-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-builder-save-title"
+          onClick={() => setSaveOpen(false)}
+        >
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-builder-save-title">
+              Save strategy
+            </p>
+            <p className="tc-modal-body">
+              Enter your bot name, choose to save on your computer or Google Drive, and hit Save.
+            </p>
+            <label className="bot-builder-save-name">
+              Bot name
+              <input
+                value={saveName}
+                placeholder="Bot name"
+                onChange={(event) => setSaveName(event.target.value)}
+              />
+            </label>
+            <div className="bot-builder-save-targets">
+              <button
+                type="button"
+                className={cn("bot-builder-save-target", saveTarget === "local" && "is-on")}
+                onClick={() => setSaveTarget("local")}
+              >
+                Local
+              </button>
+              <button
+                type="button"
+                className={cn("bot-builder-save-target", saveTarget === "drive" && "is-on")}
+                onClick={() => setSaveTarget("drive")}
+              >
+                Google Drive
+              </button>
+            </div>
+            <div className="tc-load-dialog-actions">
+              <button type="button" className="tc-btn tc-btn-ghost" onClick={() => setSaveOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="tc-btn tc-btn-solid"
+                onClick={() => {
+                  downloadStrategy(saveName.trim() || "Untitled Bot");
+                  setSaveOpen(false);
+                  if (saveTarget === "drive") {
+                    setNotice("XML downloaded — upload it to Google Drive");
+                  }
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {chartOpen ? (
+        <div className="chart-desk-modal" role="dialog" aria-modal="true" onClick={() => setChartOpen(false)}>
+          <div onClick={(event) => event.stopPropagation()}>
+            <header>
+              <span>Charts · {snapshot.market}</span>
+              <button type="button" onClick={() => setChartOpen(false)}>
+                Close
+              </button>
+            </header>
+            <div className="bot-builder-chart-panel">
+              <p className="bot-builder-chart-quote">
+                {lastQuote != null ? lastQuote.toFixed(2) : "Waiting for ticks"}
+              </p>
+              <BuilderSparkline ticks={chartTicks} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {tvOpen ? (
+        <div className="chart-desk-modal" role="dialog" aria-modal="true" onClick={() => setTvOpen(false)}>
+          <div onClick={(event) => event.stopPropagation()}>
+            <header>
+              <span>Trading View · {snapshot.market}</span>
+              <button type="button" onClick={() => setTvOpen(false)}>
+                Close
+              </button>
+            </header>
+            <iframe
+              title="Trading View"
+              src={`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(snapshot.symbol)}&interval=1&hidesidetoolbar=0&theme=light`}
+            />
           </div>
         </div>
       ) : null}
@@ -1124,5 +1320,27 @@ export function BotBuilderDesk({
         />
       ) : null}
     </div>
+  );
+}
+
+function BuilderSparkline({ ticks }: { ticks: TickEvent[] }) {
+  if (ticks.length < 2) {
+    return <p className="bot-builder-chart-empty">Price ticks appear here once the market is live.</p>;
+  }
+  const quotes = ticks.map((tick) => tick.quote);
+  const min = Math.min(...quotes);
+  const max = Math.max(...quotes);
+  const span = max - min || 1;
+  const d = quotes
+    .map((quote, index) => {
+      const x = (index / (quotes.length - 1)) * 100;
+      const y = 36 - ((quote - min) / span) * 32;
+      return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+  return (
+    <svg className="bot-builder-sparkline" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
+      <path d={d} fill="none" stroke="#2d46c6" strokeWidth="1.4" />
+    </svg>
   );
 }
