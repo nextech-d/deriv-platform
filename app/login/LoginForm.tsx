@@ -44,6 +44,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
+  const verified = searchParams.get("verified") === "1";
 
   const [status, setStatus] = useState<AuthStatus | null>(null);
   const [patToken, setPatToken] = useState("");
@@ -196,6 +197,12 @@ export function LoginForm() {
             {status ? (
               <p className="login-redirect font-mono text-[9px] text-muted">
                 Redirect: {status.oauth.redirectUri}
+              </p>
+            ) : null}
+
+            {verified ? (
+              <p className="workspace-inline-alert workspace-inline-alert-demo text-[11px]">
+                Email verified. Log in with Deriv to open the desk.
               </p>
             ) : null}
 

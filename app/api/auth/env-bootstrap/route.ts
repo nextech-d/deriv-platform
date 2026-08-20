@@ -11,6 +11,10 @@ function safeNextPath(raw: string | null): string {
 }
 
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   const next = safeNextPath(request.nextUrl.searchParams.get("next"));
   const existing = await getSessionOrDefault();
 
