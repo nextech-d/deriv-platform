@@ -9,6 +9,7 @@ interface ThemeContextValue {
   resolvedTheme: ResolvedTheme;
   hydrated: boolean;
   setPreference: (next: ThemePreference) => void;
+  toggleLightDark: () => void;
   labels: Record<ThemePreference, string>;
   descriptions: Record<ThemePreference, string>;
 }

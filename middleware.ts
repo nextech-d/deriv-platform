@@ -1,8 +1,7 @@
+import { CSRF_COOKIE, CSRF_HEADER } from "@/lib/auth/csrf";
 import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "deriv_platform_session";
-const CSRF_COOKIE = "deriv_csrf";
-const CSRF_HEADER = "x-csrf-token";
 
 /** Reachable without a Deriv session. Admin still requires Bearer ADMIN_SECRET in the route. */
 const PUBLIC_PREFIXES = [

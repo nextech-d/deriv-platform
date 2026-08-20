@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken } from "@/lib/deriv/api";
+import { applyCsrfCookie } from "@/lib/auth/csrf";
 import { establishSessionFromToken } from "@/lib/auth/session-from-token";
 import { getAppRedirectUri } from "@/lib/config/deriv";
 import { AUTH_DASHBOARD_PATH } from "@/lib/auth/auth-links";
@@ -52,6 +53,12 @@ function withClearedPkce(response: NextResponse) {
   return response;
 }
 
+function dashboardRedirect(request: NextRequest, csrfToken: string) {
+  const response = NextResponse.redirect(new URL(AUTH_DASHBOARD_PATH, request.url));
+  applyCsrfCookie(response, csrfToken);
+  return withClearedPkce(response);
+}
+
 /**
  * Completes Deriv return traffic on OAuth callback, Verification URL, or /verify.
  * Handles PKCE `code`, legacy `token1`, and email-verification tokens.
@@ -99,23 +106,21 @@ export async function handleInboundAuth(
       );
     }
 
-    await establishSessionFromToken({
+    const { csrfToken } = await establishSessionFromToken({
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       expiresIn: tokenResponse.expires_in,
     });
 
-    return withClearedPkce(
-      NextResponse.redirect(new URL(AUTH_DASHBOARD_PATH, request.url)),
-    );
+    return dashboardRedirect(request, csrfToken);
   }
 
   if (inbound.kind === "legacy_token") {
     try {
-      await establishSessionFromToken({ accessToken: inbound.token });
-      return withClearedPkce(
-        NextResponse.redirect(new URL(AUTH_DASHBOARD_PATH, request.url)),
-      );
+      const { csrfToken } = await establishSessionFromToken({
+        accessToken: inbound.token,
+      });
+      return dashboardRedirect(request, csrfToken);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "token_rejected";
@@ -125,10 +130,10 @@ export async function handleInboundAuth(
 
   if (inbound.kind === "verify") {
     try {
-      await establishSessionFromToken({ accessToken: inbound.token });
-      return withClearedPkce(
-        NextResponse.redirect(new URL(AUTH_DASHBOARD_PATH, request.url)),
-      );
+      const { csrfToken } = await establishSessionFromToken({
+        accessToken: inbound.token,
+      });
+      return dashboardRedirect(request, csrfToken);
     } catch {
       return withClearedPkce(
         loginRedirect(request, { verified: "1" }),

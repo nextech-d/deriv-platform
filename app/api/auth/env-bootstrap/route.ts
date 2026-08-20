@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyCsrfCookie } from "@/lib/auth/csrf";
 import { establishSessionFromToken } from "@/lib/auth/session-from-token";
 import { derivConfig } from "@/lib/config/deriv";
 import { getSessionOrDefault } from "@/lib/session";
@@ -28,8 +29,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    await establishSessionFromToken({ accessToken: token });
-    return NextResponse.redirect(new URL(next, request.url));
+    const { csrfToken } = await establishSessionFromToken({ accessToken: token });
+    const response = NextResponse.redirect(new URL(next, request.url));
+    applyCsrfCookie(response, csrfToken);
+    return response;
   } catch (error) {
     console.error("[auth] DERIV_API_TOKEN bootstrap failed:", error);
     const login = new URL("/login", request.url);

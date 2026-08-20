@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyCsrfCookie } from "@/lib/auth/csrf";
 import { establishSessionFromToken } from "@/lib/auth/session-from-token";
 import { clientIp, rateLimit } from "@/lib/utils/rate-limit";
 
@@ -31,15 +32,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { accounts, activeAccountId } = await establishSessionFromToken({
+    const { accounts, activeAccountId, csrfToken } = await establishSessionFromToken({
       accessToken: token,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       accountCount: accounts.length,
       activeAccountId,
     });
+    applyCsrfCookie(response, csrfToken);
+    return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Token validation failed";
     return NextResponse.json({ error: message }, { status: 401 });

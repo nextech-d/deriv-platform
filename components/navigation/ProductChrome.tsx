@@ -10,6 +10,7 @@ import {
 import { PLATFORM_NAV_ITEMS, type PlatformNavId } from "@/lib/navigation/platform-nav";
 import { ProductNavIcon } from "@/components/navigation/product-nav-icons";
 import { BrandMark, BrandWord } from "@/components/navigation/BrandLockup";
+import { ThemeToggle } from "@/components/trading/ThemeToggle";
 import type { DerivAccount } from "@/lib/session/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -21,7 +22,83 @@ interface ProductNavbarProps {
   onSelect: (id: PlatformNavId) => void;
   brandHref?: string;
   account?: DerivAccount;
+  accounts?: DerivAccount[];
+  activeAccountId?: string;
+  onAccountChange?: (id: string) => void;
+  demoMode?: boolean;
   onLogout?: () => void;
+}
+
+function NavbarAccountSwitch({
+  accounts,
+  activeAccountId,
+  onAccountChange,
+  demoMode = false,
+}: {
+  accounts: DerivAccount[];
+  activeAccountId?: string;
+  onAccountChange: (id: string) => void;
+  demoMode?: boolean;
+}) {
+  const active = accounts.find((item) => item.accountId === activeAccountId) ?? accounts[0];
+  const demoAccount = accounts.find((item) => item.isDemo);
+  const realAccount = accounts.find((item) => !item.isDemo);
+  const guest = accounts.length === 0;
+  const demoOn = guest || Boolean(active?.isDemo);
+  const realLoginHref =
+    !realAccount && (guest || demoMode) ? AUTH_LOGIN_PATH : undefined;
+
+  return (
+    <div
+      className="tc-account-switch"
+      role="group"
+      aria-label="Account type"
+      data-testid="tc-account-switch"
+    >
+      <button
+        type="button"
+        className={cn("tc-account-switch-btn", demoOn && "is-on")}
+        aria-pressed={demoOn}
+        disabled={!guest && !demoAccount}
+        title={demoAccount || guest ? "Demo account" : "No demo account on this login"}
+        onClick={() => {
+          if (demoAccount && demoAccount.accountId !== active?.accountId) {
+            onAccountChange(demoAccount.accountId);
+          }
+        }}
+      >
+        Demo
+      </button>
+      {realAccount ? (
+        <button
+          type="button"
+          className={cn("tc-account-switch-btn", !demoOn && "is-on")}
+          aria-pressed={!demoOn}
+          title="Real account"
+          onClick={() => {
+            if (realAccount.accountId !== active?.accountId) {
+              onAccountChange(realAccount.accountId);
+            }
+          }}
+        >
+          Real
+        </button>
+      ) : realLoginHref ? (
+        <Link href={realLoginHref} className="tc-account-switch-btn" title="Log in to use a real account">
+          Real
+        </Link>
+      ) : (
+        <button
+          type="button"
+          className="tc-account-switch-btn"
+          disabled
+          title="No real account on this login"
+        >
+          Real
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function ProductNavbar({
@@ -29,6 +106,10 @@ export function ProductNavbar({
   onSelect,
   brandHref = "/",
   account,
+  accounts,
+  activeAccountId,
+  onAccountChange,
+  demoMode = false,
   onLogout,
 }: ProductNavbarProps) {
   const [tick, setTick] = useState({ x: 0, ready: false, motion: false });
@@ -67,6 +148,15 @@ export function ProductNavbar({
           <BrandWord />
         </Link>
         <div className="tc-navbar-top-right">
+          <ThemeToggle variant="navbar" />
+          {onAccountChange ? (
+            <NavbarAccountSwitch
+              accounts={accounts ?? []}
+              activeAccountId={activeAccountId}
+              onAccountChange={onAccountChange}
+              demoMode={demoMode}
+            />
+          ) : null}
           {account ? (
             <div className="tc-auth">
               <span className="tc-loginid">{account.loginid}</span>

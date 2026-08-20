@@ -1,5 +1,6 @@
 import { fetchAccounts } from "@/lib/deriv/api";
 import { derivConfig } from "@/lib/config/deriv";
+import { createCsrfToken } from "@/lib/auth/csrf";
 import { getSession } from "@/lib/session";
 import type { DerivAccount } from "@/lib/session/types";
 
@@ -11,7 +12,7 @@ export interface TokenSessionInput {
 
 export async function establishSessionFromToken(
   input: TokenSessionInput,
-): Promise<{ accounts: DerivAccount[]; activeAccountId?: string }> {
+): Promise<{ accounts: DerivAccount[]; activeAccountId?: string; csrfToken: string }> {
   const accounts = await fetchAccounts(input.accessToken);
 
   if (accounts.length === 0) {
@@ -30,11 +31,13 @@ export async function establishSessionFromToken(
   session.accounts = accounts;
   session.activeAccountId = activeAccount?.accountId;
   session.isLoggedIn = true;
+  session.csrfToken = session.csrfToken || createCsrfToken();
   await session.save();
 
   return {
     accounts,
     activeAccountId: activeAccount?.accountId,
+    csrfToken: session.csrfToken,
   };
 }
 

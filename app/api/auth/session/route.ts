@@ -1,19 +1,31 @@
-import { getSessionOrDefault, getSession } from "@/lib/session";
+import { applyCsrfCookie, createCsrfToken } from "@/lib/auth/csrf";
+import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const session = await getSessionOrDefault();
+  try {
+    const session = await getSession();
 
-  if (!session.isLoggedIn) {
+    if (!session.isLoggedIn) {
+      return NextResponse.json({ isLoggedIn: false });
+    }
+
+    if (!session.csrfToken) {
+      session.csrfToken = createCsrfToken();
+      await session.save();
+    }
+
+    const response = NextResponse.json({
+      isLoggedIn: true,
+      accounts: session.accounts ?? [],
+      activeAccountId: session.activeAccountId,
+      expiresAt: session.expiresAt,
+    });
+    applyCsrfCookie(response, session.csrfToken);
+    return response;
+  } catch {
     return NextResponse.json({ isLoggedIn: false });
   }
-
-  return NextResponse.json({
-    isLoggedIn: true,
-    accounts: session.accounts ?? [],
-    activeAccountId: session.activeAccountId,
-    expiresAt: session.expiresAt,
-  });
 }
 
 export async function PATCH(request: Request) {

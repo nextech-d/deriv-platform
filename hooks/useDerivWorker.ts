@@ -40,6 +40,7 @@ import {
   applyTickToChartCandles,
   applyTickToHistory,
 } from "@/lib/chart/candles";
+import { ensureCsrfCookie, withCsrfHeaders } from "@/lib/auth/csrf";
 import { fetchWithTimeout } from "@/lib/utils/fetch-with-timeout";
 
 const DEFAULT_SYMBOL = "R_10";
@@ -122,9 +123,10 @@ export interface UseDerivWorkerOptions {
 }
 
 async function fetchOtp(accountId?: string): Promise<string> {
+  await ensureCsrfCookie();
   const response = await fetchWithTimeout("/api/trading/otp", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withCsrfHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ accountId }),
     timeoutMs: 15_000,
   });

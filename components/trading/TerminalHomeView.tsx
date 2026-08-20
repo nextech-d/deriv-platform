@@ -125,6 +125,7 @@ export function TerminalHomeView({
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [driveOpen, setDriveOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [loadOpen, setLoadOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -135,16 +136,17 @@ export function TerminalHomeView({
   }, []);
 
   useEffect(() => {
-    if (!announceOpen && !driveOpen && !quickOpen) return;
+    if (!announceOpen && !driveOpen && !quickOpen && !loadOpen) return;
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setAnnounceOpen(false);
       setDriveOpen(false);
       setQuickOpen(false);
+      setLoadOpen(false);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [announceOpen, driveOpen, quickOpen]);
+  }, [announceOpen, driveOpen, quickOpen, loadOpen]);
 
   useEffect(() => {
     if (!announceOpen) return;
@@ -198,12 +200,15 @@ export function TerminalHomeView({
     if (xmlInputRef.current) xmlInputRef.current.value = "";
     if (driveInputRef.current) driveInputRef.current.value = "";
     setDriveOpen(false);
+    setLoadOpen(false);
   }
 
   function openWindow(deskWindow: DashboardWindow) {
     setLoadError(null);
     if (deskWindow.id === "load-bot") {
-      xmlInputRef.current?.click();
+      window.localStorage.setItem("tc-tour-dashboard", "1");
+      setTourOpen(false);
+      setLoadOpen(true);
       return;
     }
     if (deskWindow.id === "speed-bot") {
@@ -234,7 +239,7 @@ export function TerminalHomeView({
       id: "computer",
       title: "My computer",
       icon: HardDrive,
-      onClick: () => xmlInputRef.current?.click(),
+      inputId: "tc-xml-computer",
     },
     {
       id: "drive",
@@ -266,20 +271,20 @@ export function TerminalHomeView({
       style={{ padding: "32px 28px 40px", maxWidth: 1100, margin: "0 auto" }}
     >
       <input
+        id="tc-xml-computer"
         ref={xmlInputRef}
         type="file"
         accept={XML_ACCEPT}
-        className="sr-only"
-        aria-hidden
+        className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}
       />
       <input
+        id="tc-xml-drive"
         ref={driveInputRef}
         type="file"
         accept={XML_ACCEPT}
-        className="sr-only"
-        aria-hidden
+        className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}
       />
@@ -294,10 +299,10 @@ export function TerminalHomeView({
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "#111" }}>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "var(--dg-text)" }}>
             {deskTitle(demoMode, signedIn)}
           </h1>
-          <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280" }}>
+          <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--dg-muted)" }}>
             Load XML, speed-build a strategy, open premium or free bots, or study
             signals before you trade.
           </p>
@@ -347,9 +352,9 @@ export function TerminalHomeView({
               alignItems: "center",
               gap: 8,
               padding: "6px 12px",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--dg-border)",
               borderRadius: 4,
-              background: "#fff",
+              background: "var(--dg-surface)",
               cursor: "pointer",
               fontSize: 13,
               position: "relative",
@@ -363,7 +368,7 @@ export function TerminalHomeView({
                   position: "absolute",
                   top: -6,
                   right: -6,
-                  background: "#dc3545",
+                  background: "#0f766e",
                   color: "#fff",
                   borderRadius: 10,
                   minWidth: 18,
@@ -389,19 +394,19 @@ export function TerminalHomeView({
                 top: "calc(100% + 8px)",
                 width: 320,
                 zIndex: 20,
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--dg-border)",
                 borderRadius: 8,
                 padding: 12,
                 fontSize: 13,
-                background: "#fff",
+                background: "var(--dg-surface)",
                 boxShadow: "0 12px 32px rgba(15, 23, 42, 0.12)",
               }}
             >
               <p style={{ margin: "0 0 8px", fontWeight: 700 }}>Announcements</p>
-              <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", color: "#555" }}>
+              <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", color: "var(--dg-muted)" }}>
                 {ANNOUNCEMENTS.map((item) => (
                   <li key={item.title} style={{ marginBottom: 10 }}>
-                    <strong style={{ display: "block", color: "#111" }}>{item.title}</strong>
+                    <strong style={{ display: "block", color: "var(--dg-text)" }}>{item.title}</strong>
                     {item.body}
                   </li>
                 ))}
@@ -482,10 +487,10 @@ export function TerminalHomeView({
         }}
       >
         <section>
-          <h2 style={{ margin: "0 0 8px", fontSize: 22, fontWeight: 700, color: "#111" }}>
+          <h2 style={{ margin: "0 0 8px", fontSize: 22, fontWeight: 700, color: "var(--dg-text)" }}>
             Load or build your bot
           </h2>
-          <p style={{ margin: "0 0 20px", fontSize: 14, color: "#6b7280", maxWidth: 520 }}>
+          <p style={{ margin: "0 0 20px", fontSize: 14, color: "var(--dg-muted)", maxWidth: 520 }}>
             Import a bot from your computer or Google Drive, build it from scratch, or start
             with a quick strategy.
           </p>
@@ -499,27 +504,43 @@ export function TerminalHomeView({
           >
             {cards.map((card) => {
               const Icon = card.icon;
+              const inner = (
+                <>
+                  <Icon style={{ width: 22, height: 22, color: "#0d4d4d" }} strokeWidth={1.75} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--dg-text)" }}>
+                    {card.title}
+                  </span>
+                </>
+              );
+              const cardStyle: CSSProperties = {
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 10,
+                padding: "16px 14px",
+                border: "1px solid var(--dg-border)",
+                borderRadius: 8,
+                background: "var(--dg-surface)",
+                cursor: "pointer",
+                textAlign: "left",
+                minHeight: 88,
+              };
+              if ("inputId" in card && card.inputId) {
+                return (
+                  <label key={card.id} htmlFor={card.inputId} className="tc-load-source" style={cardStyle}>
+                    {inner}
+                  </label>
+                );
+              }
               return (
                 <button
                   key={card.id}
                   type="button"
                   onClick={card.onClick}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    gap: 10,
-                    padding: "16px 14px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 8,
-                    background: "#fff",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    minHeight: 88,
-                  }}
+                  className="tc-load-source"
+                  style={cardStyle}
                 >
-                  <Icon style={{ width: 22, height: 22, color: "#0d4d4d" }} strokeWidth={1.75} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{card.title}</span>
+                  {inner}
                 </button>
               );
             })}
@@ -529,18 +550,18 @@ export function TerminalHomeView({
         <aside>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Bot style={{ width: 18, height: 18, color: "#0d4d4d" }} />
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--dg-text)" }}>
               Welcome to tradecity.trade!
             </h2>
           </div>
-          <p style={{ margin: "0 0 16px", fontSize: 13, color: "#555", lineHeight: 1.5 }}>
+          <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--dg-muted)", lineHeight: 1.5 }}>
             Ready to automate your trading strategy without writing any code? You&apos;ve come to
             the right place.
           </p>
-          <p style={{ margin: "0 0 10px", fontSize: 13, color: "#555" }}>
+          <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--dg-muted)" }}>
             Check out these guides and FAQs to learn more about building your bot:
           </p>
-          <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "#111" }}>Guide</p>
+          <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "var(--dg-text)" }}>Guide</p>
           <button
             type="button"
             onClick={() => onNavigate("deriv-course")}
@@ -560,13 +581,13 @@ export function TerminalHomeView({
           >
             tradecity.trade - your automated trading partner
           </button>
-          <p style={{ margin: "12px 0 6px", fontSize: 12, fontWeight: 700, color: "#111" }}>
+          <p style={{ margin: "12px 0 6px", fontSize: 12, fontWeight: 700, color: "var(--dg-text)" }}>
             FAQs
           </p>
           {FAQ_ITEMS.map((item) => {
             const open = openFaq === item.q;
             return (
-              <div key={item.q} style={{ borderBottom: "1px solid #eee" }}>
+              <div key={item.q} style={{ borderBottom: "1px solid var(--dg-border)" }}>
                 <button
                   type="button"
                   onClick={() => setOpenFaq(open ? null : item.q)}
@@ -578,7 +599,7 @@ export function TerminalHomeView({
                     border: "none",
                     background: "transparent",
                     fontSize: 13,
-                    color: "#333",
+                    color: "var(--dg-text)",
                     cursor: "pointer",
                   }}
                 >
@@ -586,7 +607,7 @@ export function TerminalHomeView({
                   <span style={{ float: "right", color: "#9ca3af" }}>{open ? "▴" : "▾"}</span>
                 </button>
                 {open ? (
-                  <p style={{ margin: "0 0 10px", fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
+                  <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--dg-muted)", lineHeight: 1.5 }}>
                     {item.a}
                   </p>
                 ) : null}
@@ -596,70 +617,91 @@ export function TerminalHomeView({
         </aside>
       </div>
 
+      {loadOpen ? (
+        <div
+          className="tc-modal-scrim tc-load-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-load-bot-title"
+          onClick={() => setLoadOpen(false)}
+        >
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-load-bot-title">
+              Load Bot
+            </p>
+            <p className="tc-modal-body">
+              Import XML from your computer or Google Drive, open Bot Builder, or start with a
+              quick strategy.
+            </p>
+            <div className="tc-load-grid">
+              {cards.map((card) => {
+                const Icon = card.icon;
+                const inner = (
+                  <>
+                    <Icon style={{ width: 20, height: 20, color: "#0f766e" }} strokeWidth={1.75} />
+                    {card.title}
+                  </>
+                );
+                if ("inputId" in card && card.inputId) {
+                  return (
+                    <label key={card.id} htmlFor={card.inputId} className="tc-load-source">
+                      {inner}
+                    </label>
+                  );
+                }
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    className="tc-load-source"
+                    onClick={() => {
+                      setLoadOpen(false);
+                      card.onClick?.();
+                    }}
+                  >
+                    {inner}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className="tc-btn tc-btn-ghost"
+              onClick={() => setLoadOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {driveOpen ? (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="tc-drive-title"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 55,
-          }}
+          className="tc-modal-scrim"
           onClick={() => setDriveOpen(false)}
         >
-          <div
-            style={{
-              background: "#fff",
-              width: "min(420px, calc(100vw - 32px))",
-              borderRadius: 8,
-              padding: 20,
-            }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p id="tc-drive-title" style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 16 }}>
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-drive-title">
               Google Drive
             </p>
-            <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+            <p className="tc-modal-body">
               Choose a bot XML saved from Google Drive. This desk opens a local file picker — pick
               the file you downloaded from Drive.
             </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
               <button
                 type="button"
+                className="tc-btn tc-btn-ghost"
                 onClick={() => setDriveOpen(false)}
-                style={{
-                  padding: "10px 16px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 4,
-                  background: "#fff",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={() => driveInputRef.current?.click()}
-                style={{
-                  padding: "10px 16px",
-                  border: "none",
-                  borderRadius: 4,
-                  background: "#1a73e8",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
-              >
+              <label htmlFor="tc-xml-drive" className="tc-btn tc-btn-solid" style={{ cursor: "pointer" }}>
                 Choose from Google Drive
-              </button>
+              </label>
             </div>
           </div>
         </div>

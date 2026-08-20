@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
-import { ArrowRight } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ArrowRight, HardDrive } from "lucide-react";
 import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
 import {
   isPlatformNavId,
@@ -34,11 +34,21 @@ export function MarketingDashboardPanel({
 }: MarketingDashboardPanelProps) {
   const xmlInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadOpen, setLoadOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loadOpen) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setLoadOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [loadOpen]);
 
   function openWindow(deskWindow: DashboardWindow) {
     setLoadError(null);
     if (deskWindow.id === "load-bot") {
-      xmlInputRef.current?.click();
+      setLoadOpen(true);
       return;
     }
     if (deskWindow.id === "speed-bot") {
@@ -69,15 +79,20 @@ export function MarketingDashboardPanel({
         setLoadError(
           `"${file.name}" is not a TradeCity strategy file. Export XML from Bot Builder, then try again.`,
         );
+        setLoadOpen(false);
         return;
       }
       writeBuilderHandoff({
         ...parsed,
         sourceLabel: `Dashboard · ${file.name}`,
       });
+      setLoadOpen(false);
       go(onNavigate, "bot-builder");
     };
-    reader.onerror = () => setLoadError(`Could not read ${file.name}.`);
+    reader.onerror = () => {
+      setLoadError(`Could not read ${file.name}.`);
+      setLoadOpen(false);
+    };
     reader.readAsText(file);
     if (xmlInputRef.current) xmlInputRef.current.value = "";
   }
@@ -90,11 +105,11 @@ export function MarketingDashboardPanel({
       tabIndex={-1}
     >
       <input
+        id="tc-marketing-xml"
         ref={xmlInputRef}
         type="file"
         accept=".xml,application/xml,text/xml,application/json,.json"
-        className="sr-only"
-        aria-hidden
+        className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleXmlSelected(event.target.files)}
       />
@@ -200,6 +215,36 @@ export function MarketingDashboardPanel({
           />
         </div>
       </div>
+
+      {loadOpen ? (
+        <div
+          className="tc-modal-scrim tc-load-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-marketing-load-title"
+          onClick={() => setLoadOpen(false)}
+        >
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-marketing-load-title">
+              Load Bot
+            </p>
+            <p className="tc-modal-body">
+              Choose a TradeCity strategy XML from your computer.
+            </p>
+            <label htmlFor="tc-marketing-xml" className="tc-load-source">
+              <HardDrive style={{ width: 20, height: 20, color: "#0f766e" }} strokeWidth={1.75} />
+              My computer
+            </label>
+            <button
+              type="button"
+              className="tc-btn tc-btn-ghost"
+              onClick={() => setLoadOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

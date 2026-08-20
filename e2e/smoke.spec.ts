@@ -35,6 +35,7 @@ test.describe("Marketing", () => {
       "Your bot desk",
     );
     await expect(page.getByRole("button", { name: /Load Bot/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Switch to (dark|light) theme/i })).toBeVisible();
   });
 
   test("nav switches workspace panels independently", async ({ page }) => {
@@ -121,6 +122,10 @@ test.describe("Dashboard (demo mode)", () => {
     ).toBeVisible();
     await expect(workspaceMain(page).getByText("Load Bot")).toBeVisible();
     await expect(workspaceMain(page).getByText("Analysis tool")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Switch to (dark|light) theme/i })).toBeVisible();
+    await expect(page.getByTestId("tc-account-switch")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Demo", exact: true })).toBeVisible();
+    await expect(page.getByTestId("tc-account-switch").getByText("Real", { exact: true })).toBeVisible();
   });
 
   test("product nav includes Copy Trader", async ({ page }) => {
@@ -152,12 +157,15 @@ test.describe("Dashboard (demo mode)", () => {
 
   test("invalid XML stays on the desk with an error", async ({ page }) => {
     await waitForLiveConnection(page);
+    await workspaceMain(page)
+      .locator(".terminal-home-window")
+      .filter({ hasText: "Load Bot" })
+      .click();
+    const loadDialog = page.getByRole("dialog", { name: "Load Bot" });
+    await expect(loadDialog).toBeVisible();
     const [chooser] = await Promise.all([
       page.waitForEvent("filechooser"),
-      workspaceMain(page)
-        .locator(".terminal-home-window")
-        .filter({ hasText: "Load Bot" })
-        .click(),
+      loadDialog.getByText("My computer", { exact: true }).click(),
     ]);
     await chooser.setFiles({
       name: "broken.xml",
@@ -170,6 +178,14 @@ test.describe("Dashboard (demo mode)", () => {
     await expect(
       workspaceMain(page).getByRole("heading", { name: /Demo desk|Live desk|Your desk/ }),
     ).toBeVisible();
+  });
+
+  test("navbar theme toggles dark and light", async ({ page }) => {
+    await waitForLiveConnection(page);
+    const html = page.locator("html");
+    const initial = await html.getAttribute("data-theme");
+    await page.getByRole("button", { name: /Switch to (dark|light) theme/i }).click();
+    await expect(html).not.toHaveAttribute("data-theme", initial ?? "");
   });
 
   test("brand lockup returns to marketing website", async ({ page }) => {

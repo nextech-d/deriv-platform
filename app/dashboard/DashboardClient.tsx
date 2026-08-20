@@ -65,6 +65,7 @@ import type { DerivAccount } from "@/lib/session/types";
 import type { OpenContractRecord } from "@/lib/state/types";
 import { cn } from "@/lib/utils/cn";
 import { clearTradingDb } from "@/lib/state/db";
+import { csrfFetch } from "@/lib/auth/csrf";
 import { AUTH_LOGIN_PATH } from "@/lib/auth/auth-links";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -257,7 +258,7 @@ export function DashboardClient({
       setActiveAccountId(accountId);
       if (demoMode) return;
       try {
-        await fetch("/api/auth/session", {
+        await csrfFetch("/api/auth/session", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activeAccountId: accountId }),
@@ -478,7 +479,7 @@ export function DashboardClient({
       router.push("/");
       return;
     }
-    await fetch("/api/auth/logout", { method: "POST" });
+    await csrfFetch("/api/auth/logout", { method: "POST" });
     await clearTradingDb();
     router.push(AUTH_LOGIN_PATH);
     router.refresh();

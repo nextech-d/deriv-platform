@@ -77,6 +77,7 @@ export function AppShell({
   onViewChange,
   accounts,
   activeAccountId,
+  onAccountChange,
   onLogout,
   toolbar,
 }: AppShellProps) {
@@ -126,6 +127,10 @@ export function AppShell({
         activeId={activeView}
         onSelect={onViewChange}
         account={activeAccount}
+        accounts={accounts}
+        activeAccountId={activeAccountId}
+        onAccountChange={onAccountChange}
+        demoMode={toolbar.demoMode}
         onLogout={onLogout}
       />
 
@@ -136,7 +141,7 @@ export function AppShell({
           style={{
             flex: 1,
             overflowY: fillWorkspace ? "hidden" : "auto",
-            background: "#fff",
+            background: "var(--dg-bg)",
             display: fillWorkspace ? "flex" : undefined,
             minHeight: 0,
           }}

@@ -27,6 +27,11 @@ export function useTheme() {
     applyTheme(resolved);
   }, []);
 
+  const toggleLightDark = useCallback(() => {
+    const current = preference === "system" ? resolvedTheme : preference;
+    setPreference(current === "dark" ? "light" : "dark");
+  }, [preference, resolvedTheme, setPreference]);
+
   useEffect(() => {
     const stored = readStoredTheme();
     const resolved = resolveTheme(stored);
@@ -53,6 +58,7 @@ export function useTheme() {
     resolvedTheme,
     hydrated,
     setPreference,
+    toggleLightDark,
     labels: THEME_LABELS,
     descriptions: THEME_DESCRIPTIONS,
   };

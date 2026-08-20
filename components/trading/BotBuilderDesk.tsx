@@ -661,7 +661,7 @@ export function BotBuilderDesk({
         ref={fileRef}
         type="file"
         accept=".xml,application/xml,text/xml,application/json"
-        className="sr-only"
+        className="tc-file-input"
         tabIndex={-1}
         onChange={(event) => handleFile(event.target.files)}
       />
