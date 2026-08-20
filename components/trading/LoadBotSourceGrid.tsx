@@ -51,7 +51,10 @@ export function LoadBotSourceGrid({
             key={source.id}
             type="button"
             className="tc-load-source"
-            onClick={() => onSelect(source.id)}
+            onClick={() => {
+              if (source.id === "computer") return;
+              onSelect(source.id);
+            }}
           >
             {inner}
           </button>
