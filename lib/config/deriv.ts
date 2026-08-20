@@ -6,8 +6,8 @@ export const derivConfig = {
   /** Server-only PAT for local dev when OAuth is unreachable */
   serverApiToken: process.env.DERIV_API_TOKEN ?? "",
   oauthClientId:
-    process.env.DERIV_OAUTH_CLIENT_ID ??
-    process.env.NEXT_PUBLIC_DERIV_APP_ID ??
+    process.env.DERIV_OAUTH_CLIENT_ID?.trim() ||
+    process.env.NEXT_PUBLIC_DERIV_APP_ID ||
     "",
   affiliateToken: process.env.NEXT_PUBLIC_DERIV_AFFILIATE_TOKEN ?? "",
   utmCampaign: process.env.NEXT_PUBLIC_DERIV_UTM_CAMPAIGN ?? "deriv_platform_ea",
