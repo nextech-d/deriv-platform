@@ -27,6 +27,16 @@ interface ProductNavbarProps {
   onAccountChange?: (id: string) => void;
   demoMode?: boolean;
   onLogout?: () => void;
+  balance?: { amount: number; currency: string } | null;
+}
+
+function formatWalletBalance(amount: number, currency: string): string {
+  const crypto = /BTC|ETH|LTC|XRP|SOL|USDT|USDC/i.test(currency);
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: crypto ? 8 : 2,
+  }).format(amount);
+  return `${formatted} ${currency}`;
 }
 
 function NavbarAccountSwitch({
@@ -34,11 +44,13 @@ function NavbarAccountSwitch({
   activeAccountId,
   onAccountChange,
   demoMode = false,
+  balance,
 }: {
   accounts: DerivAccount[];
   activeAccountId?: string;
   onAccountChange: (id: string) => void;
   demoMode?: boolean;
+  balance?: { amount: number; currency: string } | null;
 }) {
   const active = accounts.find((item) => item.accountId === activeAccountId) ?? accounts[0];
   const demoAccount = accounts.find((item) => item.isDemo);
@@ -48,55 +60,74 @@ function NavbarAccountSwitch({
   const realLoginHref =
     !realAccount && (guest || demoMode) ? AUTH_LOGIN_PATH : undefined;
 
+  const walletLabel = balance
+    ? formatWalletBalance(balance.amount, balance.currency)
+    : "…";
+
   return (
-    <div
-      className="tc-account-switch"
-      role="group"
-      aria-label="Account type"
-      data-testid="tc-account-switch"
-    >
-      <button
-        type="button"
-        className={cn("tc-account-switch-btn", demoOn && "is-on")}
-        aria-pressed={demoOn}
-        disabled={!guest && !demoAccount}
-        title={demoAccount || guest ? "Demo account" : "No demo account on this login"}
-        onClick={() => {
-          if (demoAccount && demoAccount.accountId !== active?.accountId) {
-            onAccountChange(demoAccount.accountId);
-          }
-        }}
+    <div className="tc-account-cluster">
+      <div
+        className="tc-account-switch"
+        role="group"
+        aria-label="Account type"
+        data-testid="tc-account-switch"
       >
-        Demo
-      </button>
-      {realAccount ? (
         <button
           type="button"
-          className={cn("tc-account-switch-btn", !demoOn && "is-on")}
-          aria-pressed={!demoOn}
-          title="Real account"
+          className={cn("tc-account-switch-btn", demoOn && "is-on")}
+          aria-pressed={demoOn}
+          disabled={!guest && !demoAccount}
+          title={demoAccount || guest ? "Demo account" : "No demo account on this login"}
           onClick={() => {
-            if (realAccount.accountId !== active?.accountId) {
-              onAccountChange(realAccount.accountId);
+            if (demoAccount && demoAccount.accountId !== active?.accountId) {
+              onAccountChange(demoAccount.accountId);
             }
           }}
         >
-          Real
+          Demo
         </button>
-      ) : realLoginHref ? (
-        <Link href={realLoginHref} className="tc-account-switch-btn" title="Log in to use a real account">
-          Real
-        </Link>
-      ) : (
-        <button
-          type="button"
-          className="tc-account-switch-btn"
-          disabled
-          title="No real account on this login"
-        >
-          Real
-        </button>
-      )}
+        {realAccount ? (
+          <button
+            type="button"
+            className={cn("tc-account-switch-btn", !demoOn && "is-on")}
+            aria-pressed={!demoOn}
+            title="Real account"
+            onClick={() => {
+              if (realAccount.accountId !== active?.accountId) {
+                onAccountChange(realAccount.accountId);
+              }
+            }}
+          >
+            Real
+          </button>
+        ) : realLoginHref ? (
+          <Link href={realLoginHref} className="tc-account-switch-btn" title="Log in to use a real account">
+            Real
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="tc-account-switch-btn"
+            disabled
+            title="No real account on this login"
+          >
+            Real
+          </button>
+        )}
+      </div>
+      <span
+        className="tc-account-balance"
+        data-testid="tc-account-balance"
+        aria-live="polite"
+        aria-atomic="true"
+        title={
+          active?.isDemo
+            ? "Demo wallet balance"
+            : "Real wallet balance from Deriv"
+        }
+      >
+        {walletLabel}
+      </span>
     </div>
   );
 }
@@ -111,6 +142,7 @@ export function ProductNavbar({
   onAccountChange,
   demoMode = false,
   onLogout,
+  balance,
 }: ProductNavbarProps) {
   const [tick, setTick] = useState({ x: 0, ready: false, motion: false });
   const trackRef = useRef<HTMLDivElement>(null);
@@ -155,6 +187,7 @@ export function ProductNavbar({
               activeAccountId={activeAccountId}
               onAccountChange={onAccountChange}
               demoMode={demoMode}
+              balance={balance}
             />
           ) : null}
           {account ? (

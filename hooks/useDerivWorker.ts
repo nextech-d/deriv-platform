@@ -571,6 +571,7 @@ export function useDerivWorker(
       ...prev,
       connectionState: "connecting",
       error: null,
+      balance: isDemoMode ? DEMO_BALANCE : null,
     }));
 
     worker.onmessage = (event: MessageEvent<WorkerInbound>) => {

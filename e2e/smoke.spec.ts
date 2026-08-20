@@ -136,6 +136,9 @@ test.describe("Dashboard (demo mode)", () => {
       await expect(page.getByTestId("tc-account-switch")).toBeVisible();
       await expect(page.getByRole("button", { name: "Demo", exact: true })).toBeVisible();
       await expect(page.getByTestId("tc-account-switch").getByText("Real", { exact: true })).toBeVisible();
+      await expect(page.getByTestId("tc-account-balance")).toContainText("USD", {
+        timeout: 15_000,
+      });
     } else {
       await expect(page.getByTestId("tc-account-switch")).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Log in" }).first()).toBeVisible();

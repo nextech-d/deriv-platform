@@ -408,7 +408,7 @@ async function runRecoverySequence(): Promise<void> {
 
   if (!isPublicConnection) {
     try {
-      await sendWithReqId({ balance: 1 }, "balance");
+      await sendWithReqId({ balance: 1, subscribe: 1 }, "balance");
     } catch {
       // balance unavailable on some connections
     }

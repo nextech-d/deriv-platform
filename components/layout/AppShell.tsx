@@ -132,6 +132,7 @@ export function AppShell({
         onAccountChange={onAccountChange}
         demoMode={toolbar.demoMode}
         onLogout={onLogout}
+        balance={toolbar.balance}
       />
 
       <div className="dangote-body">

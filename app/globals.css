@@ -20930,14 +20930,33 @@ body {
   color: var(--dg-text);
 }
 
+.tc-account-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
 .tc-account-switch {
   display: inline-flex;
   align-items: stretch;
   height: 28px;
-  border: 1px solid var(--dg-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.tc-account-balance {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  white-space: nowrap;
+  tabular-nums: true;
+  font-variant-numeric: tabular-nums;
 }
 
 .tc-account-switch-btn {
@@ -21070,6 +21089,12 @@ body {
   font-weight: 500;
   color: var(--dg-muted);
   padding: 0 8px;
+}
+
+@media (max-width: 720px) {
+  .tc-loginid {
+    display: none;
+  }
 }
 
 .tc-auth {
