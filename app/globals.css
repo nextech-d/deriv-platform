@@ -2187,6 +2187,35 @@ html[data-boot-hold] body {
   --warning: #d97706;
 }
 
+.bot-builder-chart-modal > div {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 94vw);
+  height: min(640px, 80vh);
+  overflow: hidden;
+}
+
+.bot-builder-chart-modal .smartchart-panel {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.bot-builder-chart-modal .smartchart-panel > .smartcharts,
+.bot-builder-chart-modal .smartchart-panel .cq-chart-area,
+.bot-builder-chart-modal .smartchart-panel .chartContainer {
+  height: 100%;
+  min-height: 0;
+}
+
+.smartchart-panel__loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
 .bot-builder-workspace {
   display: flex;
   flex-direction: column;
@@ -21498,16 +21527,16 @@ body {
 }
 
 .tc-file-input {
-  position: absolute;
-  left: -9999px;
-  top: 0;
+  position: fixed;
+  inset: auto 0 0 auto;
   width: 1px;
   height: 1px;
   padding: 0;
   margin: 0;
   overflow: hidden;
-  opacity: 0;
+  opacity: 0.001;
   border: 0;
+  z-index: 2147483647;
 }
 
 .tc-load-scrim {

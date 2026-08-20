@@ -1,5 +1,6 @@
 "use client";
 
+import { type RefObject } from "react";
 import { Folder, HardDrive, Sparkles, Workflow, type LucideIcon } from "lucide-react";
 
 export type LoadBotSource = "computer" | "drive" | "builder" | "quick";
@@ -17,12 +18,25 @@ const SOURCES: {
 
 interface LoadBotSourceGridProps {
   computerInputId: string;
+  computerInputRef?: RefObject<HTMLInputElement | null>;
   sources?: LoadBotSource[];
   onSelect: (source: Exclude<LoadBotSource, "computer">) => void;
 }
 
+function openComputerPicker(
+  computerInputId: string,
+  computerInputRef?: RefObject<HTMLInputElement | null>,
+) {
+  const input = computerInputRef?.current ?? document.getElementById(computerInputId);
+  if (input instanceof HTMLInputElement) {
+    input.value = "";
+    input.click();
+  }
+}
+
 export function LoadBotSourceGrid({
   computerInputId,
+  computerInputRef,
   sources = ["computer", "drive", "builder", "quick"],
   onSelect,
 }: LoadBotSourceGridProps) {
@@ -42,10 +56,7 @@ export function LoadBotSourceGrid({
               key={source.id}
               type="button"
               className="tc-load-source"
-              onClick={() => {
-                const input = document.getElementById(computerInputId);
-                if (input instanceof HTMLInputElement) input.click();
-              }}
+              onClick={() => openComputerPicker(computerInputId, computerInputRef)}
             >
               {inner}
             </button>
@@ -71,11 +82,12 @@ export function LoadBotSourceGrid({
 
 interface DriveFileDialogProps {
   inputId: string;
+  inputRef?: RefObject<HTMLInputElement | null>;
   open: boolean;
   onClose: () => void;
 }
 
-export function DriveFileDialog({ inputId, open, onClose }: DriveFileDialogProps) {
+export function DriveFileDialog({ inputId, inputRef, open, onClose }: DriveFileDialogProps) {
   if (!open) return null;
   return (
     <div
@@ -100,10 +112,7 @@ export function DriveFileDialog({ inputId, open, onClose }: DriveFileDialogProps
           <button
             type="button"
             className="tc-btn tc-btn-solid"
-            onClick={() => {
-              const input = document.getElementById(inputId);
-              if (input instanceof HTMLInputElement) input.click();
-            }}
+            onClick={() => openComputerPicker(inputId, inputRef)}
           >
             Choose from Google Drive
           </button>

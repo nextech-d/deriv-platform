@@ -44,6 +44,8 @@ interface ChartDeskProps {
   chartHistory?: ChartHistorySnapshot | null;
   chartHistoryLoading?: boolean;
   onRequestHistory?: (symbol: string, granularity: number) => void;
+  tradingViewRequested?: boolean;
+  onTradingViewHandled?: () => void;
 }
 
 const TOOLS = ["Chart types", "Indicators", "Templates", "Drawing tools", "Download"] as const;
@@ -78,6 +80,8 @@ export function ChartDesk({
   chartHistory = null,
   chartHistoryLoading = false,
   onRequestHistory,
+  tradingViewRequested = false,
+  onTradingViewHandled,
 }: ChartDeskProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [tab, setTab] = useState<"markets" | "favorites">("markets");
@@ -158,6 +162,12 @@ export function ChartDesk({
   useEffect(() => {
     setChartType(granularity === 0 ? "area" : "candle");
   }, [granularity]);
+
+  useEffect(() => {
+    if (!tradingViewRequested) return;
+    setTvOpen(true);
+    onTradingViewHandled?.();
+  }, [tradingViewRequested, onTradingViewHandled]);
 
   const quotes =
     chartType === "candle" ? candles.flatMap((c) => [c.high, c.low]) : ticks.map((t) => t.quote);

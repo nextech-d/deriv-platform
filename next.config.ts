@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
   // Docker/ECS needs standalone. Vercel traces its own output and fails
   // looking for `.next/next-server.js.nft.json` when standalone is set.
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
+  transpilePackages: ["@deriv-com/smartcharts-champion"],
   turbopack: {},
   async headers() {
     return [

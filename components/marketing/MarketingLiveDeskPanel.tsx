@@ -266,9 +266,15 @@ export function MarketingLiveDeskPanel({
           <BotBuilderDesk
             seed={builderSeed}
             seedKey={builderSeedKey}
-            onSeedChange={setBuilderSeed}
+            onSeedChange={(snapshot) => {
+              setBuilderSeed(snapshot);
+              setBuilderSeedKey((key) => key + 1);
+            }}
             onOpenAiBot={() => onNavigate?.("ai-bot", "ai-bot")}
             onRun={sendToRunner}
+            tickHistory={DEMO_TICKS}
+            lastQuote={DEMO_TICKS.find((tick) => tick.symbol === "R_100")?.quote ?? null}
+            isConnected={false}
           />
         ) : null}
 

@@ -28,6 +28,10 @@ let tradeInFlight = false;
 const tickSubscriptions = new Set<string>();
 /** Symbols confirmed live on the current WebSocket session. */
 const liveTickSubscriptions = new Set<string>();
+const chartStreams = new Map<
+  string,
+  { symbol: string; granularity: number; subscriptionId?: string }
+>();
 const openContracts = new Map<number, OpenContractEvent>();
 
 function emit(event: WorkerEvent): void {
@@ -177,6 +181,20 @@ function handleMessage(event: MessageEvent<string>): void {
         epoch: tick.epoch ?? Date.now(),
       },
     });
+    routeChartStreamFromTick(symbol, tick.epoch ?? Math.floor(Date.now() / 1000), tickQuote(tick));
+  }
+
+  if (message.msg_type === "ohlc" || message.ohlc) {
+    const ohlc = message.ohlc!;
+    const symbol = String(ohlc.symbol ?? message.echo_req?.ticks_history ?? "");
+    const epoch = Number(ohlc.epoch ?? 0);
+    const open = Number(ohlc.open);
+    const high = Number(ohlc.high);
+    const low = Number(ohlc.low);
+    const close = Number(ohlc.close);
+    if (symbol && Number.isFinite(epoch) && Number.isFinite(close)) {
+      routeChartStreamFromOhlc(symbol, epoch, open, high, low, close);
+    }
   }
 
   if (message.balance?.balance !== undefined) {
@@ -502,56 +520,8 @@ async function requestChartHistory(symbol: string, granularity: number): Promise
     return;
   }
 
-  const ticksStyle = granularity <= 0;
   try {
-    const message = (await sendWithReqId(
-      {
-        ticks_history: symbol,
-        end: "latest",
-        count: ticksStyle ? 2000 : 300,
-        style: ticksStyle ? "ticks" : "candles",
-        adjust_start_time: 1,
-        ...(ticksStyle ? {} : { granularity }),
-      },
-      "ticks_history",
-      20_000,
-    )) as DerivWsMessage;
-
-    if (message.error) {
-      throw new Error(message.error.message ?? "ticks_history failed");
-    }
-
-    const payload: ChartHistorySnapshot = ticksStyle
-      ? {
-          symbol,
-          granularity: 0,
-          ticks: (message.history?.prices ?? []).flatMap((price, index) => {
-            const quote = Number(price);
-            const epoch = Number(message.history?.times?.[index] ?? 0);
-            if (!Number.isFinite(quote) || !Number.isFinite(epoch) || epoch <= 0) {
-              return [];
-            }
-            return [{ symbol, quote, epoch }];
-          }),
-          candles: [],
-        }
-      : {
-          symbol,
-          granularity,
-          ticks: [],
-          candles: (message.candles ?? []).flatMap((candle) => {
-            const open = Number(candle.open);
-            const high = Number(candle.high);
-            const low = Number(candle.low);
-            const close = Number(candle.close);
-            const epoch = Number(candle.epoch);
-            if (![open, high, low, close, epoch].every(Number.isFinite) || epoch <= 0) {
-              return [];
-            }
-            return [{ open, high, low, close, epoch }];
-          }),
-        };
-
+    const payload = await fetchChartQuotesPayload(symbol, granularity);
     emit({ type: "CHART_HISTORY", payload });
   } catch (err) {
     emit({
@@ -564,12 +534,218 @@ async function requestChartHistory(symbol: string, granularity: number): Promise
   }
 }
 
+async function fetchChartQuotesPayload(
+  symbol: string,
+  granularity: number,
+  options: { count?: number; start?: number; end?: number | "latest" } = {},
+): Promise<ChartHistorySnapshot> {
+  const ticksStyle = granularity <= 0;
+  const count = options.count ?? (ticksStyle ? 2000 : 300);
+  const message = (await sendWithReqId(
+    {
+      ticks_history: symbol,
+      end: options.end ?? "latest",
+      ...(options.start ? { start: options.start } : { count }),
+      style: ticksStyle ? "ticks" : "candles",
+      adjust_start_time: 1,
+      ...(ticksStyle ? {} : { granularity }),
+    },
+    "ticks_history",
+    20_000,
+  )) as DerivWsMessage;
+
+  if (message.error) {
+    throw new Error(message.error.message ?? "ticks_history failed");
+  }
+
+  return ticksStyle
+    ? {
+        symbol,
+        granularity: 0,
+        ticks: (message.history?.prices ?? []).flatMap((price, index) => {
+          const quote = Number(price);
+          const epoch = Number(message.history?.times?.[index] ?? 0);
+          if (!Number.isFinite(quote) || !Number.isFinite(epoch) || epoch <= 0) {
+            return [];
+          }
+          return [{ symbol, quote, epoch }];
+        }),
+        candles: [],
+      }
+    : {
+        symbol,
+        granularity,
+        ticks: [],
+        candles: (message.candles ?? []).flatMap((candle) => {
+          const open = Number(candle.open);
+          const high = Number(candle.high);
+          const low = Number(candle.low);
+          const close = Number(candle.close);
+          const epoch = Number(candle.epoch);
+          if (![open, high, low, close, epoch].every(Number.isFinite) || epoch <= 0) {
+            return [];
+          }
+          return [{ open, high, low, close, epoch }];
+        }),
+      };
+}
+
+async function requestChartQuotes(
+  requestId: string,
+  symbol: string,
+  granularity: number,
+  count?: number,
+  start?: number,
+  end?: number | "latest",
+): Promise<void> {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    emit({
+      type: "CHART_QUOTES",
+      payload: {
+        requestId,
+        symbol,
+        granularity,
+        error: "Not connected to Deriv",
+      },
+    });
+    return;
+  }
+
+  try {
+    const payload = await fetchChartQuotesPayload(symbol, granularity, { count, start, end });
+    if (granularity <= 0) {
+      emit({
+        type: "CHART_QUOTES",
+        payload: {
+          requestId,
+          symbol,
+          granularity,
+          prices: payload.ticks.map((tick) => tick.quote),
+          times: payload.ticks.map((tick) => tick.epoch),
+        },
+      });
+      return;
+    }
+
+    emit({
+      type: "CHART_QUOTES",
+      payload: {
+        requestId,
+        symbol,
+        granularity,
+        candles: payload.candles,
+      },
+    });
+  } catch (err) {
+    emit({
+      type: "CHART_QUOTES",
+      payload: {
+        requestId,
+        symbol,
+        granularity,
+        error: err instanceof Error ? err.message : "Chart quotes failed",
+      },
+    });
+  }
+}
+
+function routeChartStreamFromTick(symbol: string, epoch: number, quote: number): void {
+  for (const [streamId, stream] of chartStreams) {
+    if (stream.symbol !== symbol || stream.granularity !== 0) continue;
+    emit({
+      type: "CHART_STREAM_QUOTE",
+      payload: {
+        streamId,
+        symbol,
+        granularity: 0,
+        epoch,
+        quote,
+      },
+    });
+  }
+}
+
+function routeChartStreamFromOhlc(
+  symbol: string,
+  epoch: number,
+  open: number,
+  high: number,
+  low: number,
+  close: number,
+): void {
+  for (const [streamId, stream] of chartStreams) {
+    if (stream.symbol !== symbol || stream.granularity <= 0) continue;
+    emit({
+      type: "CHART_STREAM_QUOTE",
+      payload: {
+        streamId,
+        symbol,
+        granularity: stream.granularity,
+        epoch,
+        quote: close,
+        open,
+        high,
+        low,
+        close,
+      },
+    });
+  }
+}
+
+function subscribeChartStream(streamId: string, symbol: string, granularity: number): void {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+  void (async () => {
+    const ticksStyle = granularity <= 0;
+    const payload: Record<string, unknown> = {
+      ticks_history: symbol,
+      subscribe: 1,
+      end: "latest",
+      style: ticksStyle ? "ticks" : "candles",
+      adjust_start_time: 1,
+      ...(ticksStyle ? { count: 1 } : { granularity, count: 1 }),
+    };
+
+    try {
+      const message = (await sendWithReqId(payload, "ticks_history", 20_000)) as DerivWsMessage;
+      chartStreams.set(streamId, {
+        symbol,
+        granularity,
+        subscriptionId: message.subscription?.id,
+      });
+    } catch (err) {
+      emit({
+        type: "ERROR",
+        payload: {
+          code: "chart_stream",
+          message: err instanceof Error ? err.message : "Chart stream subscribe failed",
+        },
+      });
+    }
+  })();
+}
+
+function unsubscribeChartStream(streamId: string): void {
+  const stream = chartStreams.get(streamId);
+  chartStreams.delete(streamId);
+  if (!stream || !socket || socket.readyState !== WebSocket.OPEN) return;
+
+  if (stream.subscriptionId) {
+    try {
+      sendRaw({ forget: stream.subscriptionId });
+    } catch {
+      // ignore disconnect races
+    }
+  }
+}
+
 function disconnect(): void {
   fsm.reset();
   registry.clear();
   clearPingTimers();
   tickSubscriptions.clear();
   liveTickSubscriptions.clear();
+  chartStreams.clear();
   openContracts.clear();
   tradeInFlight = false;
   tradingEnabled = false;
@@ -641,6 +817,32 @@ self.onmessage = (event: MessageEvent<WorkerCommand | { type: "NEED_OTP_REFRESH"
 
   if (command.type === "REQUEST_CHART_HISTORY") {
     void requestChartHistory(command.payload.symbol, command.payload.granularity);
+    return;
+  }
+
+  if (command.type === "REQUEST_CHART_QUOTES") {
+    void requestChartQuotes(
+      command.payload.requestId,
+      command.payload.symbol,
+      command.payload.granularity,
+      command.payload.count,
+      command.payload.start,
+      command.payload.end,
+    );
+    return;
+  }
+
+  if (command.type === "SUBSCRIBE_CHART_STREAM") {
+    subscribeChartStream(
+      command.payload.streamId,
+      command.payload.symbol,
+      command.payload.granularity,
+    );
+    return;
+  }
+
+  if (command.type === "UNSUBSCRIBE_CHART_STREAM") {
+    unsubscribeChartStream(command.payload.streamId);
   }
 };
 

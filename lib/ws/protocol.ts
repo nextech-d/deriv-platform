@@ -56,6 +56,25 @@ export type WorkerCommand =
   | {
       type: "REQUEST_CHART_HISTORY";
       payload: { symbol: string; granularity: number };
+    }
+  | {
+      type: "REQUEST_CHART_QUOTES";
+      payload: {
+        requestId: string;
+        symbol: string;
+        granularity: number;
+        count?: number;
+        start?: number;
+        end?: number | "latest";
+      };
+    }
+  | {
+      type: "SUBSCRIBE_CHART_STREAM";
+      payload: { streamId: string; symbol: string; granularity: number };
+    }
+  | {
+      type: "UNSUBSCRIBE_CHART_STREAM";
+      payload: { streamId: string };
     };
 
 export interface ChartCandle {
@@ -85,7 +104,33 @@ export type WorkerEvent =
   | { type: "ERROR"; payload: { code: string; message: string } }
   | { type: "RECOVERY_COMPLETE"; payload: RecoverySnapshot }
   | { type: "PONG"; payload: { reqId: number; epoch?: number } }
-  | { type: "CHART_HISTORY"; payload: ChartHistorySnapshot };
+  | { type: "CHART_HISTORY"; payload: ChartHistorySnapshot }
+  | {
+      type: "CHART_QUOTES";
+      payload: {
+        requestId: string;
+        symbol: string;
+        granularity: number;
+        prices?: number[];
+        times?: number[];
+        candles?: ChartCandle[];
+        error?: string;
+      };
+    }
+  | {
+      type: "CHART_STREAM_QUOTE";
+      payload: {
+        streamId: string;
+        symbol: string;
+        granularity: number;
+        epoch: number;
+        quote: number;
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+      };
+    };
 
 export interface DerivWsMessage {
   msg_type?: string;
@@ -100,6 +145,15 @@ export interface DerivWsMessage {
   };
   error?: { code?: string; message?: string };
   tick?: { symbol?: string; quote?: number; ask?: number; bid?: number; epoch?: number };
+  ohlc?: {
+    symbol?: string;
+    epoch?: number | string;
+    open?: number | string;
+    high?: number | string;
+    low?: number | string;
+    close?: number | string;
+  };
+  subscription?: { id?: string };
   balance?: { balance?: number; currency?: string };
   proposal?: { id?: string; ask_price?: number; payout?: number };
   buy?: { contract_id?: number; buy_price?: number; balance_after?: number };

@@ -186,18 +186,20 @@ export function TerminalHomeView({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      applyXml(String(reader.result ?? ""), file.name);
-      setLoadOpen(false);
-      setDriveOpen(false);
+      const ok = applyXml(String(reader.result ?? ""), file.name);
+      if (ok) {
+        setLoadOpen(false);
+        setDriveOpen(false);
+      }
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+      if (driveInputRef.current) driveInputRef.current.value = "";
     };
     reader.onerror = () => {
       setLoadError(`Could not read ${file.name}.`);
-      setLoadOpen(false);
-      setDriveOpen(false);
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+      if (driveInputRef.current) driveInputRef.current.value = "";
     };
     reader.readAsText(file);
-    if (xmlInputRef.current) xmlInputRef.current.value = "";
-    if (driveInputRef.current) driveInputRef.current.value = "";
   }
 
   function openWindow(deskWindow: DashboardWindow) {
@@ -476,6 +478,7 @@ export function TerminalHomeView({
           <div style={{ maxWidth: 420 }}>
             <LoadBotSourceGrid
               computerInputId="tc-xml-computer"
+              computerInputRef={xmlInputRef}
               onSelect={selectLoadSource}
             />
           </div>
@@ -569,11 +572,17 @@ export function TerminalHomeView({
             </p>
             <LoadBotSourceGrid
               computerInputId="tc-xml-computer"
+              computerInputRef={xmlInputRef}
               onSelect={(source) => {
                 setLoadOpen(false);
                 selectLoadSource(source);
               }}
             />
+            {loadError ? (
+              <p className="tc-modal-body" role="alert" style={{ color: "#991b1b" }}>
+                {loadError}
+              </p>
+            ) : null}
             <button
               type="button"
               className="tc-btn tc-btn-ghost"
@@ -587,6 +596,7 @@ export function TerminalHomeView({
 
       <DriveFileDialog
         inputId="tc-xml-drive"
+        inputRef={driveInputRef}
         open={driveOpen}
         onClose={() => setDriveOpen(false)}
       />

@@ -184,7 +184,10 @@ export function DashboardClient({
     closeContract,
     reconnect,
     requestBalance,
+    subscribeTicks,
     requestChartHistory,
+    fetchChartQuotes,
+    subscribeChartStream,
     chartHistory,
     chartHistoryLoading,
     wsMetrics,
@@ -859,7 +862,10 @@ export function DashboardClient({
           <BotBuilderDesk
               seed={builderSeed}
               seedKey={builderSeedKey}
-              onSeedChange={setBuilderSeed}
+              onSeedChange={(snapshot) => {
+                setBuilderSeed(snapshot);
+                setBuilderSeedKey((key) => key + 1);
+              }}
               onOpenAiBot={() => handleViewChange("ai-bot")}
               onRun={(config, snapshot) => {
                 setSymbol(snapshot.symbol);
@@ -877,6 +883,10 @@ export function DashboardClient({
               balance={balance}
               accountCurrency={activeAccount?.currency ?? "USD"}
               onSymbolChange={setSymbol}
+              isConnected={isConnected}
+              onSubscribeTicks={subscribeTicks}
+              fetchChartQuotes={fetchChartQuotes}
+              subscribeChartStream={subscribeChartStream}
               fills={botContracts}
               runStats={builderRunStats}
               recentJournal={

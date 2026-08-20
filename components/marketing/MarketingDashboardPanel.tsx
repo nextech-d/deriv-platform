@@ -91,8 +91,8 @@ export function MarketingDashboardPanel({
         setLoadError(
           `"${file.name}" is not a TradeCity strategy file. Export XML from Bot Builder, then try again.`,
         );
-        setLoadOpen(false);
-        setDriveOpen(false);
+        if (xmlInputRef.current) xmlInputRef.current.value = "";
+        if (driveInputRef.current) driveInputRef.current.value = "";
         return;
       }
       writeBuilderHandoff({
@@ -103,15 +103,15 @@ export function MarketingDashboardPanel({
       setLoadOpen(false);
       setDriveOpen(false);
       go(onNavigate, "bot-builder");
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+      if (driveInputRef.current) driveInputRef.current.value = "";
     };
     reader.onerror = () => {
       setLoadError(`Could not read ${file.name}.`);
-      setLoadOpen(false);
-      setDriveOpen(false);
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+      if (driveInputRef.current) driveInputRef.current.value = "";
     };
     reader.readAsText(file);
-    if (xmlInputRef.current) xmlInputRef.current.value = "";
-    if (driveInputRef.current) driveInputRef.current.value = "";
   }
 
   return (
@@ -260,6 +260,7 @@ export function MarketingDashboardPanel({
             </p>
             <LoadBotSourceGrid
               computerInputId="tc-marketing-xml"
+              computerInputRef={xmlInputRef}
               onSelect={(source) => {
                 setLoadOpen(false);
                 if (source === "drive") setDriveOpen(true);
@@ -267,6 +268,11 @@ export function MarketingDashboardPanel({
                 else setQuickOpen(true);
               }}
             />
+            {loadError ? (
+              <p className="tc-modal-body" role="alert" style={{ color: "#991b1b" }}>
+                {loadError}
+              </p>
+            ) : null}
             <button
               type="button"
               className="tc-btn tc-btn-ghost"
@@ -280,6 +286,7 @@ export function MarketingDashboardPanel({
 
       <DriveFileDialog
         inputId="tc-marketing-xml-drive"
+        inputRef={driveInputRef}
         open={driveOpen}
         onClose={() => setDriveOpen(false)}
       />

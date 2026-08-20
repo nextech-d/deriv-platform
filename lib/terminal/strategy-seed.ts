@@ -907,7 +907,8 @@ function isBlocklyStrategyXml(xml: string): boolean {
   return (
     /is_dbot\s*=\s*["']true["']/i.test(xml) ||
     /<block\b[^>]*\btype=["']trade_definition/i.test(xml) ||
-    /<block\b[^>]*\btype=["']trade["']/i.test(xml)
+    /<block\b[^>]*\btype=["']trade["']/i.test(xml) ||
+    /<field\b[^>]*\bname=["']SYMBOL_LIST["']/i.test(xml)
   );
 }
 
@@ -1017,7 +1018,8 @@ function snapshotFromBlocklyXml(xml: string): BotBuilderSnapshot | null {
   });
 }
 
-export const STRATEGY_FILE_ACCEPT = ".xml,.json";
+export const STRATEGY_FILE_ACCEPT =
+  ".xml,.XML,.json,.JSON,text/xml,application/xml,application/octet-stream";
 
 export function snapshotFromXml(xml: string): BotBuilderSnapshot | null {
   const text = xml.replace(/^\uFEFF/, "").trim();

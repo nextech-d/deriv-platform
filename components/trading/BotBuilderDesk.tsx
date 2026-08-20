@@ -44,9 +44,12 @@ import {
   normalizePurchase,
   purchasesForTradeType,
   workspaceChipsForSnapshot,
+  marketLabelForSymbol,
   type BotBuilderSnapshot,
   type BuilderTradeType,
 } from "@/lib/terminal/strategy-seed";
+import { SmartChartPanel } from "@/components/trading/SmartChartPanel";
+import type { SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
 import { TourDialog } from "@/components/trading/TourDialog";
 import { DriveFileDialog } from "@/components/trading/LoadBotSourceGrid";
 import { BuilderBlocklyBlocks } from "@/components/trading/BuilderBlocklyBlocks";
@@ -109,6 +112,10 @@ interface BotBuilderDeskProps {
   };
   recentJournal?: string[];
   tickHistory?: TickEvent[];
+  isConnected?: boolean;
+  onSubscribeTicks?: (symbol: string) => void;
+  fetchChartQuotes?: SmartChartFeedSource["fetchChartQuotes"];
+  subscribeChartStream?: SmartChartFeedSource["subscribeChartStream"];
 }
 
 const TOOLBAR_ICONS = {
@@ -173,6 +180,10 @@ export function BotBuilderDesk({
   runStats,
   recentJournal = [],
   tickHistory = [],
+  isConnected = false,
+  onSubscribeTicks,
+  fetchChartQuotes,
+  subscribeChartStream,
 }: BotBuilderDeskProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const driveFileRef = useRef<HTMLInputElement>(null);
@@ -253,7 +264,7 @@ export function BotBuilderDesk({
   const [saveName, setSaveName] = useState("Untitled Bot");
   const [saveTarget, setSaveTarget] = useState<"local" | "drive">("local");
   const [chartOpen, setChartOpen] = useState(false);
-  const [tvOpen, setTvOpen] = useState(false);
+  const [chartTradingView, setChartTradingView] = useState(false);
   const [statsHelpOpen, setStatsHelpOpen] = useState(false);
   const [recentWhyOpen, setRecentWhyOpen] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
@@ -266,6 +277,22 @@ export function BotBuilderDesk({
     if (typeof window === "undefined") return;
     if (!window.localStorage.getItem("tc-tour-builder")) setTourOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (!chartOpen || !onSubscribeTicks) return;
+    onSubscribeTicks(snapshot.symbol);
+  }, [chartOpen, onSubscribeTicks, snapshot.symbol]);
+
+  function handleChartSymbolChange(nextSymbol: string) {
+    onSymbolChangeRef.current?.(nextSymbol);
+    patchSnapshot(
+      {
+        symbol: nextSymbol,
+        market: marketLabelForSymbol(nextSymbol),
+      },
+      `Chart · ${marketLabelForSymbol(nextSymbol)}`,
+    );
+  }
 
   function toggleExpanded(id: string) {
     setExpandedCategories((prev) => {
@@ -505,7 +532,7 @@ export function BotBuilderDesk({
     setChips([]);
     setFocusBlock("trade");
     setChartOpen(false);
-    setTvOpen(false);
+    setChartTradingView(false);
     setNotice("Workspace reset");
   }
 
@@ -516,8 +543,7 @@ export function BotBuilderDesk({
     }
     if (id === "import") {
       setLoadError(null);
-      setLoadTab("local");
-      setLoadOpen(true);
+      if (fileRef.current) fileRef.current.value = "";
       fileRef.current?.click();
       return;
     }
@@ -534,13 +560,13 @@ export function BotBuilderDesk({
       return;
     }
     if (id === "charts") {
-      setTvOpen(false);
-      setChartOpen((open) => !open);
+      setChartTradingView(false);
+      setChartOpen(true);
       return;
     }
     if (id === "tradingview") {
-      setChartOpen(false);
-      setTvOpen((open) => !open);
+      setChartTradingView(true);
+      setChartOpen(true);
       return;
     }
     if (id === "undo") {
@@ -594,15 +620,18 @@ export function BotBuilderDesk({
       );
       setLoadOpen(false);
       setDriveOpen(false);
+      if (fileRef.current) fileRef.current.value = "";
+      if (driveFileRef.current) driveFileRef.current.value = "";
     };
     reader.onerror = () => {
       setLoadError(`Could not read ${file.name}`);
       setFlash({ tone: "ok", text: `Could not read ${file.name}` });
+      setLoadTab("local");
       setLoadOpen(true);
+      if (fileRef.current) fileRef.current.value = "";
+      if (driveFileRef.current) driveFileRef.current.value = "";
     };
     reader.readAsText(file);
-    if (fileRef.current) fileRef.current.value = "";
-    if (driveFileRef.current) driveFileRef.current.value = "";
   }
 
   function handleRun() {
@@ -659,9 +688,6 @@ export function BotBuilderDesk({
   });
   const durationRule = DURATION_RULES[snapshot.tradeType];
   const durationLimit = durationBounds(snapshot.tradeType, snapshot.durationUnit);
-  const chartTicks = tickHistory
-    .filter((tick) => tick.symbol === snapshot.symbol)
-    .slice(-80);
   const flyoutBlocks = (() => {
     if (!openGroup) return [];
     const cat = categories.find((item) => item.id === openGroup.cat);
@@ -921,7 +947,8 @@ export function BotBuilderDesk({
                   (item.id === "undo" && historyIndex <= 0) ||
                   (item.id === "redo" && historyIndex >= history.length - 1);
                 const on =
-                  (item.id === "charts" && chartOpen) || (item.id === "tradingview" && tvOpen);
+                  (item.id === "charts" && chartOpen) ||
+                  (item.id === "tradingview" && chartOpen && chartTradingView);
                 return (
                   <button
                     key={item.id}
@@ -940,7 +967,19 @@ export function BotBuilderDesk({
               })}
             </div>
           </header>
-          <section className="bot-builder-canvas" data-scroll-pane>
+          <section
+            className="bot-builder-canvas"
+            data-scroll-pane
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes("Files")) return;
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              if (!event.dataTransfer.files.length) return;
+              event.preventDefault();
+              handleFile(event.dataTransfer.files);
+            }}
+          >
           <div
             className="bot-builder-canvas-grid"
             style={{ transform: `scale(${snapshot.zoom})`, transformOrigin: "top left" }}
@@ -1188,7 +1227,10 @@ export function BotBuilderDesk({
                 <button
                   type="button"
                   className="bot-builder-btn-primary"
-                  onClick={() => fileRef.current?.click()}
+                  onClick={() => {
+                    if (fileRef.current) fileRef.current.value = "";
+                    fileRef.current?.click();
+                  }}
                 >
                   Select an XML file from your device
                 </button>
@@ -1317,36 +1359,37 @@ export function BotBuilderDesk({
       ) : null}
 
       {chartOpen ? (
-        <div className="chart-desk-modal" role="dialog" aria-modal="true" onClick={() => setChartOpen(false)}>
+        <div
+          className="chart-desk-modal bot-builder-chart-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-builder-chart-title"
+          onClick={() => {
+            setChartOpen(false);
+            setChartTradingView(false);
+          }}
+        >
           <div onClick={(event) => event.stopPropagation()}>
             <header>
-              <span>Chart</span>
-              <button type="button" onClick={() => setChartOpen(false)}>
+              <span id="tc-builder-chart-title">Chart · {snapshot.market}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setChartOpen(false);
+                  setChartTradingView(false);
+                }}
+              >
                 Close
               </button>
             </header>
-            <div className="bot-builder-chart-panel">
-              <p className="bot-builder-chart-quote">
-                {lastQuote != null ? lastQuote.toFixed(2) : "Waiting for ticks"}
-              </p>
-              <BuilderSparkline ticks={chartTicks} />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {tvOpen ? (
-        <div className="chart-desk-modal" role="dialog" aria-modal="true" onClick={() => setTvOpen(false)}>
-          <div onClick={(event) => event.stopPropagation()}>
-            <header>
-              <span>TradingView Chart</span>
-              <button type="button" onClick={() => setTvOpen(false)}>
-                Close
-              </button>
-            </header>
-            <iframe
-              title="TradingView Chart"
-              src={`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(snapshot.symbol)}&interval=1&hidesidetoolbar=0&theme=light`}
+            <SmartChartPanel
+              symbol={snapshot.symbol}
+              isConnected={isConnected}
+              initialChartType={chartTradingView ? "candle" : "mountain"}
+              onSymbolChange={handleChartSymbolChange}
+              fetchChartQuotes={fetchChartQuotes}
+              subscribeChartStream={subscribeChartStream}
+              demoTicks={fetchChartQuotes ? undefined : tickHistory}
             />
           </div>
         </div>
@@ -1381,6 +1424,7 @@ export function BotBuilderDesk({
 
       <DriveFileDialog
         inputId="tc-builder-xml-drive"
+        inputRef={driveFileRef}
         open={driveOpen}
         onClose={() => setDriveOpen(false)}
       />
@@ -1417,27 +1461,5 @@ export function BotBuilderDesk({
         />
       ) : null}
     </div>
-  );
-}
-
-function BuilderSparkline({ ticks }: { ticks: TickEvent[] }) {
-  if (ticks.length < 2) {
-    return <p className="bot-builder-chart-empty">Price ticks appear here once the market is live.</p>;
-  }
-  const quotes = ticks.map((tick) => tick.quote);
-  const min = Math.min(...quotes);
-  const max = Math.max(...quotes);
-  const span = max - min || 1;
-  const d = quotes
-    .map((quote, index) => {
-      const x = (index / (quotes.length - 1)) * 100;
-      const y = 36 - ((quote - min) / span) * 32;
-      return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-  return (
-    <svg className="bot-builder-sparkline" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
-      <path d={d} fill="none" stroke="#064e72" strokeWidth="1.4" />
-    </svg>
   );
 }

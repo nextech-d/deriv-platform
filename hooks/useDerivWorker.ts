@@ -190,6 +190,34 @@ export function useDerivWorker(
   const [chartHistory, setChartHistory] = useState<ChartHistorySnapshot | null>(null);
   const [chartHistoryLoading, setChartHistoryLoading] = useState(false);
   const chartKeyRef = useRef("");
+  const chartQuotesPendingRef = useRef(
+    new Map<
+      string,
+      {
+        resolve: (payload: {
+          prices?: number[];
+          times?: number[];
+          candles?: ChartHistorySnapshot["candles"];
+        }) => void;
+        reject: (error: Error) => void;
+      }
+    >(),
+  );
+  const chartStreamCallbacksRef = useRef(
+    new Map<
+      string,
+      (payload: {
+        symbol: string;
+        granularity: number;
+        epoch: number;
+        quote: number;
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+      }) => void
+    >(),
+  );
 
   const flushTradeQueue = useCallback(() => {
     if (tradeInFlightRef.current) return;
@@ -625,6 +653,28 @@ export function useDerivWorker(
           break;
         }
 
+        case "CHART_QUOTES": {
+          const pending = chartQuotesPendingRef.current.get(message.payload.requestId);
+          if (!pending) break;
+          chartQuotesPendingRef.current.delete(message.payload.requestId);
+          if (message.payload.error) {
+            pending.reject(new Error(message.payload.error));
+            break;
+          }
+          pending.resolve({
+            prices: message.payload.prices,
+            times: message.payload.times,
+            candles: message.payload.candles,
+          });
+          break;
+        }
+
+        case "CHART_STREAM_QUOTE": {
+          const callback = chartStreamCallbacksRef.current.get(message.payload.streamId);
+          callback?.(message.payload);
+          break;
+        }
+
         case "BALANCE":
           if (!isDemoMode) {
             setState((prev) => ({
@@ -747,6 +797,65 @@ export function useDerivWorker(
     [sendCommand],
   );
 
+  const fetchChartQuotes = useCallback(
+    (params: {
+      symbol: string;
+      granularity: number;
+      count?: number;
+      start?: number;
+      end?: number | "latest";
+    }) =>
+      new Promise<{
+        prices?: number[];
+        times?: number[];
+        candles?: ChartHistorySnapshot["candles"];
+      }>((resolve, reject) => {
+        const requestId = crypto.randomUUID();
+        chartQuotesPendingRef.current.set(requestId, { resolve, reject });
+        sendCommand({
+          type: "REQUEST_CHART_QUOTES",
+          payload: { requestId, ...params },
+        });
+        window.setTimeout(() => {
+          if (!chartQuotesPendingRef.current.has(requestId)) return;
+          chartQuotesPendingRef.current.delete(requestId);
+          reject(new Error("Chart quotes timed out"));
+        }, 25_000);
+      }),
+    [sendCommand],
+  );
+
+  const subscribeChartStream = useCallback(
+    (
+      params: { symbol: string; granularity: number },
+      onQuote: (payload: {
+        symbol: string;
+        granularity: number;
+        epoch: number;
+        quote: number;
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+      }) => void,
+    ) => {
+      const streamId = crypto.randomUUID();
+      chartStreamCallbacksRef.current.set(streamId, onQuote);
+      sendCommand({
+        type: "SUBSCRIBE_CHART_STREAM",
+        payload: { streamId, ...params },
+      });
+      return () => {
+        chartStreamCallbacksRef.current.delete(streamId);
+        sendCommand({
+          type: "UNSUBSCRIBE_CHART_STREAM",
+          payload: { streamId },
+        });
+      };
+    },
+    [sendCommand],
+  );
+
   const openContracts = state.contracts.filter((c) => !c.isSold);
 
   const sessionPnl = state.contracts.reduce(
@@ -765,6 +874,8 @@ export function useDerivWorker(
     closeContract,
     reconnect: () => sendCommand({ type: "FORCE_RECONNECT" }),
     requestChartHistory,
+    fetchChartQuotes,
+    subscribeChartStream,
     chartHistory,
     chartHistoryLoading,
     requestBalance: () => {

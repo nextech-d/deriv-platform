@@ -267,6 +267,34 @@ describe("strategy seeds", () => {
     expect(snapshot?.quickStrategy?.type).toBe("martingale");
   });
 
+  it("loads legacy Binary Bot XML with block type trade", () => {
+    const snapshot = snapshotFromXml(`
+      <xml xmlns="http://www.w3.org/1999/xhtml" collection="false">
+        <block type="trade" x="0" y="0">
+          <field name="MARKET_LIST">synthetic_index</field>
+          <field name="SUBMARKET_LIST">random_index</field>
+          <field name="SYMBOL_LIST">R_75</field>
+          <field name="TRADETYPECAT_LIST">digits</field>
+          <field name="TRADETYPE_LIST">evenodd</field>
+          <field name="TYPE_LIST">both</field>
+          <field name="CANDLEINTERVAL_LIST">60</field>
+          <field name="TIME_MACHINE_ENABLED">FALSE</field>
+          <field name="RESTARTONERROR">TRUE</field>
+          <statement name="SUBMARKET">
+            <block type="trade_definition_tradeoptions">
+              <field name="DURATIONTYPE_LIST">t</field>
+              <value name="DURATION"><field name="NUM">1</field></value>
+              <value name="AMOUNT"><field name="NUM">0.35</field></value>
+            </block>
+          </statement>
+        </block>
+      </xml>
+    `);
+    expect(snapshot?.symbol).toBe("R_75");
+    expect(snapshot?.tradeType).toBe("Even/Odd");
+    expect(snapshot?.stake).toBe("0.35");
+  });
+
   it("uses official Deriv Derived groups on Bot Builder", () => {
     const path = findBuilderMarketPath("R_100");
     expect(path?.category.label).toBe("Derived");
