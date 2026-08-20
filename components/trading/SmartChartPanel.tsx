@@ -8,6 +8,27 @@ import { smartchartsActiveSymbols } from "@/lib/chart/smartcharts-symbols";
 
 let publicPathReady = false;
 
+/** SmartCharts chart type ids (Flutter enum) — not the same as our ChartDesk names. */
+function normalizeSmartChartType(type: string): string {
+  switch (type.toLowerCase()) {
+    case "candle":
+    case "candles":
+      return "candles";
+    case "mountain":
+    case "area":
+    case "line":
+      return "line";
+    case "ohlc":
+    case "colored_bar":
+      return "ohlc";
+    case "hollow":
+    case "hollow_candle":
+      return "hollow";
+    default:
+      return type;
+  }
+}
+
 const SmartChart = dynamic(
   () =>
     import("@deriv-com/smartcharts-champion").then((module) => {
@@ -33,7 +54,7 @@ interface SmartChartPanelProps extends SmartChartFeedSource {
 export function SmartChartPanel({
   symbol,
   isConnected = false,
-  initialChartType = "mountain",
+  initialChartType = "line",
   onSymbolChange,
   fetchChartQuotes,
   subscribeChartStream,
@@ -71,7 +92,7 @@ export function SmartChartPanel({
       <SmartChart
         id="bot-builder-smartchart"
         symbol={symbol}
-        chartType={initialChartType}
+        chartType={normalizeSmartChartType(initialChartType)}
         getQuotes={feed.getQuotes}
         subscribeQuotes={feed.subscribeQuotes}
         unsubscribeQuotes={feed.unsubscribeQuotes}

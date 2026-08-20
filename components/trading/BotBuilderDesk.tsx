@@ -1385,7 +1385,7 @@ export function BotBuilderDesk({
             <SmartChartPanel
               symbol={snapshot.symbol}
               isConnected={isConnected}
-              initialChartType={chartTradingView ? "candle" : "mountain"}
+              initialChartType={chartTradingView ? "candles" : "line"}
               onSymbolChange={handleChartSymbolChange}
               fetchChartQuotes={fetchChartQuotes}
               subscribeChartStream={subscribeChartStream}
