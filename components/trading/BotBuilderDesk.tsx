@@ -42,11 +42,17 @@ import {
   normalizeLoadedSnapshot,
   normalizePurchase,
   purchasesForTradeType,
+  quickStrategyToSnapshot,
   type BotBuilderSnapshot,
   type BuilderTradeType,
   type DurationUnit,
 } from "@/lib/terminal/strategy-seed";
 import { TourDialog } from "@/components/trading/TourDialog";
+import {
+  DriveFileDialog,
+  LoadBotSourceGrid,
+  QuickStrategyDialog,
+} from "@/components/trading/LoadBotSourceGrid";
 import { consumeBuilderHandoff } from "@/lib/terminal/desk-handoff";
 import type { BotConfig, QuickStrategyType } from "@/lib/bot/types";
 import { QUICK_STRATEGY_METAS } from "@/lib/bot/types";
@@ -164,6 +170,7 @@ export function BotBuilderDesk({
   recentJournal = [],
 }: BotBuilderDeskProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const driveFileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] =
     useState<BuilderCategoryId>("trade-parameters");
@@ -180,6 +187,9 @@ export function BotBuilderDesk({
   const [openGroup, setOpenGroup] = useState<{ cat: string; group: string } | null>(null);
   const [vhOpen, setVhOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  const [loadOpen, setLoadOpen] = useState(false);
+  const [driveOpen, setDriveOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -521,7 +531,7 @@ export function BotBuilderDesk({
       return;
     }
     if (id === "open") {
-      fileRef.current?.click();
+      setLoadOpen(true);
       return;
     }
     if (id === "save") {
@@ -597,6 +607,9 @@ export function BotBuilderDesk({
     };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = "";
+    if (driveFileRef.current) driveFileRef.current.value = "";
+    setLoadOpen(false);
+    setDriveOpen(false);
   }
 
   function handleRun() {
@@ -658,7 +671,17 @@ export function BotBuilderDesk({
       data-layout={compactLayout ? "compact" : "expanded"}
     >
       <input
+        id="tc-builder-xml-computer"
         ref={fileRef}
+        type="file"
+        accept=".xml,application/xml,text/xml,application/json"
+        className="tc-file-input"
+        tabIndex={-1}
+        onChange={(event) => handleFile(event.target.files)}
+      />
+      <input
+        id="tc-builder-xml-drive"
+        ref={driveFileRef}
         type="file"
         accept=".xml,application/xml,text/xml,application/json"
         className="tc-file-input"
@@ -1352,6 +1375,55 @@ export function BotBuilderDesk({
           </button>
         </aside>
       </div>
+
+      {loadOpen ? (
+        <div
+          className="tc-modal-scrim tc-load-scrim"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tc-builder-load-title"
+          onClick={() => setLoadOpen(false)}
+        >
+          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
+            <p className="tc-modal-title" id="tc-builder-load-title">
+              Load Bot
+            </p>
+            <p className="tc-modal-body">
+              Import XML from your computer or Google Drive, or start with a quick strategy.
+            </p>
+            <LoadBotSourceGrid
+              computerInputId="tc-builder-xml-computer"
+              sources={["computer", "drive", "quick"]}
+              onSelect={(source) => {
+                setLoadOpen(false);
+                if (source === "drive") setDriveOpen(true);
+                else if (source === "quick") setQuickOpen(true);
+              }}
+            />
+            <button
+              type="button"
+              className="tc-btn tc-btn-ghost"
+              onClick={() => setLoadOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <DriveFileDialog
+        inputId="tc-builder-xml-drive"
+        open={driveOpen}
+        onClose={() => setDriveOpen(false)}
+      />
+      <QuickStrategyDialog
+        open={quickOpen}
+        onClose={() => setQuickOpen(false)}
+        onPick={(type) => {
+          setQuickOpen(false);
+          applySnapshot(quickStrategyToSnapshot(type), `Quick strategy · ${type}`);
+        }}
+      />
 
       {tourOpen ? (
         <TourDialog

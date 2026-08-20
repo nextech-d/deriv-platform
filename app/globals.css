@@ -20967,16 +20967,17 @@ body {
 }
 
 .tc-file-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-  opacity: 0;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 .tc-load-scrim {
@@ -20994,7 +20995,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
   gap: 10px;
+  width: 100%;
   padding: 14px 12px;
   border: 1px solid var(--tc-window-border);
   border-radius: 0.75rem;
@@ -21590,6 +21593,43 @@ body {
   margin-top: 4px;
 }
 
+.tc-load-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tc-quick-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tc-quick-item {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--tc-window-border);
+  border-radius: 0.75rem;
+  background: var(--tc-window-bg);
+  box-shadow: var(--tc-window-shadow);
+  cursor: pointer;
+  color: var(--foreground);
+}
+
+.tc-quick-item strong {
+  display: block;
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.tc-quick-item span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .dangote-header__left {
   display: flex;
   align-items: center;
@@ -21704,7 +21744,7 @@ body {
 
 .dangote-layout .sidebar-feed-dot-live { background: var(--dg-green); }
 
-.dangote-layout input,
+.dangote-layout input:not(.tc-file-input),
 .dangote-layout select,
 .dangote-layout textarea {
   background: var(--dg-input-bg);
@@ -22223,7 +22263,7 @@ html[data-theme] :is(
   color: var(--foreground);
 }
 
-html[data-theme] :is(.tc-shell, .marketing-page, .login-shell) :is(input, select, textarea) {
+html[data-theme] :is(.tc-shell, .marketing-page, .login-shell) :is(input, select, textarea):not(.tc-file-input) {
   background: var(--dg-input-bg);
   color: var(--foreground);
   border-color: var(--dg-input-border);

@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowRight, HardDrive } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { MarketingAuthButtons } from "@/components/marketing/MarketingAuthButtons";
+import {
+  DriveFileDialog,
+  LoadBotSourceGrid,
+  QuickStrategyDialog,
+} from "@/components/trading/LoadBotSourceGrid";
 import {
   isPlatformNavId,
   platformSectionIdFromNavId,
@@ -11,6 +16,7 @@ import {
 import { DASHBOARD_WINDOWS, type DashboardWindow } from "@/lib/terminal/dashboard-windows";
 import { writeBuilderHandoff, writeFreeBotsTier } from "@/lib/terminal/desk-handoff";
 import {
+  quickStrategyToSnapshot,
   snapshotFromXml,
   speedBotSnapshot,
 } from "@/lib/terminal/strategy-seed";
@@ -33,17 +39,23 @@ export function MarketingDashboardPanel({
   onNavigate,
 }: MarketingDashboardPanelProps) {
   const xmlInputRef = useRef<HTMLInputElement>(null);
+  const driveInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadOpen, setLoadOpen] = useState(false);
+  const [driveOpen, setDriveOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
 
   useEffect(() => {
-    if (!loadOpen) return;
+    if (!loadOpen && !driveOpen && !quickOpen) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setLoadOpen(false);
+      if (event.key !== "Escape") return;
+      setLoadOpen(false);
+      setDriveOpen(false);
+      setQuickOpen(false);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [loadOpen]);
+  }, [loadOpen, driveOpen, quickOpen]);
 
   function openWindow(deskWindow: DashboardWindow) {
     setLoadError(null);
@@ -95,6 +107,8 @@ export function MarketingDashboardPanel({
     };
     reader.readAsText(file);
     if (xmlInputRef.current) xmlInputRef.current.value = "";
+    if (driveInputRef.current) driveInputRef.current.value = "";
+    setDriveOpen(false);
   }
 
   return (
@@ -107,6 +121,15 @@ export function MarketingDashboardPanel({
       <input
         id="tc-marketing-xml"
         ref={xmlInputRef}
+        type="file"
+        accept=".xml,application/xml,text/xml,application/json,.json"
+        className="tc-file-input"
+        tabIndex={-1}
+        onChange={(event) => handleXmlSelected(event.target.files)}
+      />
+      <input
+        id="tc-marketing-xml-drive"
+        ref={driveInputRef}
         type="file"
         accept=".xml,application/xml,text/xml,application/json,.json"
         className="tc-file-input"
@@ -229,12 +252,18 @@ export function MarketingDashboardPanel({
               Load Bot
             </p>
             <p className="tc-modal-body">
-              Choose a TradeCity strategy XML from your computer.
+              Import XML from your computer or Google Drive, open Bot Builder, or start with a
+              quick strategy.
             </p>
-            <label htmlFor="tc-marketing-xml" className="tc-load-source">
-              <HardDrive style={{ width: 20, height: 20, color: "#0f766e" }} strokeWidth={1.75} />
-              My computer
-            </label>
+            <LoadBotSourceGrid
+              computerInputId="tc-marketing-xml"
+              onSelect={(source) => {
+                setLoadOpen(false);
+                if (source === "drive") setDriveOpen(true);
+                else if (source === "builder") go(onNavigate, "bot-builder");
+                else setQuickOpen(true);
+              }}
+            />
             <button
               type="button"
               className="tc-btn tc-btn-ghost"
@@ -245,6 +274,21 @@ export function MarketingDashboardPanel({
           </div>
         </div>
       ) : null}
+
+      <DriveFileDialog
+        inputId="tc-marketing-xml-drive"
+        open={driveOpen}
+        onClose={() => setDriveOpen(false)}
+      />
+      <QuickStrategyDialog
+        open={quickOpen}
+        onClose={() => setQuickOpen(false)}
+        onPick={(type) => {
+          setQuickOpen(false);
+          writeBuilderHandoff(quickStrategyToSnapshot(type));
+          go(onNavigate, "bot-builder");
+        }}
+      />
     </section>
   );
 }

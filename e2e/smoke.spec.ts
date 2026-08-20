@@ -35,6 +35,14 @@ test.describe("Marketing", () => {
       "Your bot desk",
     );
     await expect(page.getByRole("button", { name: /Load Bot/i })).toBeVisible();
+    await page.getByRole("button", { name: /Load Bot/i }).click();
+    const marketingLoad = page.getByRole("dialog", { name: "Load Bot" });
+    await expect(marketingLoad).toBeVisible();
+    await expect(marketingLoad.getByText("My computer", { exact: true })).toBeVisible();
+    await expect(marketingLoad.getByText("Google Drive", { exact: true })).toBeVisible();
+    await expect(marketingLoad.getByText("Bot builder", { exact: true })).toBeVisible();
+    await expect(marketingLoad.getByText("Quick strategy", { exact: true })).toBeVisible();
+    await marketingLoad.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByRole("button", { name: /Switch to (dark|light) theme/i })).toBeVisible();
   });
 
@@ -169,6 +177,10 @@ test.describe("Dashboard (demo mode)", () => {
       .click();
     const loadDialog = page.getByRole("dialog", { name: "Load Bot" });
     await expect(loadDialog).toBeVisible();
+    await expect(loadDialog.getByText("My computer", { exact: true })).toBeVisible();
+    await expect(loadDialog.getByText("Google Drive", { exact: true })).toBeVisible();
+    await expect(loadDialog.getByText("Bot builder", { exact: true })).toBeVisible();
+    await expect(loadDialog.getByText("Quick strategy", { exact: true })).toBeVisible();
     const [chooser] = await Promise.all([
       page.waitForEvent("filechooser"),
       loadDialog.getByText("My computer", { exact: true }).click(),

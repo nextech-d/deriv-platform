@@ -37,7 +37,7 @@ export const DASHBOARD_WINDOWS: DashboardWindow[] = [
   {
     id: "load-bot",
     title: "Load Bot",
-    summary: "Import an XML from your device",
+    summary: "Import XML, Drive, Builder, or a quick strategy",
     action: "Choose XML",
     icon: FileUp,
     view: "bot-builder",

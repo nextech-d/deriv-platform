@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowRight, Bell, Bot, Folder, HardDrive, Sparkles, Workflow } from "lucide-react";
+import { ArrowRight, Bell, Bot } from "lucide-react";
 import type { AppView } from "@/components/layout/AppShell";
 import type { HomeOnboardingStep } from "@/lib/terminal/home-onboarding";
 import type { DisplayCurrency } from "@/hooks/useDisplayCurrency";
@@ -9,6 +9,11 @@ import type { DerivAccount } from "@/lib/session/types";
 import type { OpenContractRecord } from "@/lib/state/types";
 import type { ConnectionState } from "@/lib/ws/protocol";
 import { TourDialog } from "@/components/trading/TourDialog";
+import {
+  DriveFileDialog,
+  LoadBotSourceGrid,
+  QuickStrategyDialog,
+} from "@/components/trading/LoadBotSourceGrid";
 import {
   DASHBOARD_WINDOWS,
   type DashboardWindow,
@@ -21,8 +26,6 @@ import {
   speedBotSnapshot,
   type BotBuilderSnapshot,
 } from "@/lib/terminal/strategy-seed";
-import type { QuickStrategyType } from "@/lib/bot/types";
-import { QUICK_STRATEGY_METAS } from "@/lib/bot/types";
 
 interface TerminalHomeViewProps {
   demoMode?: boolean;
@@ -85,12 +88,6 @@ const ANNOUNCEMENTS = [
     title: "Risk warning",
     body: "Trading involves risk. Never trade money you cannot afford to lose. Past performance does not guarantee future results.",
   },
-];
-
-const QUICK_PICK: QuickStrategyType[] = [
-  "martingale",
-  "dalembert",
-  "oscars_grind",
 ];
 
 const XML_ACCEPT = ".xml,application/xml,text/xml,application/json,.json";
@@ -234,32 +231,11 @@ export function TerminalHomeView({
     onNavigate(deskWindow.view);
   }
 
-  const cards = [
-    {
-      id: "computer",
-      title: "My computer",
-      icon: HardDrive,
-      inputId: "tc-xml-computer",
-    },
-    {
-      id: "drive",
-      title: "Google Drive",
-      icon: Folder,
-      onClick: () => setDriveOpen(true),
-    },
-    {
-      id: "builder",
-      title: "Bot builder",
-      icon: Workflow,
-      onClick: () => onNavigate("bot-builder"),
-    },
-    {
-      id: "quick",
-      title: "Quick strategy",
-      icon: Sparkles,
-      onClick: () => setQuickOpen(true),
-    },
-  ];
+  function selectLoadSource(source: "drive" | "builder" | "quick") {
+    if (source === "drive") setDriveOpen(true);
+    else if (source === "builder") onNavigate("bot-builder");
+    else setQuickOpen(true);
+  }
 
   const feedLive = connectionState === "connected";
   const signedIn = Boolean(activeAccount);
@@ -497,56 +473,11 @@ export function TerminalHomeView({
             Import a bot from your computer or Google Drive, build it from scratch, or start
             with a quick strategy.
           </p>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
-              maxWidth: 420,
-            }}
-          >
-            {cards.map((card) => {
-              const Icon = card.icon;
-              const inner = (
-                <>
-                  <Icon style={{ width: 22, height: 22, color: "#0d4d4d" }} strokeWidth={1.75} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--dg-text)" }}>
-                    {card.title}
-                  </span>
-                </>
-              );
-              const cardStyle: CSSProperties = {
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: 10,
-                padding: "16px 14px",
-                border: "1px solid var(--dg-border)",
-                borderRadius: 8,
-                background: "var(--dg-surface)",
-                cursor: "pointer",
-                textAlign: "left",
-                minHeight: 88,
-              };
-              if ("inputId" in card && card.inputId) {
-                return (
-                  <label key={card.id} htmlFor={card.inputId} className="tc-load-source" style={cardStyle}>
-                    {inner}
-                  </label>
-                );
-              }
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={card.onClick}
-                  className="tc-load-source"
-                  style={cardStyle}
-                >
-                  {inner}
-                </button>
-              );
-            })}
+          <div style={{ maxWidth: 420 }}>
+            <LoadBotSourceGrid
+              computerInputId="tc-xml-computer"
+              onSelect={selectLoadSource}
+            />
           </div>
         </section>
 
@@ -636,37 +567,13 @@ export function TerminalHomeView({
               Import XML from your computer or Google Drive, open Bot Builder, or start with a
               quick strategy.
             </p>
-            <div className="tc-load-grid">
-              {cards.map((card) => {
-                const Icon = card.icon;
-                const inner = (
-                  <>
-                    <Icon style={{ width: 20, height: 20, color: "#0f766e" }} strokeWidth={1.75} />
-                    {card.title}
-                  </>
-                );
-                if ("inputId" in card && card.inputId) {
-                  return (
-                    <label key={card.id} htmlFor={card.inputId} className="tc-load-source">
-                      {inner}
-                    </label>
-                  );
-                }
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    className="tc-load-source"
-                    onClick={() => {
-                      setLoadOpen(false);
-                      card.onClick?.();
-                    }}
-                  >
-                    {inner}
-                  </button>
-                );
-              })}
-            </div>
+            <LoadBotSourceGrid
+              computerInputId="tc-xml-computer"
+              onSelect={(source) => {
+                setLoadOpen(false);
+                selectLoadSource(source);
+              }}
+            />
             <button
               type="button"
               className="tc-btn tc-btn-ghost"
@@ -678,107 +585,19 @@ export function TerminalHomeView({
         </div>
       ) : null}
 
-      {driveOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="tc-drive-title"
-          className="tc-modal-scrim"
-          onClick={() => setDriveOpen(false)}
-        >
-          <div className="tc-modal" onClick={(event) => event.stopPropagation()}>
-            <p className="tc-modal-title" id="tc-drive-title">
-              Google Drive
-            </p>
-            <p className="tc-modal-body">
-              Choose a bot XML saved from Google Drive. This desk opens a local file picker — pick
-              the file you downloaded from Drive.
-            </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-              <button
-                type="button"
-                className="tc-btn tc-btn-ghost"
-                onClick={() => setDriveOpen(false)}
-              >
-                Cancel
-              </button>
-              <label htmlFor="tc-xml-drive" className="tc-btn tc-btn-solid" style={{ cursor: "pointer" }}>
-                Choose from Google Drive
-              </label>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {quickOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="tc-quick-title"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 55,
-          }}
-          onClick={() => setQuickOpen(false)}
-        >
-          <div
-            className="tc-modal"
-            style={{ width: "min(460px, calc(100vw - 32px))" }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="tc-modal-title" id="tc-quick-title">
-              Quick strategy
-            </p>
-            <p className="tc-modal-body">
-              Pick a ready-made stake progression. Trade parameters open in Bot Builder so you can
-              tweak them before you run.
-            </p>
-            <div style={{ display: "grid", gap: 8 }}>
-              {QUICK_PICK.map((type) => {
-                const meta = QUICK_STRATEGY_METAS.find((item) => item.type === type);
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setQuickOpen(false);
-                      onApplySnapshot(quickStrategyToSnapshot(type));
-                    }}
-                    style={{
-                      textAlign: "left",
-                      padding: "12px 14px",
-                      border: "1px solid var(--dg-border)",
-                      borderRadius: 8,
-                      background: "var(--dg-surface)",
-                      cursor: "pointer",
-                      color: "var(--dg-text)",
-                    }}
-                  >
-                    <strong style={{ display: "block", fontSize: 14, color: "var(--dg-text)" }}>
-                      {meta?.label ?? type}
-                    </strong>
-                    <span style={{ fontSize: 12, color: "var(--dg-muted)" }}>{meta?.description}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-              <button
-                type="button"
-                className="tc-btn tc-btn-ghost"
-                onClick={() => setQuickOpen(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <DriveFileDialog
+        inputId="tc-xml-drive"
+        open={driveOpen}
+        onClose={() => setDriveOpen(false)}
+      />
+      <QuickStrategyDialog
+        open={quickOpen}
+        onClose={() => setQuickOpen(false)}
+        onPick={(type) => {
+          setQuickOpen(false);
+          onApplySnapshot(quickStrategyToSnapshot(type));
+        }}
+      />
 
       {tourOpen ? (
         <TourDialog
