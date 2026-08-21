@@ -13,8 +13,8 @@ import {
 import './copy-trader-desk.scss';
 
 const MODES: { id: CopyMode; title: string; hint: string }[] = [
-    { id: 'demo', title: 'Demo accounts', hint: 'Uses practice funds' },
-    { id: 'real', title: 'Real accounts', hint: 'Uses real funds' },
+    { id: 'demo', title: 'Demo accounts', hint: 'Practice funds' },
+    { id: 'real', title: 'Real accounts', hint: 'Real funds' },
 ];
 
 interface CopyTraderDeskProps {
@@ -93,7 +93,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                     <Heading running={false} />
                     <div className='copy-trader-desk__card copy-trader-desk__empty'>
                         <h3>Sign in first</h3>
-                        <p>Log in to your Deriv account to add Personal Access Tokens and copy trades.</p>
+                        <p>Log in to add PATs and copy trades.</p>
                     </div>
                 </div>
             </div>
@@ -110,10 +110,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                 <section className='copy-trader-desk__card copy-trader-desk__pat'>
                     <div className='copy-trader-desk__pat-copy'>
                         <h3>Add a PAT</h3>
-                        <p>
-                            Create the PAT in Deriv with the Trade scope. We verify its options accounts, encrypt it,
-                            and never return the plaintext value.
-                        </p>
+                        <p>Trade-scoped PAT. We encrypt it.</p>
                     </div>
                     <form
                         className='copy-trader-desk__pat-form'
@@ -178,8 +175,8 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
 
                 <section className='copy-trader-desk__card copy-trader-desk__mode'>
                     <span className='copy-trader-desk__eyebrow'>Copy trading mode</span>
-                    <h3>Choose where copied trades run</h3>
-                    <p>One copy-trading session uses one account type. Demo and real balances never mix.</p>
+                    <h3>Where trades run</h3>
+                    <p>Demo and real never mix.</p>
 
                     <div className='copy-trader-desk__mode-row'>
                         <div className='copy-trader-desk__mode-options' role='radiogroup' aria-label='Copy trading mode'>
@@ -218,8 +215,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                             ) : null}
                             {!state.blocker && copiesNothing ? (
                                 <p className='copy-trader-desk__blocker'>
-                                    <span aria-hidden='true'>●</span> {source} is the account you trade from, so
-                                    nothing will be copied. Enable another {mode} account to copy onto.
+                                    <span aria-hidden='true'>●</span> Enable another {mode} account.
                                 </p>
                             ) : null}
                             <button
@@ -228,7 +224,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                                 disabled={busy || loading || (!running && Boolean(state.blocker))}
                                 onClick={() => run(() => (running ? copyApi.stop() : copyApi.start()))}
                             >
-                                {running ? `Stop ${modeLabel} copy trading` : `Start ${modeLabel} copy trading`}
+                                {running ? `Stop ${modeLabel} copy` : `Start ${modeLabel} copy`}
                             </button>
                         </div>
                     </div>
@@ -238,7 +234,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                     <AccountCard
                         variant='real'
                         title='Real accounts'
-                        blurb='Trades use the available cash balance on these accounts.'
+                        blurb='Uses cash balances.'
                         accounts={accountsForMode(state.accounts, 'real')}
                         tally={tallies.real}
                         busy={busy || running}
@@ -247,7 +243,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                     <AccountCard
                         variant='demo'
                         title='Demo accounts'
-                        blurb='Practice safely with virtual balances before copying live trades.'
+                        blurb='Uses virtual balances.'
                         accounts={accountsForMode(state.accounts, 'demo')}
                         tally={tallies.demo}
                         busy={busy || running}
@@ -264,10 +260,7 @@ const Heading = ({ running }: { running: boolean }) => (
         <div>
             <span className='copy-trader-desk__eyebrow'>Multi-account trading</span>
             <h2>Copy trading accounts</h2>
-            <p>
-                Add Deriv v2 Personal Access Tokens here. Tokens are encrypted server-side and your saved accounts
-                follow your verified Deriv login across devices.
-            </p>
+            <p>Add a Deriv PAT. Tokens stay encrypted.</p>
         </div>
         <span className={classNames('copy-trader-desk__status', { running })}>
             <span aria-hidden='true'>●</span> {running ? 'Copy trading running' : 'Copy trading paused'}
@@ -323,7 +316,7 @@ const AccountCard = ({ variant, title, blurb, accounts, tally, busy, onToggle }:
                     ∿
                 </span>
                 <h4>No {variant} accounts</h4>
-                <p>Add a PAT above. Any accounts discovered for this environment will appear here.</p>
+                <p>Add a PAT above.</p>
             </div>
         )}
     </section>
