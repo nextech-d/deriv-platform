@@ -199,6 +199,7 @@ export function BotBuilderDesk({
   const skipFirstSeed = useRef(true);
   /** Skip the next seedKey effect when installBot already synced parent state. */
   const skipSeedEffectRef = useRef(false);
+  const chartReferenceRequestedRef = useRef(false);
   const onSymbolChangeRef = useRef(onSymbolChange);
   onSymbolChangeRef.current = onSymbolChange;
   const onSeedChangeRef = useRef(onSeedChange);
@@ -296,8 +297,14 @@ export function BotBuilderDesk({
   useEffect(() => {
     if (!chartOpen || !onSubscribeTicks) return;
     onSubscribeTicks(snapshot.symbol);
+  }, [chartOpen, onSubscribeTicks, snapshot.symbol]);
+
+  useEffect(() => {
+    if (!chartOpen) return;
+    if (chartActiveSymbols?.length || chartReferenceRequestedRef.current) return;
+    chartReferenceRequestedRef.current = true;
     onRequestChartReference?.();
-  }, [chartOpen, onRequestChartReference, onSubscribeTicks, snapshot.symbol]);
+  }, [chartActiveSymbols, chartOpen, onRequestChartReference]);
 
   function persistChartProps(next: {
     symbol?: string;

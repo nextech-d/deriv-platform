@@ -2283,12 +2283,6 @@ html[data-boot-hold] body {
   pointer-events: auto;
 }
 
-.cq-modal-dropdown.stxMenuActive {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 100000 !important;
-}
-
 .dashboard__chart-wrapper .cq-top-ui-widgets {
   z-index: 3;
 }

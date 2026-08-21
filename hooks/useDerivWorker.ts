@@ -691,8 +691,23 @@ export function useDerivWorker(
               activeSymbolsFromDerivApi(message.payload.activeSymbols as DerivActiveSymbolRow[]),
               tradingTimesFromDerivApi(message.payload.tradingTimes),
             );
-            setChartActiveSymbols(merged.activeSymbols);
-            setChartTradingTimes(merged.tradingTimes);
+            setChartActiveSymbols((prev) =>
+              prev.length === merged.activeSymbols.length &&
+              prev.every((row, index) => row.symbol === merged.activeSymbols[index]?.symbol)
+                ? prev
+                : merged.activeSymbols,
+            );
+            setChartTradingTimes((prev) => {
+              const prevKeys = Object.keys(prev);
+              const nextKeys = Object.keys(merged.tradingTimes);
+              if (
+                prevKeys.length === nextKeys.length &&
+                prevKeys.every((key) => prev[key]?.isOpen === merged.tradingTimes[key]?.isOpen)
+              ) {
+                return prev;
+              }
+              return merged.tradingTimes;
+            });
           }
           break;
         }

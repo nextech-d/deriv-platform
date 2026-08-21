@@ -90,66 +90,78 @@ function latestTickForSymbol(ticks: TickEvent[] | undefined, symbol: string | un
 }
 
 export function useSmartChartFeed(source: SmartChartFeedSource) {
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
+
   const streamCleanupRef = useRef(new Map<string, () => void>());
-  const liveCallbacksRef = useRef(new Map<string, { granularity: number; callback: (quote: ReturnType<typeof smartChartTickQuote>) => void }>());
+  const liveCallbacksRef = useRef(
+    new Map<
+      string,
+      { granularity: number; callback: (quote: ReturnType<typeof smartChartTickQuote>) => void }
+    >(),
+  );
   const lastLiveEpochRef = useRef(new Map<string, number>());
 
-  const getQuotes: TGetQuotes = useCallback(
-    async ({ symbol, granularity, count, start, end }) => {
-      const g = asGranularity(granularity);
+  const getQuotes: TGetQuotes = useCallback(async ({ symbol, granularity, count, start, end }) => {
+    const g = asGranularity(granularity);
+    const { fetchChartQuotes, demoTicks } = sourceRef.current;
 
-      if (source.fetchChartQuotes) {
-        try {
-          const result = await source.fetchChartQuotes({
-            symbol,
-            granularity: g,
-            count,
-            start,
-            end,
-          });
+    if (fetchChartQuotes) {
+      try {
+        const result = await fetchChartQuotes({
+          symbol,
+          granularity: g,
+          count,
+          start,
+          end,
+        });
 
-          if (g === 0) {
-            return {
-              history: {
-                prices: result.prices ?? [],
-                times: (result.times ?? []).map((time) => derivEpoch(time)),
-              },
-            };
-          }
-
+        if (g === 0) {
           return {
-            candles: (result.candles ?? []).map((candle) => ({
-              open: candle.open,
-              high: candle.high,
-              low: candle.low,
-              close: candle.close,
-              epoch: derivEpoch(candle.epoch),
-            })),
+            history: {
+              prices: result.prices ?? [],
+              times: (result.times ?? []).map((time) => derivEpoch(time)),
+            },
           };
-        } catch {
-          return g === 0
-            ? { history: { prices: [], times: [] } }
-            : { candles: [] };
         }
-      }
 
-      if (g === 0 && source.demoTicks?.length) {
-        const history = demoHistoryFromTicks(source.demoTicks, symbol);
-        return { history };
+        return {
+          candles: (result.candles ?? []).map((candle) => ({
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+            epoch: derivEpoch(candle.epoch),
+          })),
+        };
+      } catch {
+        return g === 0
+          ? { history: { prices: [], times: [] } }
+          : { candles: [] };
       }
+    }
 
-      throw new Error("Chart feed unavailable");
-    },
-    [source.demoTicks, source.fetchChartQuotes],
-  );
+    if (g === 0 && demoTicks?.length) {
+      const history = demoHistoryFromTicks(demoTicks, symbol);
+      return { history };
+    }
+
+    throw new Error("Chart feed unavailable");
+  }, []);
 
   const deliverLiveTick = useCallback(
-    (symbol: string, granularity: number, epoch: number, quote: number, ohlc?: {
-      open?: number;
-      high?: number;
-      low?: number;
-      close?: number;
-    }) => {
+    (
+      symbol: string,
+      granularity: number,
+      epoch: number,
+      quote: number,
+      ohlc?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+      },
+    ) => {
       const key = `${symbol}:${granularity}`;
       const entry = liveCallbacksRef.current.get(key);
       if (!entry) return;
@@ -168,40 +180,32 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
 
   const subscribeQuotes: TSubscribeQuotes = useCallback(
     (params, callback) => {
+      const { demoTicks, liveTicks, subscribeChartStream } = sourceRef.current;
       const granularity = asGranularity(params.granularity);
       const key = `${params.symbol}:${granularity}`;
 
       liveCallbacksRef.current.set(key, { granularity, callback });
       lastLiveEpochRef.current.delete(key);
 
-      const latest = latestTickForSymbol(source.liveTicks, params.symbol);
+      const latest = latestTickForSymbol(liveTicks, params.symbol);
       if (latest && granularity === 0) {
         deliverLiveTick(params.symbol, granularity, latest.epoch, latest.quote);
       }
 
-      if (source.subscribeChartStream) {
+      if (subscribeChartStream) {
         streamCleanupRef.current.get(key)?.();
-        const cleanup = source.subscribeChartStream(
-          { symbol: params.symbol, granularity },
-          (payload) => {
-            deliverLiveTick(
-              params.symbol,
-              granularity,
-              payload.epoch,
-              payload.quote,
-              {
-                open: payload.open,
-                high: payload.high,
-                low: payload.low,
-                close: payload.close,
-              },
-            );
-          },
-        );
+        const cleanup = subscribeChartStream({ symbol: params.symbol, granularity }, (payload) => {
+          deliverLiveTick(params.symbol, granularity, payload.epoch, payload.quote, {
+            open: payload.open,
+            high: payload.high,
+            low: payload.low,
+            close: payload.close,
+          });
+        });
         streamCleanupRef.current.set(key, cleanup);
       }
 
-      if (granularity !== 0 || !source.demoTicks?.length || source.subscribeChartStream) {
+      if (granularity !== 0 || !demoTicks?.length || subscribeChartStream) {
         return () => {
           liveCallbacksRef.current.delete(key);
           lastLiveEpochRef.current.delete(key);
@@ -212,7 +216,7 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
 
       let lastEpoch = 0;
       const timer = window.setInterval(() => {
-        const tick = latestTickForSymbol(source.demoTicks, params.symbol);
+        const tick = latestTickForSymbol(sourceRef.current.demoTicks, params.symbol);
         if (!tick) return;
         const epoch = derivEpoch(tick.epoch);
         if (epoch <= lastEpoch) return;
@@ -226,7 +230,7 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
         lastLiveEpochRef.current.delete(key);
       };
     },
-    [deliverLiveTick, source.demoTicks, source.liveTicks, source.subscribeChartStream],
+    [deliverLiveTick],
   );
 
   const unsubscribeQuotes: TUnsubscribeQuotes = useCallback((request) => {
@@ -266,8 +270,8 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
   }, []);
 
   useEffect(() => {
-    const symbol = source.symbol;
-    const latest = latestTickForSymbol(source.liveTicks, symbol);
+    const { symbol, liveTicks } = sourceRef.current;
+    const latest = latestTickForSymbol(liveTicks, symbol);
     if (!symbol || !latest) return;
     deliverLiveTick(symbol, 0, latest.epoch, latest.quote);
   }, [deliverLiveTick, source.liveTicks, source.symbol]);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import "@deriv-com/smartcharts-champion/dist/smartcharts.css";
 import type { ActiveSymbol, TradingTimesMap } from "@deriv-com/smartcharts-champion";
