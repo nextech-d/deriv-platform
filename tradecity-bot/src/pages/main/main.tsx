@@ -31,12 +31,6 @@ import {
     setModalStateChangeCallback,
 } from '@/utils/trade-type-modal-handler';
 import { loadFreeBotInBuilder } from '@/utils/load-free-bot';
-import {
-    LabelPairedChartLineCaptionRegularIcon,
-    LabelPairedObjectsColumnCaptionRegularIcon,
-    LabelPairedPuzzlePieceTwoCaptionBoldIcon,
-} from '@deriv/quill-icons/LabelPaired';
-import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
@@ -59,6 +53,46 @@ import './main.scss';
 
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 const Tutorial = lazy(() => import('../tutorials'));
+
+const TAB_ICONS: Record<string, { color: string; path: string; stroke?: boolean }> = {
+    dashboard: { color: '#ff444f', path: 'M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z' },
+    bot_builder: { color: '#6366f1', path: 'M12 3l2 3h3l-2 3 2 3h-3l-2 3-2-3H7l2-3-2-3h3z' },
+    free_bots: { color: '#f59e0b', path: 'M12 2l2.2 6.8H21l-5.4 4 2.1 6.7L12 16.2 6.3 19.5l2.1-6.7L3 8.8h6.8z' },
+    d_trader: { color: '#0ea5e9', path: 'M4 16l5-6 4 3 7-9', stroke: true },
+    analysis_tool: { color: '#8b5cf6', path: 'M4 19V9m5 10V5m5 14v-8m5 8V7', stroke: true },
+    signal_center: {
+        color: '#ec4899',
+        path: 'M12 12a2 2 0 100-4 2 2 0 000 4zm-5 3a7 7 0 0110 0M5 18a11 11 0 0114 0',
+        stroke: true,
+    },
+    money_management: {
+        color: '#10b981',
+        path: 'M12 3v18m-6-4c0 2 2.7 3.5 6 3.5s6-1.5 6-3.5-2.7-3.5-6-3.5-6 1.5-6 3.5V7c0-2 2.7-3.5 6-3.5s6 1.5 6 3.5',
+        stroke: true,
+    },
+    copy_trader: { color: '#14b8a6', path: 'M9 8h10v12H9zM5 4h10v3', stroke: true },
+    edging: { color: '#f97316', path: 'M4 18l8-14 8 14z' },
+    edging_2: { color: '#e11d48', path: 'M5 19l7-14 7 14z' },
+    fast_trader: { color: '#06b6d4', path: 'M13 2L4 14h7l-1 8 10-14h-7z' },
+    chart: { color: '#3b82f6', path: 'M4 19h16M6 16l4-5 3 3 5-7', stroke: true },
+    ultimate_bot: { color: '#eab308', path: 'M12 3l2.4 7.2H22l-6 4.4 2.3 7.1L12 17.6 5.7 21.7 8 14.6 2 10.2h7.6z' },
+    bulk_trader: { color: '#22c55e', path: 'M4 7h16v3H4zm0 5h16v3H4zm0 5h16v3H4z' },
+    tutorial: { color: '#64748b', path: 'M4 5h16v14H4zm4 4h8M8 13h5', stroke: true },
+};
+
+const TabMark = ({ kind, label }: { kind: string; label: React.ReactNode }) => {
+    const icon = TAB_ICONS[kind] ?? TAB_ICONS.dashboard;
+    return (
+        <span className='main__tab-mark'>
+            <span className='main__tab-icon' style={{ color: icon.color }}>
+                <svg viewBox='0 0 24 24' aria-hidden='true' data-stroke={icon.stroke ? 'true' : undefined}>
+                    <path d={icon.path} />
+                </svg>
+            </span>
+            <span>{label}</span>
+        </span>
+    );
+};
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
@@ -378,57 +412,7 @@ const AppWrapper = observer(() => {
     };
 
     const renderTabLabel = (tab: (typeof PLATFORM_TABS)[number]) => {
-        const labelText = <Localize i18n_default_text={tab.label} />;
-
-        switch (tab.kind) {
-            case 'dashboard':
-                return (
-                    <>
-                        <LabelPairedObjectsColumnCaptionRegularIcon
-                            height='24px'
-                            width='24px'
-                            fill='var(--text-general)'
-                        />
-                        {labelText}
-                    </>
-                );
-            case 'bot_builder':
-                return (
-                    <>
-                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
-                            height='24px'
-                            width='24px'
-                            fill='var(--text-general)'
-                        />
-                        {labelText}
-                    </>
-                );
-            case 'chart':
-                return (
-                    <>
-                        <LabelPairedChartLineCaptionRegularIcon
-                            height='24px'
-                            width='24px'
-                            fill='var(--text-general)'
-                        />
-                        {labelText}
-                    </>
-                );
-            case 'tutorial':
-                return (
-                    <>
-                        <LegacyGuide1pxIcon
-                            height='16px'
-                            width='16px'
-                            fill='var(--text-general)'
-                            className='icon-general-fill-g-path'
-                        />
-                        {labelText}
-                    </>
-                );
-            default:
-                return labelText;
-        }
+        return <TabMark kind={tab.kind} label={<Localize i18n_default_text={tab.label} />} />;
     };
 
     const renderTabPanel = (tab: (typeof PLATFORM_TABS)[number]) => {

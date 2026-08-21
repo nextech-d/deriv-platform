@@ -14,9 +14,11 @@
 
     @include desktop-screen {
         .deriv-header {
-            height: 8.8rem;
+            height: 10rem;
             align-items: flex-start;
             overflow: visible;
+            border-bottom: 1px solid var(--general-section-1);
+            box-shadow: none;
         }
 
         // Keep logo, login and the rest on the original first row.

@@ -35,7 +35,7 @@
     padding: 1.6rem;
 
     @include desktop-screen {
-        height: calc(100vh - 12.4rem);
+        height: calc(100vh - 13.6rem);
     }
 
     @include mobile-or-tablet-screen {
@@ -77,18 +77,19 @@
 
             &__active {
                 background: transparent;
-                color: var(--brand-red-coral);
+                color: #000;
                 font-weight: 700;
-
-                svg {
-                    fill: var(--brand-red-coral);
-                }
             }
 
             &__list {
                 background: var(--general-main-1);
                 justify-content: start;
                 border-bottom: 1px solid var(--general-section-1);
+
+                @include desktop-screen {
+                    background: transparent;
+                    border-bottom: none;
+                }
 
                 @include mobile-or-tablet-screen {
                     overflow-x: auto;
@@ -182,17 +183,38 @@
                 }
 
                 @include desktop-screen {
-                    height: 3.2rem;
-                    padding: 0 0.5rem;
+                    height: 4.4rem;
+                    padding: 0.2rem 0.4rem 0.3rem;
                     flex: 0 1 auto;
                     min-width: 0;
+                    flex-direction: column;
                     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
                     font-size: 1.2rem;
                     font-weight: 700;
                     letter-spacing: 0;
+                    color: #000;
+
+                    &:not(.dc-tabs__active),
+                    &:hover:not(.dc-tabs__active) {
+                        color: #000;
+                    }
 
                     svg {
-                        display: none;
+                        display: block;
+                        width: 1.4rem;
+                        height: 1.4rem;
+                        margin: 0;
+                        padding: 0;
+                        flex: none;
+                    }
+
+                    .main__tab-icon svg[data-stroke],
+                    .main__tab-icon svg[data-stroke] path {
+                        fill: none;
+                        stroke: currentColor;
+                        stroke-width: 2;
+                        stroke-linecap: round;
+                        stroke-linejoin: round;
                     }
                 }
 
@@ -234,7 +256,7 @@
                         overflow: hidden;
                         width: 100%;
                         max-width: 100%;
-                        height: 3.2rem;
+                        height: 4.4rem;
                         justify-content: space-evenly;
                     }
                 }
@@ -257,19 +279,42 @@
                         top: 5.6rem;
                         inset-inline: 0;
                         z-index: 6;
-                        height: 3.2rem;
-                        background: var(--general-main-1);
-                        border-bottom: 1px solid var(--general-section-1);
+                        height: 4.4rem;
+                        background: transparent;
+                        border-bottom: none;
                     }
 
                     .dc-tabs__item:nth-child(3),
                     .dc-tabs__item:nth-child(8),
                     .dc-tabs__item:nth-child(10) {
                         margin-inline-end: 0;
-                        padding-inline-end: 0.5rem;
+                        padding-inline-end: 0.4rem;
                     }
                 }
             }
+        }
+    }
+
+    &__tab-mark {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+        line-height: 1.15;
+    }
+
+    &__tab-icon {
+        display: grid;
+        place-items: center;
+        line-height: 0;
+
+        svg[data-stroke] {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
     }
 
