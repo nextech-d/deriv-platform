@@ -63,47 +63,49 @@ const FreeBotsDesk = ({ onLoadInBuilder, initialTier = 'free' }: TFreeBotsDeskPr
     return (
         <div data-testid='free-bots-desk' data-desk className='free-bots' data-scroll-pane>
             <header className='free-bots-toolbar'>
-                <div className='free-bots-toolbar-tools'>
-                    <div className='free-bots-segment'>
-                        {(['free', 'premium'] as const).map(id => (
-                            <button
-                                key={id}
-                                type='button'
-                                className={classNames('free-bots-seg', tier === id && 'is-on')}
-                                onClick={() => {
-                                    setTier(id);
-                                    writeFreeBotsTier(id);
-                                }}
-                            >
-                                {id === 'free' ? 'Free' : 'Premium'}
-                            </button>
-                        ))}
+                <div className='free-bots-toolbar-cluster'>
+                    <div className='free-bots-toolbar-tools'>
+                        <div className='free-bots-segment'>
+                            {(['free', 'premium'] as const).map(id => (
+                                <button
+                                    key={id}
+                                    type='button'
+                                    className={classNames('free-bots-seg', tier === id && 'is-on')}
+                                    onClick={() => {
+                                        setTier(id);
+                                        writeFreeBotsTier(id);
+                                    }}
+                                >
+                                    {id === 'free' ? 'Free' : 'Premium'}
+                                </button>
+                            ))}
+                        </div>
+                        <span className='free-bots-split' aria-hidden />
+                        <div className='free-bots-segment'>
+                            {(['all', 'new', 'normal'] as const).map(id => (
+                                <button
+                                    key={id}
+                                    type='button'
+                                    className={classNames('free-bots-seg', fresh === id && 'is-on')}
+                                    onClick={() => setFresh(id)}
+                                >
+                                    {id === 'all' ? 'All' : id === 'new' ? 'New' : 'Normal'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <span className='free-bots-split' aria-hidden />
-                    <div className='free-bots-segment'>
-                        {(['all', 'new', 'normal'] as const).map(id => (
-                            <button
-                                key={id}
-                                type='button'
-                                className={classNames('free-bots-seg', fresh === id && 'is-on')}
-                                onClick={() => setFresh(id)}
-                            >
-                                {id === 'all' ? 'All' : id === 'new' ? 'New' : 'Normal'}
-                            </button>
-                        ))}
+                    <div className='free-bots-toolbar-status'>
+                        <label className='free-bots-search'>
+                            <LabelPairedSearchSmRegularIcon width={14} height={14} />
+                            <input
+                                value={query}
+                                onChange={event => setQuery(event.target.value)}
+                                placeholder='Search bots'
+                                aria-label='Search bots'
+                            />
+                        </label>
+                        <span className='free-bots-count'>{strategies.length}</span>
                     </div>
-                </div>
-                <div className='free-bots-toolbar-status'>
-                    <label className='free-bots-search'>
-                        <LabelPairedSearchSmRegularIcon width={14} height={14} />
-                        <input
-                            value={query}
-                            onChange={event => setQuery(event.target.value)}
-                            placeholder='Search bots'
-                            aria-label='Search bots'
-                        />
-                    </label>
-                    <span className='free-bots-count'>{strategies.length}</span>
                 </div>
             </header>
 
