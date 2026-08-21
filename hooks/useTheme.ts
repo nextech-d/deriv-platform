@@ -13,18 +13,28 @@ import {
   type ThemePreference,
 } from "@/lib/theme/settings";
 
+function readInitialTheme(): {
+  preference: ThemePreference;
+  resolved: ResolvedTheme;
+} {
+  if (typeof window === "undefined") {
+    return { preference: DEFAULT_THEME, resolved: "dark" };
+  }
+  const stored = readStoredTheme();
+  const resolved = resolveTheme(stored);
+  applyTheme(resolved);
+  return { preference: stored, resolved };
+}
+
 export function useTheme() {
-  const [preference, setPreferenceState] =
-    useState<ThemePreference>(DEFAULT_THEME);
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("dark");
-  const [hydrated, setHydrated] = useState(false);
+  const [{ preference, resolved: resolvedTheme }, setTheme] = useState(readInitialTheme);
+  const hydrated = typeof window !== "undefined";
 
   const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next);
-    localStorage.setItem(THEME_STORAGE_KEY, next);
     const resolved = resolveTheme(next);
-    setResolvedTheme(resolved);
+    localStorage.setItem(THEME_STORAGE_KEY, next);
     applyTheme(resolved);
+    setTheme({ preference: next, resolved });
   }, []);
 
   const toggleLightDark = useCallback(() => {
@@ -33,20 +43,18 @@ export function useTheme() {
   }, [preference, resolvedTheme, setPreference]);
 
   useEffect(() => {
-    const stored = readStoredTheme();
-    const resolved = resolveTheme(stored);
-    setPreferenceState(stored);
-    setResolvedTheme(resolved);
-    applyTheme(resolved);
-    setHydrated(true);
+    if (typeof window === "undefined") return;
 
+    const stored = readStoredTheme();
     if (stored !== "system") return;
 
     const media = window.matchMedia("(prefers-color-scheme: light)");
     const onChange = () => {
       const next = resolveTheme("system");
-      setResolvedTheme(next);
-      applyTheme(next);
+      setTheme((prev) => {
+        applyTheme(next);
+        return { ...prev, resolved: next };
+      });
     };
 
     media.addEventListener("change", onChange);

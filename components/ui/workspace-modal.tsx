@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils/cn";
 
@@ -34,11 +34,13 @@ export function WorkspaceModal({
   slotClassName,
   size = "md",
 }: WorkspaceModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const fallbackLabelId = useId();
   const titleId = labelledBy ?? fallbackLabelId;
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;

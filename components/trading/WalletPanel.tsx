@@ -35,34 +35,36 @@ export function WalletPanel({ demoMode = false }: WalletPanelProps) {
   const [cashierNotice, setCashierNotice] = useState<string | null>(null);
   const [cashierOpening, setCashierOpening] = useState(false);
 
-  const loadAgents = useCallback(async (code: string) => {
-    setLoadingAgents(true);
-    try {
-      const response = await fetch(
-        `/api/payments/agents?country=${code}&currency=USD`,
-      );
-      if (!response.ok) throw new Error("Failed to load agents");
-      const json = (await response.json()) as {
-        agents: PaymentAgent[];
-        source: string;
-      };
-      setAgents(json.agents);
-      setAgentSource(json.source);
-    } catch {
-      setAgents([]);
-      setAgentSource("fallback");
-    } finally {
-      setLoadingAgents(false);
-    }
+  const loadAgents = useCallback((code: string) => {
+    void (async () => {
+      setLoadingAgents(true);
+      try {
+        const response = await fetch(
+          `/api/payments/agents?country=${code}&currency=USD`,
+        );
+        if (!response.ok) throw new Error("Failed to load agents");
+        const json = (await response.json()) as {
+          agents: PaymentAgent[];
+          source: string;
+        };
+        setAgents(json.agents);
+        setAgentSource(json.source);
+      } catch {
+        setAgents([]);
+        setAgentSource("fallback");
+      } finally {
+        setLoadingAgents(false);
+      }
+    })();
   }, []);
 
   function selectCountry(code: string) {
     setCountry(code);
-    void loadAgents(code);
+    loadAgents(code);
   }
 
   useEffect(() => {
-    void loadAgents(country);
+    loadAgents(country);
   }, [country, loadAgents]);
 
   async function openCashier() {

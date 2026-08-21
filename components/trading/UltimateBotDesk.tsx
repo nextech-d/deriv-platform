@@ -103,21 +103,39 @@ export function UltimateBotDesk({
   const [journal, setJournal] = useState<string[]>([]);
   const [hiddenIds, setHiddenIds] = useState<number[]>([]);
 
-  const pendingRef = useRef<{
+  type PendingTicket = {
     epoch: number;
     symbol: string;
     stake: number;
     duration: number;
     entryQuote: number;
     side: UltimateSide;
-  } | null>(null);
+  };
+  type ArmedTicket = { marketId: string; side: UltimateSide };
+
+  const [pendingTicket, setPendingTicket] = useState<PendingTicket | null>(null);
+  const [armedTicket, setArmedTicket] = useState<ArmedTicket | null>(null);
+
+  const pendingRef = useRef<PendingTicket | null>(null);
   const skipEpochRef = useRef(0);
-  const armedRef = useRef<{ marketId: string; side: UltimateSide } | null>(null);
+  const armedRef = useRef<ArmedTicket | null>(null);
+
+  function resetTickets() {
+    pendingRef.current = null;
+    armedRef.current = null;
+    setPendingTicket(null);
+    setArmedTicket(null);
+    setPendingUi(false);
+    setArmedUi(false);
+  }
 
   const init = ULTIMATE_INITIAL.find((item) => item.id === initId) ?? ULTIMATE_INITIAL[2]!;
   const recovery = ULTIMATE_RECOVERY.find((item) => item.id === recId) ?? ULTIMATE_RECOVERY[1]!;
   const nextStake = ultimateStake(stake, stats.consecutiveLosses, useMartingale, martMult);
   const canTrade = Boolean(onTrade) && isConnected && !tradingLocked && !busy;
+  const limitStop =
+    (tp > 0 && stats.profit >= tp) || (sl > 0 && stats.profit <= -sl);
+  const isRunning = running && !limitStop;
   const visibleContracts = useMemo(
     () => contracts.filter((contract) => !hiddenIds.includes(contract.contractId)),
     [contracts, hiddenIds],
@@ -171,7 +189,7 @@ export function UltimateBotDesk({
     if (!onTrade || !canTrade || pendingRef.current) return;
     const series = bySymbol.get(marketId) ?? [];
     const tick = series.at(-1);
-    pendingRef.current = {
+    const ticket: PendingTicket = {
       epoch: tick?.epoch ?? 0,
       symbol: marketId,
       stake: size,
@@ -179,6 +197,10 @@ export function UltimateBotDesk({
       entryQuote: tick?.quote ?? 0,
       side,
     };
+    pendingRef.current = ticket;
+    setPendingTicket(ticket);
+    armedRef.current = null;
+    setArmedTicket(null);
     setArmedUi(false);
     setPendingUi(true);
     onTrade({
@@ -194,7 +216,9 @@ export function UltimateBotDesk({
   function arm(marketId: string, side: UltimateSide) {
     if (!canTrade || pendingRef.current || running) return;
     skipEpochRef.current = bySymbol.get(marketId)?.at(-1)?.epoch ?? 0;
-    armedRef.current = { marketId, side };
+    const ticket: ArmedTicket = { marketId, side };
+    armedRef.current = ticket;
+    setArmedTicket(ticket);
     setArmedUi(true);
     onSymbolChange?.(marketId);
   }
@@ -217,13 +241,6 @@ export function UltimateBotDesk({
   }
 
   useEffect(() => {
-    pendingRef.current = null;
-    armedRef.current = null;
-    setPendingUi(false);
-    setArmedUi(false);
-  }, [initId, recId]);
-
-  useEffect(() => {
     const pending = pendingRef.current;
     if (!pending) {
       const armed = armedRef.current;
@@ -232,17 +249,12 @@ export function UltimateBotDesk({
         const epoch = series.at(-1)?.epoch ?? 0;
         if (epoch > skipEpochRef.current) {
           armedRef.current = null;
+          setArmedTicket(null);
           fire(armed.marketId, armed.side);
         }
         return;
       }
-      if (!running || !canTrade) return;
-      const hitTp = tp > 0 && stats.profit >= tp;
-      const hitSl = sl > 0 && stats.profit <= -sl;
-      if (hitTp || hitSl) {
-        setRunning(false);
-        return;
-      }
+      if (!isRunning || !canTrade) return;
       const next = pickSignal();
       if (!next) return;
       fire(next.marketId, next.side);
@@ -260,6 +272,7 @@ export function UltimateBotDesk({
     );
     const pnl = ultimatePnl(win, pending.stake);
     pendingRef.current = null;
+    setPendingTicket(null);
     setPendingUi(false);
     skipEpochRef.current = exit.epoch ?? skipEpochRef.current;
     setStats((prev) => ({
@@ -269,17 +282,18 @@ export function UltimateBotDesk({
       profit: Number((prev.profit + pnl).toFixed(2)),
       consecutiveLosses: win ? 0 : prev.consecutiveLosses + 1,
     }));
-  }, [bySymbol, running, canTrade, nextStake, duration, tp, sl, stats.profit, stats.consecutiveLosses]);
+  }, [bySymbol, isRunning, canTrade, nextStake, duration, tp, sl, stats.profit, stats.consecutiveLosses]);
 
-  const progress = pendingRef.current
+  const progress = pendingTicket
     ? pendingProgress(
-        bySymbol.get(pendingRef.current.symbol) ?? [],
-        pendingRef.current.epoch,
-        pendingRef.current.duration,
+        bySymbol.get(pendingTicket.symbol) ?? [],
+        pendingTicket.epoch,
+        pendingTicket.duration,
       )
     : null;
-  const focused = pendingRef.current?.symbol ?? armedRef.current?.marketId ?? symbol ?? rows[0]?.market.id;
-  const pendingSide = pendingRef.current?.side ?? armedRef.current?.side;
+  const focused =
+    pendingTicket?.symbol ?? armedTicket?.marketId ?? symbol ?? rows[0]?.market.id;
+  const pendingSide = pendingTicket?.side ?? armedTicket?.side;
   const dTraderSide =
     pendingSide ??
     rows.find((row) => row.market.id === focused)?.initial.side ??
@@ -325,7 +339,14 @@ export function UltimateBotDesk({
           <div className="edging-fields">
             <label>
               <span>Initial Trade Type</span>
-              <select value={initId} onChange={(event) => setInitId(event.target.value)} aria-label="Initial Trade Type">
+              <select
+                value={initId}
+                onChange={(event) => {
+                  setInitId(event.target.value);
+                  resetTickets();
+                }}
+                aria-label="Initial Trade Type"
+              >
                 {ULTIMATE_INITIAL.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
@@ -336,7 +357,14 @@ export function UltimateBotDesk({
             </label>
             <label>
               <span>Recovery Type</span>
-              <select value={recId} onChange={(event) => setRecId(event.target.value)} aria-label="Recovery Type">
+              <select
+                value={recId}
+                onChange={(event) => {
+                  setRecId(event.target.value);
+                  resetTickets();
+                }}
+                aria-label="Recovery Type"
+              >
                 {ULTIMATE_RECOVERY.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
@@ -438,9 +466,11 @@ export function UltimateBotDesk({
                   ? `${progress.done}/${progress.need}`
                   : armedUi
                     ? "Next tick"
-                    : running
+                    : isRunning
                       ? "Scanning"
-                      : "Idle"}
+                      : limitStop
+                        ? "Limit hit"
+                        : "Idle"}
               </strong>
               <em>{pendingSide?.label ?? "Open tickets"}</em>
             </div>
@@ -449,22 +479,21 @@ export function UltimateBotDesk({
           <div className="fast-actions">
             <button
               type="button"
-              className={cn("edging-cta", running ? "is-ghost" : "is-ink")}
-              disabled={!canTrade && !running}
+              className={cn("edging-cta", isRunning ? "is-ghost" : "is-ink")}
+              disabled={!canTrade && !isRunning}
               onClick={() => {
-                if (running) {
+                if (isRunning || (running && limitStop)) {
                   setRunning(false);
-                  logJournal("Bot stopped.");
+                  logJournal(limitStop ? "Bot stopped at limit." : "Bot stopped.");
                   return;
                 }
-                armedRef.current = null;
-                setArmedUi(false);
+                resetTickets();
                 skipEpochRef.current = Math.max(0, ...rows.map((row) => row.last?.epoch ?? 0));
                 setRunning(true);
                 logJournal("Bot started.");
               }}
             >
-              {running ? "Stop Bot" : "Start Bot"}
+              {isRunning ? "Stop Bot" : "Start Bot"}
             </button>
             {onOpenDTrader ? (
               <button

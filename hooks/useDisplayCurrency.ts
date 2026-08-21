@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   DISPLAY_CURRENCY_LABELS,
   FX_FALLBACK,
@@ -19,13 +19,8 @@ function readStoredCurrency(): DisplayCurrency {
 }
 
 export function useDisplayCurrency() {
-  const [currency, setCurrencyState] =
-    useState<DisplayCurrency>(DEFAULT_CURRENCY);
+  const [currency, setCurrencyState] = useState<DisplayCurrency>(readStoredCurrency);
   const fx = useFxRates();
-
-  useEffect(() => {
-    setCurrencyState(readStoredCurrency());
-  }, []);
 
   function setCurrency(next: DisplayCurrency) {
     setCurrencyState(next);

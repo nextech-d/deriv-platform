@@ -116,19 +116,19 @@ export function TerminalHomeView({
   const driveInputRef = useRef<HTMLInputElement>(null);
   const announceRef = useRef<HTMLDivElement>(null);
   const [announceOpen, setAnnounceOpen] = useState(false);
-  const [announceSeen, setAnnounceSeen] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [driveOpen, setDriveOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [loadOpen, setLoadOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!window.localStorage.getItem("tc-tour-dashboard")) setTourOpen(true);
-    setAnnounceSeen(Boolean(window.localStorage.getItem("tc-announce-seen")));
-  }, []);
+  const [tourOpen, setTourOpen] = useState(
+    () => typeof window !== "undefined" && !window.localStorage.getItem("tc-tour-dashboard"),
+  );
+  const [announceSeen, setAnnounceSeen] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      Boolean(window.localStorage.getItem("tc-announce-seen")),
+  );
 
   useEffect(() => {
     if (!announceOpen && !driveOpen && !quickOpen && !loadOpen) return;

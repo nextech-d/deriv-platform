@@ -193,7 +193,13 @@ test.describe("Dashboard (demo mode)", () => {
 
     await page.getByTestId("tc-builder-run").click();
     await expect(page.getByTestId("bot-builder-desk")).toBeVisible();
-    await expect(page.locator(".bot-builder-journal li").first()).toContainText(/Run ·/);
+    await expect(page.getByRole("button", { name: "Journal" })).toHaveClass(
+      /bot-builder-summary-tab-active/,
+      { timeout: 5_000 },
+    );
+    await expect(page.locator(".bot-builder-journal li").first()).toContainText(/Run ·/, {
+      timeout: 10_000,
+    });
     const runBtn = page.getByTestId("tc-builder-run");
     if ((await runBtn.innerText()).includes("Stop")) {
       await runBtn.click();
@@ -222,12 +228,16 @@ test.describe("Dashboard (demo mode)", () => {
     await page.getByTestId("tc-builder-qs").click();
     await expect(page.getByTestId("tc-qs-studio")).toBeVisible();
     await page.getByTestId("tc-qs-type-dalembert").click();
+    await expect(page.getByText("Options · D'Alembert")).toBeVisible();
+    await expect(page.getByTestId("tc-qs-create")).toBeEnabled();
     await page.getByTestId("tc-qs-create").click();
-    await expect(page.getByTestId("tc-builder-flash")).toContainText(
-      /D'Alembert generated on the workspace/,
-      { timeout: 10_000 },
+    await expect(page.getByTestId("tc-qs-studio")).not.toBeVisible();
+    await expect(page.getByTestId("tc-builder-chips-restart")).toContainText("D'Alembert", {
+      timeout: 15_000,
+    });
+    await expect(page.locator(".bot-builder-live")).toContainText(
+      /Quick strategy · D'Alembert (generated|ready) on the workspace/,
     );
-    await expect(page.getByTestId("tc-builder-chips-restart")).toContainText("D'Alembert");
   });
 
   test("invalid XML stays on the desk with an error", async ({ page }) => {

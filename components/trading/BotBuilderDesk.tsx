@@ -197,6 +197,8 @@ export function BotBuilderDesk({
   const fileRef = useRef<HTMLInputElement>(null);
   const driveFileRef = useRef<HTMLInputElement>(null);
   const skipFirstSeed = useRef(true);
+  /** Skip the next seedKey effect when installBot already synced parent state. */
+  const skipSeedEffectRef = useRef(false);
   const onSymbolChangeRef = useRef(onSymbolChange);
   onSymbolChangeRef.current = onSymbolChange;
   const onSeedChangeRef = useRef(onSeedChange);
@@ -408,7 +410,10 @@ export function BotBuilderDesk({
     const normalized = normalizeLoadedSnapshot(next);
     writeBuilderHandoff(normalized);
     markBuilderHandoffApplied();
-    onSeedChangeRef.current?.(normalized);
+    if (onSeedChangeRef.current) {
+      skipSeedEffectRef.current = true;
+      onSeedChangeRef.current(normalized);
+    }
     applySnapshot(normalized, message, true);
     setChips(chipsFromSnapshot(normalized));
     setVhOpen(Boolean(normalized.virtualHook));
@@ -437,6 +442,10 @@ export function BotBuilderDesk({
   }
 
   useEffect(() => {
+    if (skipSeedEffectRef.current) {
+      skipSeedEffectRef.current = false;
+      return;
+    }
     const runAfter = consumeBuilderRunAfter();
     if (skipFirstSeed.current) {
       skipFirstSeed.current = false;
