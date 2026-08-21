@@ -10,7 +10,8 @@ import MobileWrapper from '@/components/shared_ui/mobile-wrapper';
 import Tabs from '@/components/shared_ui/tabs/tabs';
 import TradeTypeConfirmationModal from '@/components/trade-type-confirmation-modal';
 import TradingViewModal from '@/components/trading-view-chart/trading-view-modal';
-import { DBOT_TABS, TAB_IDS } from '@/constants/bot-contents';
+import { DBOT_TABS, TAB_HASHES, TAB_IDS } from '@/constants/bot-contents';
+import { PLATFORM_TABS } from '@/constants/platform-tabs';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
@@ -38,6 +39,7 @@ import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
+import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
 import RunStrategy from '../dashboard/run-strategy';
@@ -75,9 +77,9 @@ const AppWrapper = observer(() => {
         [key: string]: string;
     };
     const { clear } = summary_card;
-    const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
+    const { DASHBOARD, BOT_BUILDER, CHART, TUTORIAL } = DBOT_TABS;
     const init_render = React.useRef(true);
-    const hash = ['dashboard', 'bot_builder', 'chart', 'tutorial'];
+    const hash = TAB_HASHES;
     const { isDesktop } = useDevice();
     const location = useLocation();
     const navigate = useNavigate();
@@ -361,6 +363,87 @@ const AppWrapper = observer(() => {
             console.error('Failed to generate OAuth URL');
         }
     };
+
+    const renderTabLabel = (tab: (typeof PLATFORM_TABS)[number]) => {
+        const labelText = <Localize i18n_default_text={tab.label} />;
+
+        switch (tab.kind) {
+            case 'dashboard':
+                return (
+                    <>
+                        <LabelPairedObjectsColumnCaptionRegularIcon
+                            height='24px'
+                            width='24px'
+                            fill='var(--text-general)'
+                        />
+                        {labelText}
+                    </>
+                );
+            case 'bot_builder':
+                return (
+                    <>
+                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
+                            height='24px'
+                            width='24px'
+                            fill='var(--text-general)'
+                        />
+                        {labelText}
+                    </>
+                );
+            case 'chart':
+                return (
+                    <>
+                        <LabelPairedChartLineCaptionRegularIcon
+                            height='24px'
+                            width='24px'
+                            fill='var(--text-general)'
+                        />
+                        {labelText}
+                    </>
+                );
+            case 'tutorial':
+                return (
+                    <>
+                        <LegacyGuide1pxIcon
+                            height='16px'
+                            width='16px'
+                            fill='var(--text-general)'
+                            className='icon-general-fill-g-path'
+                        />
+                        {labelText}
+                    </>
+                );
+            default:
+                return labelText;
+        }
+    };
+
+    const renderTabPanel = (tab: (typeof PLATFORM_TABS)[number]) => {
+        switch (tab.kind) {
+            case 'dashboard':
+                return <Dashboard handleTabChange={handleTabChange} />;
+            case 'bot_builder':
+                return null;
+            case 'chart':
+                return (
+                    <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
+                        <ChartWrapper show_digits_stats={false} />
+                    </Suspense>
+                );
+            case 'tutorial':
+                return (
+                    <div className='tutorials-wrapper'>
+                        <Suspense
+                            fallback={<ChunkLoader message={localize('Please wait, loading tutorials...')} />}
+                        >
+                            <Tutorial handleTabChange={handleTabChange} />
+                        </Suspense>
+                    </div>
+                );
+            default:
+                return <PlaceholderDesk title={localize(tab.label)} />;
+        }
+    };
     // [/AI]
     return (
         <React.Fragment>
@@ -372,82 +455,28 @@ const AppWrapper = observer(() => {
                 >
                     <div>
                         {!isDesktop && left_tab_shadow && <span className='tabs-shadow tabs-shadow--left' />}{' '}
-                        <Tabs active_index={active_tab} className='main__tabs' onTabItemClick={handleTabChange} top>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedObjectsColumnCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Dashboard' />
-                                    </>
-                                }
-                                id='id-dbot-dashboard'
-                            >
-                                <Dashboard handleTabChange={handleTabChange} />
-                            </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Bot Builder' />
-                                    </>
-                                }
-                                id='id-bot-builder'
-                            />
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedChartLineCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Charts' />
-                                    </>
-                                }
-                                id={
-                                    is_chart_modal_visible || is_trading_view_modal_visible
-                                        ? 'id-charts--disabled'
-                                        : 'id-charts'
-                                }
-                            >
-                                <Suspense
-                                    fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                        <Tabs
+                            active_index={active_tab}
+                            className='main__tabs'
+                            onTabItemClick={handleTabChange}
+                            top
+                            is_scrollable
+                            header_fit_content
+                        >
+                            {PLATFORM_TABS.map(tab => (
+                                <div
+                                    key={tab.id}
+                                    label={renderTabLabel(tab)}
+                                    id={
+                                        tab.kind === 'chart' &&
+                                        (is_chart_modal_visible || is_trading_view_modal_visible)
+                                            ? 'id-charts--disabled'
+                                            : tab.domId
+                                    }
                                 >
-                                    <ChartWrapper show_digits_stats={false} />
-                                </Suspense>
-                            </div>
-                            <div
-                                label={
-                                    <>
-                                        <LegacyGuide1pxIcon
-                                            height='16px'
-                                            width='16px'
-                                            fill='var(--text-general)'
-                                            className='icon-general-fill-g-path'
-                                        />
-                                        <Localize i18n_default_text='Tutorials' />
-                                    </>
-                                }
-                                id='id-tutorials'
-                            >
-                                <div className='tutorials-wrapper'>
-                                    <Suspense
-                                        fallback={
-                                            <ChunkLoader message={localize('Please wait, loading tutorials...')} />
-                                        }
-                                    >
-                                        <Tutorial handleTabChange={handleTabChange} />
-                                    </Suspense>
+                                    {renderTabPanel(tab)}
                                 </div>
-                            </div>
+                            ))}
                         </Tabs>
                         {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}{' '}
                     </div>

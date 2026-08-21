@@ -1,0 +1,28 @@
+@use 'components/shared/styles/mixins' as *;
+
+.placeholder-desk {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tab-content-height);
+    padding: 4rem 2rem;
+    background: var(--general-main-1);
+    color: var(--text-less-prominent);
+
+    @include mobile-or-tablet-screen {
+        min-height: var(--tab-content-height-mobile);
+    }
+
+    &__label {
+        margin: 0 0 0.8rem;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-general);
+    }
+
+    &__hint {
+        margin: 0;
+        font-size: 1.4rem;
+    }
+}
