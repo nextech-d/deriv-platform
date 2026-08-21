@@ -59,6 +59,11 @@ async function command(parts) {
     return json ? json.result : null;
 }
 
+/** Liveness check that writes nothing. */
+async function ping() {
+    return command(['PING']);
+}
+
 async function readRecord(key) {
     const raw = await command(['GET', key]);
     if (!raw) return null;
@@ -73,4 +78,4 @@ async function writeRecord(key, value) {
     await command(['SET', key, JSON.stringify(value)]);
 }
 
-module.exports = { readRecord, writeRecord };
+module.exports = { readRecord, writeRecord, ping };
