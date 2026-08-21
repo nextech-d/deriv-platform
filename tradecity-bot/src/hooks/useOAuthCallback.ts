@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { clearCSRFToken, validateCSRFToken } from '@/components/shared/utils/config/config';
+import { clearCSRFToken, clearOAuthRedirectUri, validateCSRFToken } from '@/components/shared/utils/config/config';
 import { clearAuthData } from '@/utils/auth-utils';
 
 /**
@@ -128,17 +128,22 @@ export const useOAuthCallback = (): OAuthCallbackResult => {
         if (!validateCSRFToken(state)) {
             console.error('[DEBUG] CSRF token validation failed - potential security threat');
             clearAuthData();
+            cleanupURL();
             setResult({
                 isProcessing: false,
                 isValid: false,
                 params: { code, state, error, error_description },
                 error: 'CSRF token validation failed',
             });
+            window.dispatchEvent(
+                new CustomEvent('tradecity:auth-failed', {
+                    detail: { reason: 'csrf_validation_failed' },
+                })
+            );
             return;
         }
 
-        // CSRF validation passed
-        clearCSRFToken();
+        // CSRF validation passed — token cleared after successful token exchange
 
         // Validate that we have the authorization code
         if (!code) {

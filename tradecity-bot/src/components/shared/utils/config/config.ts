@@ -220,6 +220,32 @@ export const clearCSRFToken = (): void => {
     sessionStorage.removeItem('oauth_csrf_token_timestamp');
 };
 
+const OAUTH_REDIRECT_URI_KEY = 'oauth_redirect_uri';
+
+/** Canonical redirect URI — must match Deriv App Manager exactly. */
+export const getOAuthRedirectUri = (): string => {
+    const stored = sessionStorage.getItem(OAUTH_REDIRECT_URI_KEY);
+    if (stored) {
+        return stored;
+    }
+
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    return `${protocol}//${host}/`;
+};
+
+export const storeOAuthRedirectUri = (redirectUri: string): void => {
+    sessionStorage.setItem(OAUTH_REDIRECT_URI_KEY, redirectUri);
+};
+
+export const clearOAuthRedirectUri = (): void => {
+    sessionStorage.removeItem(OAUTH_REDIRECT_URI_KEY);
+};
+
+export const emitAuthFailure = (reason: string): void => {
+    window.dispatchEvent(new CustomEvent('tradecity:auth-failed', { detail: { reason } }));
+};
+
 export const generateOAuthURL = async (prompt?: string) => {
     try {
         // Use brand config for login URLs
@@ -245,6 +271,7 @@ export const generateOAuthURL = async (prompt?: string) => {
             const protocol = window.location.protocol;
             const host = window.location.host;
             const redirectUrl = `${protocol}//${host}/`;
+            storeOAuthRedirectUri(redirectUrl);
             const scopes = 'trade';
 
             // Build OAuth URL with PKCE parameters

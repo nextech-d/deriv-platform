@@ -32,6 +32,8 @@ Only intentional diffs from upstream template: TradeCity shell branding (`brand.
 - [ ] **Charts tab**: `R_100` ticks, toolbar visible
 - [ ] **Account switcher**: demo account for first-time users
 - [ ] Add **https://localhost:8443/** to Deriv redirect URIs (local dev login)
+- [ ] Deriv App Manager redirect URI must be exactly **`https://tradecity.trade/`** (trailing slash)
+- [ ] OAuth only works on **tradecity.trade** — not Vercel preview URLs
 - [ ] Optional: your Google Analytics / support chat snippet in `tradecity-bot/index.html`
 - [ ] Optional: affiliate signup link in Deriv App Manager
 

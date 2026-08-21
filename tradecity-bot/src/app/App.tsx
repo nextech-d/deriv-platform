@@ -86,17 +86,30 @@ function App() {
                     } else if (response.error) {
                         console.error('❌ Token exchange failed:', response.error);
                         console.error('Error description:', response.error_description);
-                        // Clean up URL even on error
                         cleanupURL();
+                        window.dispatchEvent(
+                            new CustomEvent('tradecity:auth-failed', {
+                                detail: { reason: response.error },
+                            })
+                        );
                     }
                 })
                 .catch(error => {
                     console.error('❌ Token exchange request failed:', error);
-                    // Clean up URL even on error
                     cleanupURL();
+                    window.dispatchEvent(
+                        new CustomEvent('tradecity:auth-failed', {
+                            detail: { reason: 'network_error' },
+                        })
+                    );
                 });
         } else if (!isProcessing && error) {
             console.error('OAuth callback error:', error);
+            window.dispatchEvent(
+                new CustomEvent('tradecity:auth-failed', {
+                    detail: { reason: error },
+                })
+            );
         }
     }, [isProcessing, isValid, params.code, error, cleanupURL]);
 

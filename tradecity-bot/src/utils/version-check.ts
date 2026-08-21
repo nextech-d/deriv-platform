@@ -91,6 +91,12 @@ const isVersionValid = (): boolean => {
  * before any other localStorage or cookie operations
  */
 export const performVersionCheck = (): void => {
+    // Never wipe storage mid-OAuth callback — sessionStorage holds PKCE + CSRF state.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('code') || params.get('error')) {
+        return;
+    }
+
     console.log('Performing bot version check...');
 
     if (!isVersionValid()) {

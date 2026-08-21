@@ -1,4 +1,11 @@
-import { clearCodeVerifier, getCodeVerifier, isProduction } from '@/components/shared';
+import {
+    clearCodeVerifier,
+    clearCSRFToken,
+    clearOAuthRedirectUri,
+    getCodeVerifier,
+    getOAuthRedirectUri,
+    isProduction,
+} from '@/components/shared';
 import { ErrorLogger } from '@/utils/error-logger';
 import brandConfig from '../../brand.config.json';
 
@@ -142,29 +149,41 @@ export class OAuthTokenExchangeService {
                 };
             }
 
-            const protocol = window.location.protocol;
-            const host = window.location.host;
-            const redirectUrl = `${protocol}//${host}/`;
+            const primaryRedirect = getOAuthRedirectUri();
+            const alternateRedirect = primaryRedirect.endsWith('/')
+                ? primaryRedirect.slice(0, -1)
+                : `${primaryRedirect}/`;
 
-            const requestBody = new URLSearchParams({
-                grant_type: 'authorization_code',
-                code: code,
-                client_id: clientId,
-                redirect_uri: redirectUrl,
-                code_verifier: codeVerifier, // PKCE: Include code verifier
-            });
+            const attemptExchange = async (redirectUrl: string) => {
+                const requestBody = new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: code,
+                    client_id: clientId,
+                    redirect_uri: redirectUrl,
+                    code_verifier: codeVerifier,
+                });
 
-            const response = await fetch(tokenEndpoint, {
-                method: 'POST',
-                credentials: 'include', // Include cookies for session-based auth
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: requestBody.toString(),
-            });
+                const response = await fetch(tokenEndpoint, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: requestBody.toString(),
+                });
 
-            // Parse response
-            const data: TokenExchangeResponse = await response.json();
+                const data: TokenExchangeResponse = await response.json();
+                return { response, data };
+            };
+
+            let { data } = await attemptExchange(primaryRedirect);
+
+            if (
+                data.error === 'invalid_grant' &&
+                alternateRedirect !== primaryRedirect
+            ) {
+                ({ data } = await attemptExchange(alternateRedirect));
+            }
 
             // Check for errors in response
             if (data.error) {
@@ -180,8 +199,9 @@ export class OAuthTokenExchangeService {
 
             // Success - log token info (without exposing the actual token)
             if (data.access_token) {
-                // Clear the code verifier after successful exchange
                 clearCodeVerifier();
+                clearCSRFToken();
+                clearOAuthRedirectUri();
                 // Store authentication info in sessionStorage
                 const authInfo: AuthInfo = {
                     access_token: data.access_token,

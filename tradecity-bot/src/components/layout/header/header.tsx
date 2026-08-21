@@ -63,6 +63,18 @@ const AppHeader = observer(() => {
         }
     }, [setIsAuthorizing]);
 
+    // Reset spinner when OAuth fails (CSRF, token exchange, etc.)
+    useEffect(() => {
+        const onAuthFailed = () => {
+            setIsOAuthPending(false);
+            setIsAuthorizing(false);
+            setAuthTimeout(false);
+        };
+
+        window.addEventListener('tradecity:auth-failed', onAuthFailed);
+        return () => window.removeEventListener('tradecity:auth-failed', onAuthFailed);
+    }, [setIsAuthorizing]);
+
     // Fallback timeout: show login button if auth never resolves.
     // Suppressed during the OAuth callback flow (isOAuthPending = true).
     useEffect(() => {
