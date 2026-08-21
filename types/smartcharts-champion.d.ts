@@ -100,10 +100,51 @@ declare module "@deriv-com/smartcharts-champion" {
     isConnectionOpened?: boolean;
     settings?: Record<string, unknown>;
     stateChangeListener?: (state: string, option?: unknown) => void;
+    topWidgets?: () => ReactNode;
+    toolbarWidget?: () => ReactNode;
+    chartControlsWidgets?: null | (() => ReactNode);
+    getMarketsOrder?: (activeSymbols: ActiveSymbol[]) => string[];
+    barriers?: unknown[];
+    showLastDigitStats?: boolean;
+    enabledChartFooter?: boolean;
+    isMobile?: boolean;
+    enabledNavigationWidget?: boolean;
+    isLive?: boolean;
+    leftMargin?: number;
+    chartStatusListener?: (loading: boolean) => void;
     children?: ReactNode;
   }
 
+  export interface ChartModeProps {
+    portalNodeId?: string;
+    onChartType: (chartType: string) => void;
+    onGranularity: (granularity: number) => void;
+  }
+
+  export interface ChartTitleProps {
+    onChange: (symbol: string) => void;
+  }
+
+  export interface ToolbarWidgetProps {
+    position?: string;
+    children?: ReactNode;
+  }
+
+  export interface PortalWidgetProps {
+    portalNodeId?: string;
+    searchInputClassName?: string;
+    onChartType?: (chartType: string) => void;
+    onGranularity?: (granularity: number) => void;
+  }
+
   export const SmartChart: ComponentType<SmartChartProps>;
+  export const ChartMode: ComponentType<ChartModeProps>;
+  export const ChartTitle: ComponentType<ChartTitleProps>;
+  export const ToolbarWidget: ComponentType<ToolbarWidgetProps>;
+  export const StudyLegend: ComponentType<PortalWidgetProps>;
+  export const Views: ComponentType<PortalWidgetProps>;
+  export const DrawTools: ComponentType<PortalWidgetProps>;
+  export const Share: ComponentType<PortalWidgetProps>;
   export function setSmartChartsPublicPath(path: string): void;
 }
 

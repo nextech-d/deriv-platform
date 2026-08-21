@@ -75,7 +75,8 @@ export type WorkerCommand =
   | {
       type: "UNSUBSCRIBE_CHART_STREAM";
       payload: { streamId: string };
-    };
+    }
+  | { type: "REQUEST_CHART_REFERENCE" };
 
 export interface ChartCandle {
   open: number;
@@ -130,6 +131,14 @@ export type WorkerEvent =
         low?: number;
         close?: number;
       };
+    }
+  | {
+      type: "CHART_REFERENCE";
+      payload: {
+        activeSymbols: unknown[];
+        tradingTimes: Record<string, unknown>;
+        error?: string;
+      };
     };
 
 export interface DerivWsMessage {
@@ -154,6 +163,8 @@ export interface DerivWsMessage {
     close?: number | string;
   };
   subscription?: { id?: string };
+  active_symbols?: unknown[];
+  trading_times?: Record<string, unknown>;
   balance?: { balance?: number; currency?: string };
   proposal?: { id?: string; ask_price?: number; payout?: number };
   buy?: { contract_id?: number; buy_price?: number; balance_after?: number };

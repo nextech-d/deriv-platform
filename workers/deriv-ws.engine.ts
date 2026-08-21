@@ -739,6 +739,40 @@ function unsubscribeChartStream(streamId: string): void {
   }
 }
 
+async function requestChartReference(): Promise<void> {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    emit({
+      type: "CHART_REFERENCE",
+      payload: { activeSymbols: [], tradingTimes: {}, error: "Not connected to Deriv" },
+    });
+    return;
+  }
+
+  try {
+    const [symbolsMessage, timesMessage] = (await Promise.all([
+      sendWithReqId({ active_symbols: "brief" }, "active_symbols", 20_000),
+      sendWithReqId({ trading_times: "all" }, "trading_times", 20_000),
+    ])) as [DerivWsMessage, DerivWsMessage];
+
+    emit({
+      type: "CHART_REFERENCE",
+      payload: {
+        activeSymbols: (symbolsMessage.active_symbols as unknown[]) ?? [],
+        tradingTimes: (timesMessage.trading_times as Record<string, unknown>) ?? {},
+      },
+    });
+  } catch (err) {
+    emit({
+      type: "CHART_REFERENCE",
+      payload: {
+        activeSymbols: [],
+        tradingTimes: {},
+        error: err instanceof Error ? err.message : "Chart reference failed",
+      },
+    });
+  }
+}
+
 function disconnect(): void {
   fsm.reset();
   registry.clear();
@@ -843,6 +877,11 @@ self.onmessage = (event: MessageEvent<WorkerCommand | { type: "NEED_OTP_REFRESH"
 
   if (command.type === "UNSUBSCRIBE_CHART_STREAM") {
     unsubscribeChartStream(command.payload.streamId);
+    return;
+  }
+
+  if (command.type === "REQUEST_CHART_REFERENCE") {
+    void requestChartReference();
   }
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type {
   TGetQuotes,
   TGranularity,
@@ -66,6 +66,8 @@ function demoHistoryFromTicks(ticks: TickEvent[], symbol: string) {
 }
 
 export function useSmartChartFeed(source: SmartChartFeedSource) {
+  const streamCleanupRef = useRef(new Map<string, () => void>());
+
   const getQuotes: TGetQuotes = useCallback(
     async ({ symbol, granularity, count, start, end }) => {
       const g = asGranularity(granularity);
@@ -114,7 +116,9 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
       const granularity = asGranularity(params.granularity);
 
       if (source.subscribeChartStream) {
-        return source.subscribeChartStream(
+        const key = `${params.symbol}:${granularity}`;
+        streamCleanupRef.current.get(key)?.();
+        const cleanup = source.subscribeChartStream(
           { symbol: params.symbol, granularity },
           (payload) => {
             const epoch = derivEpoch(payload.epoch);
@@ -137,6 +141,11 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
             } satisfies TQuote);
           },
         );
+        streamCleanupRef.current.set(key, cleanup);
+        return () => {
+          cleanup();
+          streamCleanupRef.current.delete(key);
+        };
       }
 
       if (granularity !== 0 || !source.demoTicks?.length) {
@@ -165,7 +174,16 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
     [source.demoTicks, source.subscribeChartStream],
   );
 
-  const unsubscribeQuotes: TUnsubscribeQuotes = useCallback(() => {}, []);
+  const unsubscribeQuotes: TUnsubscribeQuotes = useCallback((request) => {
+    if (!request?.symbol || request.granularity === undefined) {
+      for (const cleanup of streamCleanupRef.current.values()) cleanup();
+      streamCleanupRef.current.clear();
+      return;
+    }
+    const key = `${request.symbol}:${asGranularity(request.granularity)}`;
+    streamCleanupRef.current.get(key)?.();
+    streamCleanupRef.current.delete(key);
+  }, []);
 
   return useMemo(
     () => ({ getQuotes, subscribeQuotes, unsubscribeQuotes }),

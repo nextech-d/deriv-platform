@@ -2195,17 +2195,73 @@ html[data-boot-hold] body {
   overflow: hidden;
 }
 
-.bot-builder-chart-modal .smartchart-panel {
+.dbot-chart-modal {
+  z-index: 80;
+}
+
+.dbot-chart-modal__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, 96vw);
+  height: min(720px, 88vh);
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgb(11 18 32 / 0.2);
+}
+
+.dbot-chart-modal__close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  z-index: 5;
+  border: none;
+  background: rgb(255 255 255 / 0.92);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.dashboard__chart-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  background: var(--surface);
+}
+
+.dashboard__chart-wrapper--modal {
+  height: 100%;
+}
+
+.dashboard__chart-wrapper .smartcharts,
+.dashboard__chart-wrapper .cq-chart-area,
+.dashboard__chart-wrapper .chartContainer {
+  height: 100%;
+  min-height: 0;
+}
+
+.dashboard__chart-wrapper .cq-top-ui-widgets {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.dashboard__chart-wrapper .sc-toolbar-widget {
+  transition: transform 0.25s ease;
+}
+
+.bot-builder-chart-modal .smartchart-panel,
+.bot-builder-chart-modal .dashboard__chart-wrapper {
   flex: 1;
   min-height: 0;
   position: relative;
-}
-
-.bot-builder-chart-modal .smartchart-panel > .smartcharts,
-.bot-builder-chart-modal .smartchart-panel .cq-chart-area,
-.bot-builder-chart-modal .smartchart-panel .chartContainer {
-  height: 100%;
-  min-height: 0;
 }
 
 .smartchart-panel__loading {
@@ -2214,6 +2270,16 @@ html[data-boot-hold] body {
   height: 100%;
   color: var(--muted);
   font-size: 0.875rem;
+}
+
+.modal-root {
+  position: relative;
+  z-index: 99999;
+}
+
+.cq-modal-dropdown.stxMenuActive {
+  left: 0;
+  top: 0;
 }
 
 .bot-builder-workspace {

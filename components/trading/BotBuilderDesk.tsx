@@ -50,6 +50,8 @@ import {
 } from "@/lib/terminal/strategy-seed";
 import { SmartChartPanel } from "@/components/trading/SmartChartPanel";
 import type { SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
+import { loadChartProps, saveChartProps } from "@/lib/chart/smartchart-store";
+import type { ActiveSymbol, TradingTimesMap } from "@deriv-com/smartcharts-champion";
 import { TourDialog } from "@/components/trading/TourDialog";
 import { DriveFileDialog } from "@/components/trading/LoadBotSourceGrid";
 import { BuilderBlocklyBlocks } from "@/components/trading/BuilderBlocklyBlocks";
@@ -116,6 +118,9 @@ interface BotBuilderDeskProps {
   onSubscribeTicks?: (symbol: string) => void;
   fetchChartQuotes?: SmartChartFeedSource["fetchChartQuotes"];
   subscribeChartStream?: SmartChartFeedSource["subscribeChartStream"];
+  chartActiveSymbols?: ActiveSymbol[];
+  chartTradingTimes?: TradingTimesMap;
+  onRequestChartReference?: () => void;
 }
 
 const TOOLBAR_ICONS = {
@@ -184,6 +189,9 @@ export function BotBuilderDesk({
   onSubscribeTicks,
   fetchChartQuotes,
   subscribeChartStream,
+  chartActiveSymbols,
+  chartTradingTimes,
+  onRequestChartReference,
 }: BotBuilderDeskProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const driveFileRef = useRef<HTMLInputElement>(null);
@@ -264,7 +272,11 @@ export function BotBuilderDesk({
   const [saveName, setSaveName] = useState("Untitled Bot");
   const [saveTarget, setSaveTarget] = useState<"local" | "drive">("local");
   const [chartOpen, setChartOpen] = useState(false);
-  const [chartTradingView, setChartTradingView] = useState(false);
+  const [tvOpen, setTvOpen] = useState(false);
+  const [chartGranularity, setChartGranularity] = useState(
+    () => loadChartProps().granularity ?? 0,
+  );
+  const [chartType, setChartType] = useState(() => loadChartProps().chart_type ?? "line");
   const [statsHelpOpen, setStatsHelpOpen] = useState(false);
   const [recentWhyOpen, setRecentWhyOpen] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "run"; text: string } | null>(null);
@@ -281,7 +293,20 @@ export function BotBuilderDesk({
   useEffect(() => {
     if (!chartOpen || !onSubscribeTicks) return;
     onSubscribeTicks(snapshot.symbol);
-  }, [chartOpen, onSubscribeTicks, snapshot.symbol]);
+    onRequestChartReference?.();
+  }, [chartOpen, onRequestChartReference, onSubscribeTicks, snapshot.symbol]);
+
+  function persistChartProps(next: {
+    symbol?: string;
+    granularity?: number;
+    chart_type?: string;
+  }) {
+    saveChartProps({
+      symbol: next.symbol ?? snapshot.symbol,
+      granularity: next.granularity ?? chartGranularity,
+      chart_type: next.chart_type ?? chartType,
+    });
+  }
 
   function handleChartSymbolChange(nextSymbol: string) {
     onSymbolChangeRef.current?.(nextSymbol);
@@ -292,6 +317,17 @@ export function BotBuilderDesk({
       },
       `Chart · ${marketLabelForSymbol(nextSymbol)}`,
     );
+    persistChartProps({ symbol: nextSymbol });
+  }
+
+  function handleChartGranularityChange(nextGranularity: number) {
+    setChartGranularity(nextGranularity);
+    persistChartProps({ granularity: nextGranularity });
+  }
+
+  function handleChartTypeChange(nextChartType: string) {
+    setChartType(nextChartType);
+    persistChartProps({ chart_type: nextChartType });
   }
 
   function toggleExpanded(id: string) {
@@ -532,7 +568,7 @@ export function BotBuilderDesk({
     setChips([]);
     setFocusBlock("trade");
     setChartOpen(false);
-    setChartTradingView(false);
+    setTvOpen(false);
     setNotice("Workspace reset");
   }
 
@@ -560,13 +596,13 @@ export function BotBuilderDesk({
       return;
     }
     if (id === "charts") {
-      setChartTradingView(false);
+      setTvOpen(false);
       setChartOpen(true);
       return;
     }
     if (id === "tradingview") {
-      setChartTradingView(true);
-      setChartOpen(true);
+      setChartOpen(false);
+      setTvOpen(true);
       return;
     }
     if (id === "undo") {
@@ -948,7 +984,7 @@ export function BotBuilderDesk({
                   (item.id === "redo" && historyIndex >= history.length - 1);
                 const on =
                   (item.id === "charts" && chartOpen) ||
-                  (item.id === "tradingview" && chartOpen && chartTradingView);
+                  (item.id === "tradingview" && tvOpen);
                 return (
                   <button
                     key={item.id}
@@ -1360,36 +1396,58 @@ export function BotBuilderDesk({
 
       {chartOpen ? (
         <div
-          className="chart-desk-modal bot-builder-chart-modal"
+          className="chart-desk-modal bot-builder-chart-modal dbot-chart-modal"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="tc-builder-chart-title"
-          onClick={() => {
-            setChartOpen(false);
-            setChartTradingView(false);
-          }}
+          aria-label="Chart"
+          onClick={() => setChartOpen(false)}
         >
-          <div onClick={(event) => event.stopPropagation()}>
-            <header>
-              <span id="tc-builder-chart-title">Chart · {snapshot.market}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setChartOpen(false);
-                  setChartTradingView(false);
-                }}
-              >
-                Close
-              </button>
-            </header>
+          <div className="dbot-chart-modal__panel" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="dbot-chart-modal__close"
+              aria-label="Close chart"
+              onClick={() => setChartOpen(false)}
+            >
+              Close
+            </button>
             <SmartChartPanel
               symbol={snapshot.symbol}
+              granularity={chartGranularity}
+              chartType={chartType}
               isConnected={isConnected}
-              initialChartType={chartTradingView ? "candles" : "line"}
+              isModal
+              activeSymbols={chartActiveSymbols}
+              tradingTimes={chartTradingTimes}
               onSymbolChange={handleChartSymbolChange}
+              onGranularityChange={handleChartGranularityChange}
+              onChartTypeChange={handleChartTypeChange}
               fetchChartQuotes={fetchChartQuotes}
               subscribeChartStream={subscribeChartStream}
               demoTicks={fetchChartQuotes ? undefined : tickHistory}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {tvOpen ? (
+        <div
+          className="chart-desk-modal bot-builder-chart-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="TradingView chart"
+          onClick={() => setTvOpen(false)}
+        >
+          <div onClick={(event) => event.stopPropagation()}>
+            <header>
+              <span>TradingView · {snapshot.market}</span>
+              <button type="button" onClick={() => setTvOpen(false)}>
+                Close
+              </button>
+            </header>
+            <iframe
+              title={`TradingView ${snapshot.symbol}`}
+              src={`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(snapshot.symbol)}&interval=1&hidesidetoolbar=0&theme=light`}
             />
           </div>
         </div>

@@ -188,6 +188,9 @@ export function DashboardClient({
     requestChartHistory,
     fetchChartQuotes,
     subscribeChartStream,
+    requestChartReference,
+    chartActiveSymbols,
+    chartTradingTimes,
     chartHistory,
     chartHistoryLoading,
     wsMetrics,
@@ -887,6 +890,9 @@ export function DashboardClient({
               onSubscribeTicks={subscribeTicks}
               fetchChartQuotes={fetchChartQuotes}
               subscribeChartStream={subscribeChartStream}
+              chartActiveSymbols={chartActiveSymbols}
+              chartTradingTimes={chartTradingTimes}
+              onRequestChartReference={requestChartReference}
               fills={botContracts}
               runStats={builderRunStats}
               recentJournal={

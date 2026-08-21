@@ -37,6 +37,12 @@ import type {
   ChartHistorySnapshot,
 } from "@/lib/ws/protocol";
 import {
+  activeSymbolsFromDerivApi,
+  tradingTimesFromDerivApi,
+  type DerivActiveSymbolRow,
+} from "@/lib/chart/active-symbols";
+import type { ActiveSymbol, TradingTimesMap } from "@deriv-com/smartcharts-champion";
+import {
   applyTickToChartCandles,
   applyTickToHistory,
 } from "@/lib/chart/candles";
@@ -189,6 +195,8 @@ export function useDerivWorker(
   const [state, setState] = useState<DerivWorkerState>(initialState);
   const [chartHistory, setChartHistory] = useState<ChartHistorySnapshot | null>(null);
   const [chartHistoryLoading, setChartHistoryLoading] = useState(false);
+  const [chartActiveSymbols, setChartActiveSymbols] = useState<ActiveSymbol[]>([]);
+  const [chartTradingTimes, setChartTradingTimes] = useState<TradingTimesMap>({});
   const chartKeyRef = useRef("");
   const chartQuotesPendingRef = useRef(
     new Map<
@@ -632,6 +640,7 @@ export function useDerivWorker(
                 payload: { symbol: sym },
               } satisfies WorkerCommand);
             }
+            worker.postMessage({ type: "REQUEST_CHART_REFERENCE" } satisfies WorkerCommand);
             if (isDemoMode) {
               setState((prevState) => ({ ...prevState, balance: DEMO_BALANCE }));
             } else {
@@ -672,6 +681,16 @@ export function useDerivWorker(
         case "CHART_STREAM_QUOTE": {
           const callback = chartStreamCallbacksRef.current.get(message.payload.streamId);
           callback?.(message.payload);
+          break;
+        }
+
+        case "CHART_REFERENCE": {
+          if (!message.payload.error) {
+            setChartActiveSymbols(
+              activeSymbolsFromDerivApi(message.payload.activeSymbols as DerivActiveSymbolRow[]),
+            );
+            setChartTradingTimes(tradingTimesFromDerivApi(message.payload.tradingTimes));
+          }
           break;
         }
 
@@ -856,6 +875,10 @@ export function useDerivWorker(
     [sendCommand],
   );
 
+  const requestChartReference = useCallback(() => {
+    sendCommand({ type: "REQUEST_CHART_REFERENCE" });
+  }, [sendCommand]);
+
   const openContracts = state.contracts.filter((c) => !c.isSold);
 
   const sessionPnl = state.contracts.reduce(
@@ -876,6 +899,9 @@ export function useDerivWorker(
     requestChartHistory,
     fetchChartQuotes,
     subscribeChartStream,
+    requestChartReference,
+    chartActiveSymbols,
+    chartTradingTimes,
     chartHistory,
     chartHistoryLoading,
     requestBalance: () => {

@@ -84,6 +84,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <WindowScrollRestoration />
           {children}
         </ThemeProvider>
+        <div id="modal_root" className="modal-root" />
         <PwaRegister />
       </body>
     </html>
