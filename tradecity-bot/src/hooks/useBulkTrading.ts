@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton';
+import { mirrorContract } from '@/utils/copy-mirror';
 
 export interface OpenContractRecord {
     contractId: number;
@@ -232,6 +233,7 @@ export function useBulkTrading(currency: string) {
                             batchId,
                         };
                         bought += 1;
+                        mirrorContract(parameters, request.amount);
                         contractsRef.current = [record, ...contractsRef.current];
                         setContracts(contractsRef.current);
                         trackContract(record.contractId);

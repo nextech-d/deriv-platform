@@ -5,7 +5,7 @@
   "framework": null,
   "rewrites": [
     {
-      "source": "/((?!static|js|assets|smartcharts|favicon|manifest|service-worker|.*\\..*).*)",
+      "source": "/((?!api|static|js|assets|smartcharts|favicon|manifest|service-worker|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]

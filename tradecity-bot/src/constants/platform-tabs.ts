@@ -13,6 +13,7 @@ export type PlatformTabKind =
     | 'fast_trader'
     | 'edging'
     | 'edging_2'
+    | 'copy_trader'
     | 'chart'
     | 'tutorial'
     | 'placeholder';
@@ -65,7 +66,7 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         hash: 'copy_trader',
         domId: 'id-copy-trader',
         label: 'Copy Trader',
-        kind: 'placeholder',
+        kind: 'copy_trader',
         splitAfter: true,
     },
     { id: 'edging', hash: 'edging', domId: 'id-edging', label: 'Edging', kind: 'edging' },
