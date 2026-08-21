@@ -1,6 +1,6 @@
 @use 'components/shared/styles/mixins' as *;
 
-/* Analysis tool — same catalog strip and inset cards as Free bots. */
+/* Analysis tool — catalog strip, centered wide cards. */
 .analysis-tool {
     --at-red: var(--brand-red-coral, #ff444f);
     --at-ink: #000;
@@ -71,14 +71,14 @@
 }
 
 .analysis-tool-seg {
-    min-height: 2.15rem;
+    min-height: 2.6rem;
     padding: 0 0.9rem;
     border: none;
     border-right: 1px solid var(--general-section-1);
     background: var(--general-main-1);
     color: var(--text-less-prominent);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
     cursor: pointer;
 }
@@ -107,7 +107,7 @@
     background: var(--general-section-1);
     color: var(--text-less-prominent);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -120,19 +120,19 @@
     background: color-mix(in srgb, var(--at-red) 10%, var(--general-main-1));
     color: var(--at-red);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
 }
 
 .analysis-tool-strip-cta {
-    min-height: 2.15rem;
+    min-height: 2.6rem;
     padding: 0 0.85rem;
     border: none;
     border-radius: 8px;
     background: #000;
     color: #fff;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
@@ -142,7 +142,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-less-prominent);
 }
 
@@ -194,9 +194,9 @@
     display: grid;
     gap: 1rem;
     align-items: stretch;
-    width: min(100%, 112rem);
+    width: min(96rem, 100%);
     margin-inline: auto;
-    padding: 1.4rem 8vw 6.4rem;
+    padding: 1.2rem 0.5rem 6.4rem;
 }
 
 .analysis-tool-grid {
@@ -262,7 +262,7 @@
     margin: 0;
     min-width: 0;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: 0;
     line-height: 1.25;
@@ -296,7 +296,7 @@
 
 .analysis-tool-card-summary {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     line-height: 1.4;
     color: var(--text-less-prominent);
 }
@@ -325,12 +325,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.15rem;
-    height: 2.15rem;
+    width: 2.4rem;
+    height: 2.4rem;
     border-radius: 999px;
     background: var(--general-section-2);
     color: var(--text-general);
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
 }
 
@@ -339,7 +339,7 @@
 }
 
 .analysis-tool-digit small {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     color: var(--text-less-prominent);
@@ -347,7 +347,7 @@
 
 .analysis-tool-load {
     width: 25%;
-    min-height: 2.4rem;
+    min-height: 2.6rem;
     margin-top: auto;
     padding: 0 0.85rem;
     border: none;
@@ -355,7 +355,7 @@
     background: #000;
     color: #fff;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
@@ -383,7 +383,7 @@
 
 .analysis-tool-strip-note {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-less-prominent);
 }
 
@@ -395,7 +395,7 @@
 
 .analysis-tool-strip em {
     font-style: normal;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     color: var(--text-less-prominent);
 }
 
@@ -403,10 +403,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.55rem;
-    height: 1.55rem;
+    width: 1.8rem;
+    height: 1.8rem;
     border-radius: 6px;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -437,7 +437,7 @@
 .analysis-tool-stat p,
 .analysis-tool-field span {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-less-prominent);
 }
@@ -446,13 +446,13 @@
     display: block;
     margin-top: 0.25rem;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
 }
 
 .analysis-tool-stat span {
     display: block;
     margin-top: 0.15rem;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-less-prominent);
 }
 
@@ -463,13 +463,13 @@
 }
 
 .analysis-tool-field select {
-    min-height: 2.15rem;
+    min-height: 2.6rem;
     padding: 0 0.55rem;
     border: 1px solid var(--general-section-1);
     border-radius: 8px;
     background: var(--general-main-1);
     color: var(--text-general);
-    font-size: 1.2rem;
+    font-size: 1.3rem;
 }
 
 .analysis-tool-freq {
@@ -483,7 +483,7 @@
     grid-template-columns: 1.65rem minmax(0, 1fr) 2.6rem;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
 }
 
 .analysis-tool-freq-row span {
@@ -537,11 +537,11 @@
 }
 
 .analysis-tool-key strong {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
 }
 
 .analysis-tool-key span {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-less-prominent);
 }
 
