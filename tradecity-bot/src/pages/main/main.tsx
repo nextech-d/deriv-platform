@@ -11,7 +11,7 @@ import Tabs from '@/components/shared_ui/tabs/tabs';
 import TradeTypeConfirmationModal from '@/components/trade-type-confirmation-modal';
 import TradingViewModal from '@/components/trading-view-chart/trading-view-modal';
 import { DBOT_TABS, TAB_HASHES, TAB_IDS } from '@/constants/bot-contents';
-import { PLATFORM_TABS } from '@/constants/platform-tabs';
+import { PLATFORM_TABS, RUN_CONTROL_KINDS } from '@/constants/platform-tabs';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
@@ -117,6 +117,7 @@ const AppWrapper = observer(() => {
         onCloseDialog,
         onOkButtonClick,
         stopBot,
+        is_stop_button_visible,
     } = run_panel;
     const { is_open } = quick_strategy;
     const { cancel_button_text, ok_button_text, title, message, dismissable, is_closed_on_cancel } = dialog_options as {
@@ -478,6 +479,10 @@ const AppWrapper = observer(() => {
         }
     };
     // [/AI]
+    const activeKind = PLATFORM_TABS[active_tab]?.kind;
+    const showRunControl =
+        (activeKind != null && RUN_CONTROL_KINDS.has(activeKind)) || is_stop_button_visible;
+
     return (
         <React.Fragment>
             <div className='main'>
@@ -516,7 +521,7 @@ const AppWrapper = observer(() => {
             </div>
             <DesktopWrapper>
                 <div className='main__run-strategy-wrapper'>
-                    <RunStrategy />
+                    {showRunControl && <RunStrategy />}
                     <RunPanel />
                 </div>
                 <ChartModal />
