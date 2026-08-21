@@ -2273,13 +2273,44 @@ html[data-boot-hold] body {
 }
 
 .modal-root {
-  position: relative;
+  position: fixed;
+  inset: 0;
   z-index: 99999;
+  pointer-events: none;
+}
+
+.modal-root > * {
+  pointer-events: auto;
 }
 
 .cq-modal-dropdown.stxMenuActive {
-  left: 0;
-  top: 0;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100000 !important;
+}
+
+.dashboard__chart-wrapper .cq-top-ui-widgets {
+  z-index: 3;
+}
+
+.dashboard__chart-wrapper .sc-toolbar-widget .sc-chart-mode,
+.dashboard__chart-wrapper .sc-toolbar-widget .sc-studies,
+.dashboard__chart-wrapper .sc-toolbar-widget .sc-views,
+.dashboard__chart-wrapper .sc-toolbar-widget .sc-draw-tools,
+.dashboard__chart-wrapper .sc-toolbar-widget .sc-share {
+  cursor: pointer;
+}
+
+.dashboard__chart-wrapper--mobile .cq-chart-title .cq-menu-dropdown {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100000 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.dashboard__chart-wrapper--mobile .cq-context {
+  z-index: 99;
 }
 
 .bot-builder-workspace {

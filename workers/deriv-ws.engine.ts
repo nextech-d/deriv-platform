@@ -192,8 +192,13 @@ function handleMessage(event: MessageEvent<string>): void {
     const high = Number(ohlc.high);
     const low = Number(ohlc.low);
     const close = Number(ohlc.close);
+    const candleGranularity = Number(
+      (ohlc as { granularity?: number | string }).granularity ??
+        (message.echo_req as { granularity?: number | string } | undefined)?.granularity ??
+        0,
+    );
     if (symbol && Number.isFinite(epoch) && Number.isFinite(close)) {
-      routeChartStreamFromOhlc(symbol, epoch, open, high, low, close);
+      routeChartStreamFromOhlc(symbol, epoch, open, high, low, close, candleGranularity);
     }
   }
 
@@ -672,9 +677,11 @@ function routeChartStreamFromOhlc(
   high: number,
   low: number,
   close: number,
+  candleGranularity: number,
 ): void {
   for (const [streamId, stream] of chartStreams) {
     if (stream.symbol !== symbol || stream.granularity <= 0) continue;
+    if (candleGranularity > 0 && stream.granularity !== candleGranularity) continue;
     emit({
       type: "CHART_STREAM_QUOTE",
       payload: {

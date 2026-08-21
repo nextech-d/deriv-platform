@@ -19,6 +19,20 @@ function asGranularity(value: number): TGranularity {
   return (VALID_GRANULARITIES.has(value) ? value : 0) as TGranularity;
 }
 
+/** SmartCharts passes { symbol, style, granularity? } into unsubscribeQuotes — ticks omit granularity. */
+export function streamGranularityFromRequest(request?: {
+  symbol?: string;
+  granularity?: number | string;
+  style?: string;
+}): number | null {
+  if (!request?.symbol) return null;
+  if (request.granularity !== undefined && request.granularity !== null && request.granularity !== "") {
+    return asGranularity(Number(request.granularity));
+  }
+  if (request.style === "ticks") return 0;
+  return null;
+}
+
 export interface SmartChartFeedSource {
   fetchChartQuotes?: (params: {
     symbol: string;
@@ -181,12 +195,27 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
   );
 
   const unsubscribeQuotes: TUnsubscribeQuotes = useCallback((request) => {
-    if (!request?.symbol || request.granularity === undefined) {
+    if (!request?.symbol) {
       for (const cleanup of streamCleanupRef.current.values()) cleanup();
       streamCleanupRef.current.clear();
       return;
     }
-    const key = `${request.symbol}:${asGranularity(request.granularity)}`;
+
+    const granularity = streamGranularityFromRequest(
+      request as { symbol?: string; granularity?: number | string; style?: string },
+    );
+
+    if (granularity === null) {
+      for (const [key, cleanup] of streamCleanupRef.current.entries()) {
+        if (key.startsWith(`${request.symbol}:`)) {
+          cleanup();
+          streamCleanupRef.current.delete(key);
+        }
+      }
+      return;
+    }
+
+    const key = `${request.symbol}:${granularity}`;
     streamCleanupRef.current.get(key)?.();
     streamCleanupRef.current.delete(key);
   }, []);

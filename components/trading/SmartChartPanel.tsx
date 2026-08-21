@@ -1,42 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import "@deriv-com/smartcharts-champion/dist/smartcharts.css";
-import type { ActiveSymbol, TGranularity, TradingTimesMap } from "@deriv-com/smartcharts-champion";
+import type { ActiveSymbol, TradingTimesMap } from "@deriv-com/smartcharts-champion";
 import { useSmartChartFeed, type SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
-import { getMarketsOrder } from "@/lib/chart/smartchart-store";
 import { mergeChartReferenceData } from "@/lib/chart/active-symbols";
 import { loadSmartCharts } from "@/lib/chart/smartcharts-loader";
-import { SmartChartTitle, SmartChartToolbar } from "@/components/trading/SmartChartToolbar";
 import { cn } from "@/lib/utils/cn";
 
-/** SmartCharts chart type ids (Flutter enum) — not the same as our ChartDesk names. */
-export function normalizeSmartChartType(type: string): string {
-  switch (type.toLowerCase()) {
-    case "candle":
-    case "candles":
-      return "candles";
-    case "mountain":
-    case "area":
-    case "line":
-      return "line";
-    case "ohlc":
-    case "colored_bar":
-      return "ohlc";
-    case "hollow":
-    case "hollow_candle":
-      return "hollow";
-    default:
-      return type;
-  }
-}
-
-const SmartChart = dynamic(
+const SmartChartRuntime = dynamic(
   () =>
-    loadSmartCharts().then((module) => {
-      module.setSmartChartsPublicPath("/smartcharts/");
-      return module.SmartChart;
+    loadSmartCharts().then(() => import("@/components/trading/SmartChartRuntime")).then((module) => {
+      return module.SmartChartRuntime;
     }),
   {
     ssr: false,
@@ -89,7 +65,6 @@ export function SmartChartPanel({
   symbol,
   granularity,
   chartType,
-  isConnected = false,
   isModal = false,
   showLastDigitStats = false,
   activeSymbols,
@@ -104,12 +79,6 @@ export function SmartChartPanel({
   const isMobile = useIsMobile();
   const isDesktop = !isMobile;
   const theme = useDocumentTheme();
-  const onSymbolChangeRef = useRef(onSymbolChange);
-  const onGranularityChangeRef = useRef(onGranularityChange);
-  const onChartTypeChangeRef = useRef(onChartTypeChange);
-  onSymbolChangeRef.current = onSymbolChange;
-  onGranularityChangeRef.current = onGranularityChange;
-  onChartTypeChangeRef.current = onChartTypeChange;
 
   const feed = useSmartChartFeed({
     fetchChartQuotes,
@@ -122,25 +91,9 @@ export function SmartChartPanel({
     [activeSymbols, tradingTimes],
   );
 
-  const settings = useMemo(
-    () => ({
-      assetInformation: false,
-      countdown: true,
-      isHighestLowestMarkerEnabled: false,
-      language: "en",
-      position: isDesktop ? "bottom" : "left",
-      theme,
-    }),
-    [isDesktop, theme],
-  );
-
   useEffect(() => {
-    void loadSmartCharts().then((module) => {
-      module.setSmartChartsPublicPath("/smartcharts/");
-    });
+    void loadSmartCharts();
   }, []);
-
-  const connectionOpen = true;
 
   if (!symbol) return null;
 
@@ -149,57 +102,25 @@ export function SmartChartPanel({
       className={cn(
         "dashboard__chart-wrapper smartchart-panel",
         isModal && isDesktop && "dashboard__chart-wrapper--modal",
+        isMobile && "dashboard__chart-wrapper--mobile",
       )}
       dir="ltr"
     >
-      <div id="smartcharts_modal" className="ciq-modal" />
-      <SmartChart
-        id="dbot"
+      <SmartChartRuntime
         symbol={symbol}
-        granularity={granularity as TGranularity}
-        chartType={normalizeSmartChartType(chartType)}
+        granularity={granularity}
+        chartType={chartType}
+        isMobile={isMobile}
+        isDesktop={isDesktop}
+        theme={theme}
+        showLastDigitStats={showLastDigitStats}
+        chartData={chartData}
         getQuotes={feed.getQuotes}
         subscribeQuotes={feed.subscribeQuotes}
         unsubscribeQuotes={feed.unsubscribeQuotes}
-        chartData={chartData}
-        feedCall={{ activeSymbols: false, tradingTimes: false }}
-        isConnectionOpened={connectionOpen}
-        settings={settings}
-        barriers={[]}
-        showLastDigitStats={showLastDigitStats}
-        chartControlsWidgets={null}
-        enabledChartFooter={false}
-        isMobile={isMobile}
-        enabledNavigationWidget={isDesktop}
-        isLive
-        leftMargin={80}
-        getMarketsOrder={getMarketsOrder}
-        topWidgets={() => (
-          <SmartChartTitle onChange={(next) => onSymbolChangeRef.current?.(next)} />
-        )}
-        toolbarWidget={() => (
-          <SmartChartToolbar
-            updateChartType={(next) => onChartTypeChangeRef.current?.(next)}
-            updateGranularity={(next) => onGranularityChangeRef.current?.(next)}
-            position={!isDesktop ? "bottom" : "top"}
-            isDesktop={isDesktop}
-          />
-        )}
-        stateChangeListener={(state, option) => {
-          if (!option || typeof option !== "object") return;
-          if (state === "SYMBOL_CHANGE" && "symbol" in option) {
-            const next = (option as { symbol?: string }).symbol;
-            if (next) onSymbolChangeRef.current?.(next);
-          }
-          if (state === "CHART_INTERVAL_CHANGE" && "granularity" in option) {
-            const next = Number((option as { granularity?: number }).granularity);
-            if (Number.isFinite(next)) onGranularityChangeRef.current?.(next);
-          }
-          if (state === "CHART_TYPE_CHANGE" && "chartType" in option) {
-            const next = (option as { chartType?: string }).chartType;
-            if (next) onChartTypeChangeRef.current?.(next);
-          }
-        }}
+        onSymbolChange={onSymbolChange}
+        onGranularityChange={onGranularityChange}
+        onChartTypeChange={onChartTypeChange}
       />
     </div>
   );

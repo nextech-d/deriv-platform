@@ -57,7 +57,10 @@ declare module "@deriv-com/smartcharts-champion" {
     callback: (quote: TQuote) => void,
   ) => () => void;
 
-  export type TUnsubscribeQuotes = (request?: { symbol?: string; granularity?: number }) => void;
+  export type TUnsubscribeQuotes = (
+    request?: { symbol?: string; granularity?: number | string; style?: string },
+    callback?: (quote: TQuote) => void,
+  ) => void;
 
   export interface ActiveSymbol {
     display_name: string;
