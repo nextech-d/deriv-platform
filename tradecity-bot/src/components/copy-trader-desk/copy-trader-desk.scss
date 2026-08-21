@@ -22,21 +22,20 @@
     min-height: var(--tab-content-height);
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 2rem 1.5rem 3rem;
+    padding: 1.2rem 2.4rem 6.4rem;
     background: var(--ct-page);
     color: var(--ct-text);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
     @include mobile-or-tablet-screen {
         min-height: var(--tab-content-height-mobile);
-        padding: 1rem 0.75rem 2rem;
+        padding: 1rem 0.75rem 6.4rem;
     }
 }
 
 .copy-trader-desk__inner {
     width: 100%;
-    max-width: 60rem;
-    margin: 0 auto;
+    margin-inline: auto;
 }
 
 .copy-trader-desk__eyebrow {
@@ -379,7 +378,7 @@
 .copy-trader-desk__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
+    gap: 1.4rem;
     align-items: start;
 
     @include mobile-or-tablet-screen {
