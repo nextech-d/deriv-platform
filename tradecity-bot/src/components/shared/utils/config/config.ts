@@ -241,10 +241,10 @@ export const generateOAuthURL = async (prompt?: string) => {
             // Store code verifier for token exchange
             storeCodeVerifier(codeVerifier);
 
-            // Build redirect URL
+            // Build redirect URL (must match Deriv App Manager exactly — trailing slash)
             const protocol = window.location.protocol;
             const host = window.location.host;
-            const redirectUrl = `${protocol}//${host}`;
+            const redirectUrl = `${protocol}//${host}/`;
             const scopes = 'trade';
 
             // Build OAuth URL with PKCE parameters
