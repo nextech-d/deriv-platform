@@ -75,9 +75,9 @@
 .money-mgmt-body {
     display: grid;
     gap: 1rem;
-    width: min(72rem, 100%);
-    margin: 0 auto;
-    padding: 1.15rem 1.25rem 1.75rem;
+    width: min(96rem, calc(100% + 2rem));
+    margin: 0 -1rem;
+    padding: 1.15rem 0.75rem 1.75rem;
 }
 
 .money-mgmt-fields {
