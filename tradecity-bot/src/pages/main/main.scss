@@ -177,7 +177,20 @@
             }
 
             &--main__tabs {
+                // The tab strip is wider than the panel. Without an explicit column it
+                // stretches the grid to its own width, and the content pane shares that
+                // column - so opening a right-hand tab scrolled the whole desk sideways
+                // and clipped its left edge.
+                grid-template-columns: minmax(0, 1fr);
+
+                .dc-tabs__list--header--main__tabs {
+                    min-width: 0;
+                }
+
                 .dc-tabs__list {
+                    // Beats the fit-content width the header modifier sets.
+                    max-width: 100%;
+
                     @include desktop-screen {
                         overflow-x: auto;
                         overflow-y: hidden;
