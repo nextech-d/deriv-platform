@@ -3,13 +3,42 @@
  * functions stay dependency-free.
  */
 
+/**
+ * Vercel's marketplace flow prefixes the injected variables, and the prefix is
+ * chosen at install time (KV, STORAGE, UPSTASH_REDIS, ...). Rather than pin one
+ * spelling, take the known pairs first and then fall back to any matching
+ * `<PREFIX>_REST_API_URL` / `<PREFIX>_REST_API_TOKEN` pair.
+ */
+function credentials() {
+    const known = [
+        ['KV_REST_API_URL', 'KV_REST_API_TOKEN'],
+        ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'],
+        ['STORAGE_REST_API_URL', 'STORAGE_REST_API_TOKEN'],
+        ['REDIS_REST_API_URL', 'REDIS_REST_API_TOKEN'],
+    ];
+    for (const [urlKey, tokenKey] of known) {
+        if (process.env[urlKey] && process.env[tokenKey]) {
+            return { url: process.env[urlKey], token: process.env[tokenKey] };
+        }
+    }
+
+    const urlKey = Object.keys(process.env)
+        .filter(key => key.endsWith('_REST_API_URL') && process.env[key])
+        .sort()
+        .find(key => process.env[key.replace(/_URL$/, '_TOKEN')]);
+
+    if (urlKey) {
+        return { url: process.env[urlKey], token: process.env[urlKey.replace(/_URL$/, '_TOKEN')] };
+    }
+    return null;
+}
+
 function config() {
-    const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-    if (!url || !token) {
+    const found = credentials();
+    if (!found) {
         throw new Error('KV_REST_API_URL and KV_REST_API_TOKEN are not configured');
     }
-    return { url: url.replace(/\/$/, ''), token };
+    return { url: found.url.replace(/\/$/, ''), token: found.token };
 }
 
 async function command(parts) {
