@@ -12,8 +12,18 @@
     height: 100vh;
 
     .deriv-header {
+        position: fixed;
+        top: 0;
+        inset-inline: 0;
+        z-index: 15;
+        width: 100%;
         background: var(--general-main-1);
         height: 5.6rem;
+    }
+
+    // Header is out of flow; keep the page from sliding under it.
+    .main-body {
+        padding-top: 5.6rem;
     }
 
     @include desktop-screen {
@@ -25,6 +35,10 @@
             border-bottom: 1px solid var(--general-section-1);
             box-shadow: none;
             background: var(--general-main-1);
+        }
+
+        .main-body {
+            padding-top: var(--tc-header-h);
         }
 
         // Keep logo, login and the rest on the original first row.
