@@ -2,7 +2,14 @@
  * Main tab bar order — legacy TradeCity product menu with Deriv bot tabs wired in.
  * Placeholder tabs render empty panels until desks are implemented.
  */
-export type PlatformTabKind = 'dashboard' | 'bot_builder' | 'free_bots' | 'chart' | 'tutorial' | 'placeholder';
+export type PlatformTabKind =
+    | 'dashboard'
+    | 'bot_builder'
+    | 'free_bots'
+    | 'analysis_tool'
+    | 'chart'
+    | 'tutorial'
+    | 'placeholder';
 
 export interface PlatformTabDefinition {
     id: string;
@@ -31,7 +38,7 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         hash: 'analysis_tool',
         domId: 'id-analysis-tool',
         label: 'Analysis Tool',
-        kind: 'placeholder',
+        kind: 'analysis_tool',
     },
     {
         id: 'signal_center',

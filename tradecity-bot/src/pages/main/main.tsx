@@ -40,6 +40,7 @@ import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
+import AnalysisToolPanel from '../../components/analysis-tool-desk/analysis-tool-panel';
 import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
 import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
@@ -435,6 +436,13 @@ const AppWrapper = observer(() => {
                                 handleTabChange(BOT_BUILDER);
                             }
                         }}
+                    />
+                );
+            case 'analysis_tool':
+                return (
+                    <AnalysisToolPanel
+                        onSeededToBuilder={() => handleTabChange(BOT_BUILDER)}
+                        onOpenDTrader={() => handleTabChange(DBOT_TABS.D_TRADER)}
                     />
                 );
             case 'chart':
