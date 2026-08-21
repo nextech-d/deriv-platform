@@ -14,6 +14,7 @@ export type PlatformTabKind =
     | 'edging'
     | 'edging_2'
     | 'copy_trader'
+    | 'signal_center'
     | 'chart'
     | 'tutorial'
     | 'placeholder';
@@ -52,7 +53,7 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         hash: 'signal_center',
         domId: 'id-signal-center',
         label: 'Signal Center',
-        kind: 'placeholder',
+        kind: 'signal_center',
     },
     {
         id: 'money_management',

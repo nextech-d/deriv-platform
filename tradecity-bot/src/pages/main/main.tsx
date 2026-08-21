@@ -48,6 +48,7 @@ import EdgingPanel from '../../components/edging-desk/edging-panel';
 import FastTraderPanel from '../../components/fast-trader-desk/fast-trader-panel';
 import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
 import MoneyManagementPanel from '../../components/money-management-desk/money-management-panel';
+import SignalCenterPanel from '../../components/signal-center-desk/signal-center-panel';
 import UltimateBotPanel from '../../components/ultimate-bot-desk/ultimate-bot-panel';
 import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
@@ -466,6 +467,8 @@ const AppWrapper = observer(() => {
                 return <Edging2Panel />;
             case 'copy_trader':
                 return <CopyTraderPanel />;
+            case 'signal_center':
+                return <SignalCenterPanel onSeededToBuilder={() => handleTabChange(BOT_BUILDER)} />;
             case 'chart':
                 return (
                     <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
