@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
-import { setCopyRunningHint } from '@/utils/copy-mirror';
+import { activeLoginid, setCopyRunningHint } from '@/utils/copy-mirror';
 import {
     accountsForMode,
     accountTally,
@@ -41,6 +41,14 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
         () => ({ demo: accountTally(state.accounts, 'demo'), real: accountTally(state.accounts, 'real') }),
         [state.accounts]
     );
+
+    // Trades are never copied back onto the account that placed them, so a
+    // selection of only that account would run without copying anything.
+    const source = activeLoginid();
+    const copiesNothing = useMemo(() => {
+        const enabled = accountsForMode(state.accounts, mode).filter(account => account.enabled);
+        return enabled.length > 0 && enabled.every(account => account.loginid === source);
+    }, [state.accounts, mode, source]);
 
     async function run(action: () => Promise<CopyState>): Promise<boolean> {
         setBusy(true);
@@ -206,6 +214,12 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                             {state.blocker && !running ? (
                                 <p className='copy-trader-desk__blocker'>
                                     <span aria-hidden='true'>●</span> {state.blocker}
+                                </p>
+                            ) : null}
+                            {!state.blocker && copiesNothing ? (
+                                <p className='copy-trader-desk__blocker'>
+                                    <span aria-hidden='true'>●</span> {source} is the account you trade from, so
+                                    nothing will be copied. Enable another {mode} account to copy onto.
                                 </p>
                             ) : null}
                             <button

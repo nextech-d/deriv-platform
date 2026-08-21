@@ -86,9 +86,20 @@ module.exports = async function handler(req, res) {
         }
 
         const wantDemo = record.session.mode === 'demo';
-        const targets = record.accounts.filter(account => account.enabled && account.isDemo === wantDemo);
-        if (!targets.length) {
+        const eligible = record.accounts.filter(account => account.enabled && account.isDemo === wantDemo);
+        if (!eligible.length) {
             res.status(409).json({ error: 'No enabled accounts for this session.' });
+            return;
+        }
+
+        // The start gate asks for a PAT covering the caller's own login, so the
+        // account that placed the trade is normally in this list. Buying on it
+        // again would silently double every trade.
+        const sourceLoginid = String(body.sourceLoginid || '');
+        const targets = eligible.filter(account => account.loginid !== sourceLoginid);
+        const skipped = eligible.length - targets.length;
+        if (!targets.length) {
+            res.status(200).json({ results: [], copied: 0, total: 0, skipped });
             return;
         }
 
@@ -114,7 +125,12 @@ module.exports = async function handler(req, res) {
             })
         );
 
-        res.status(200).json({ results, copied: results.filter(item => item.ok).length, total: results.length });
+        res.status(200).json({
+            results,
+            copied: results.filter(item => item.ok).length,
+            total: results.length,
+            skipped,
+        });
     } catch (error) {
         handleFailure(res, error);
     }

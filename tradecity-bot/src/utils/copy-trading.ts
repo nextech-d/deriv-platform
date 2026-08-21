@@ -99,10 +99,10 @@ export const copyApi = {
         call<CopyState>('accounts', { method: 'PATCH', body: JSON.stringify({ accountId, enabled }) }),
     start: () => call<CopyState>('session', { method: 'POST', body: JSON.stringify({ action: 'start' }) }),
     stop: () => call<CopyState>('session', { method: 'POST', body: JSON.stringify({ action: 'stop' }) }),
-    replay: (parameters: Record<string, unknown>, maxPrice?: number) =>
-        call<{ copied: number; total: number }>('replay', {
+    replay: (parameters: Record<string, unknown>, maxPrice?: number, sourceLoginid?: string) =>
+        call<{ copied: number; total: number; skipped: number }>('replay', {
             method: 'POST',
-            body: JSON.stringify({ parameters, maxPrice }),
+            body: JSON.stringify({ parameters, maxPrice, sourceLoginid }),
         }),
 };
 

@@ -24,13 +24,22 @@ function copyRunningHint(): boolean {
     }
 }
 
+/** The account the trade was placed on, so the server can skip copying onto it. */
+export function activeLoginid(): string {
+    try {
+        return localStorage.getItem('active_loginid') || '';
+    } catch {
+        return '';
+    }
+}
+
 /**
  * Replays one contract onto the enabled copy accounts. Fire-and-forget: a copy
  * failure must never disturb the trade the user actually placed.
  */
 export function mirrorContract(parameters: Record<string, unknown>, maxPrice?: number): void {
     if (!copyRunningHint()) return;
-    void copyApi.replay(parameters, maxPrice).catch(() => {
+    void copyApi.replay(parameters, maxPrice, activeLoginid()).catch(() => {
         /* surfaced on the Copy Trader tab, not here */
     });
 }
