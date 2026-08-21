@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run generate:brand-css && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install --ignore-scripts",
   "framework": null,

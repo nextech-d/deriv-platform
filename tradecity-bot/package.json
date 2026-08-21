@@ -6,7 +6,9 @@
         "node": "22.x || 24.x"
     },
     "scripts": {
+        "prestart": "node scripts/generate-brand-css.js",
         "start": "rsbuild dev -o",
+        "prebuild": "node scripts/generate-brand-css.js",
         "build": "rsbuild build",
         "watch": "rsbuild build --watch",
         "serve": "http-server dist -p 8443 -a localhost -o",
