@@ -6,6 +6,7 @@ export type PlatformTabKind =
     | 'dashboard'
     | 'bot_builder'
     | 'free_bots'
+    | 'd_trader'
     | 'analysis_tool'
     | 'money_management'
     | 'ultimate_bot'
@@ -40,7 +41,7 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         kind: 'free_bots',
         splitAfter: true,
     },
-    { id: 'd_trader', hash: 'd_trader', domId: 'id-d-trader', label: 'D-Trader', kind: 'placeholder' },
+    { id: 'd_trader', hash: 'd_trader', domId: 'id-d-trader', label: 'D-Trader', kind: 'd_trader' },
     {
         id: 'analysis_tool',
         hash: 'analysis_tool',

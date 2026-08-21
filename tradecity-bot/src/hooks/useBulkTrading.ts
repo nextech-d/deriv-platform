@@ -44,6 +44,12 @@ export interface BulkTradeRequest {
     durationUnit: string;
     amount: number;
     count: number;
+    /** Accumulators only, 0.01 to 0.05. Ignored by every other contract type. */
+    growthRate?: number;
+    /** Closes the contract at this profit. Accumulators and multipliers only. */
+    takeProfit?: number;
+    /** Set false to keep a trade out of copy trading. Defaults to mirroring. */
+    mirror?: boolean;
 }
 
 type TApi = {
@@ -211,6 +217,8 @@ export function useBulkTrading(currency: string) {
                     NEEDS_BARRIER.includes(request.contractType) && request.lastDigitPrediction != null
                         ? request.lastDigitPrediction
                         : undefined,
+                growth_rate: request.growthRate,
+                limit_order: request.takeProfit == null ? undefined : { take_profit: request.takeProfit },
             });
             const parameters = buyRequest.parameters as Record<string, unknown>;
 
@@ -237,7 +245,7 @@ export function useBulkTrading(currency: string) {
                             batchId,
                         };
                         bought += 1;
-                        mirrorContract(parameters, request.amount);
+                        if (request.mirror !== false) mirrorContract(parameters, request.amount);
                         contractsRef.current = [record, ...contractsRef.current];
                         setContracts(contractsRef.current);
                         trackContract(record.contractId);

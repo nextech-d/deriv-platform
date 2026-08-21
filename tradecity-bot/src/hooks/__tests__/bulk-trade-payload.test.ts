@@ -54,3 +54,41 @@ describe('desk buy payload', () => {
         expect(parameters.selected_tick).toBe(0);
     });
 });
+
+/**
+ * D-Trader buys accumulators through the same hook. These run to a barrier or a
+ * take profit rather than a tick count, so the payload differs in shape.
+ */
+describe('accumulator buy payload', () => {
+    const accu = {
+        amount: 10,
+        basis: 'stake',
+        currency: 'USD',
+        duration: 0,
+        duration_unit: 't',
+        symbol: '1HZ100V',
+        growth_rate: 0.03,
+    };
+
+    it('carries the growth rate and drops the duration', () => {
+        const { parameters } = tradeOptionToBuy('ACCU', accu);
+        expect(parameters.growth_rate).toBe(0.03);
+        expect(parameters.duration).toBeUndefined();
+        expect(parameters.duration_unit).toBeUndefined();
+        expect(parameters.underlying_symbol).toBe('1HZ100V');
+    });
+
+    it('attaches take profit as a limit order when one is set', () => {
+        const parameters = tradeOptionToBuy('ACCU', { ...accu, limit_order: { take_profit: 50 } })
+            .parameters as Record<string, unknown>;
+        expect(parameters.limit_order).toEqual({ take_profit: 50 });
+    });
+
+    it('omits the limit order entirely when take profit is off', () => {
+        const parameters = tradeOptionToBuy('ACCU', { ...accu, limit_order: undefined }).parameters as Record<
+            string,
+            unknown
+        >;
+        expect(parameters).not.toHaveProperty('limit_order');
+    });
+});

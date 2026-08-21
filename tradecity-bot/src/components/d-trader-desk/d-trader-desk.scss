@@ -1,0 +1,353 @@
+@use 'components/shared/styles/mixins' as *;
+
+/* D-Trader — manual accumulator trading: chart on the left, ticket on the right. */
+.d-trader {
+    --dt-teal: var(--purchase-main-1);
+    --dt-ticket-width: 34rem;
+
+    display: flex;
+    // The tab panel is a flex row, so claim the full width or this shrink-wraps to its content.
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: var(--tab-content-height);
+    background: var(--general-main-1);
+    color: var(--text-general);
+
+    @include mobile-or-tablet-screen {
+        flex-direction: column;
+        min-height: var(--tab-content-height-mobile);
+    }
+
+    &__chart {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+
+        // The shared chart sizes itself to the whole tab, which would push the ticket off-screen.
+        .dashboard__chart-wrapper {
+            width: 100%;
+            height: 100%;
+        }
+
+        @include mobile-or-tablet-screen {
+            height: 40rem;
+            flex: none;
+        }
+    }
+
+    /* ------------------------------------------------------------- ticket */
+
+    &__ticket {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+        flex: none;
+        width: var(--dt-ticket-width);
+        padding: 1.2rem 1.6rem 2rem;
+        overflow-y: auto;
+        border-inline-start: 1px solid var(--border-normal);
+        background: var(--general-section-1);
+
+        @include mobile-or-tablet-screen {
+            width: 100%;
+            border-inline-start: none;
+            border-top: 1px solid var(--border-normal);
+        }
+    }
+
+    &__learn {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-less-prominent);
+    }
+
+    &__type,
+    &__copy {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.2rem;
+        border: 1px solid var(--border-normal);
+        border-radius: 0.8rem;
+        background: var(--general-main-1);
+    }
+
+    &__type strong {
+        font-size: 1.4rem;
+        font-weight: 700;
+    }
+
+    &__type-nav svg,
+    &__type-icon svg,
+    &__copy-icon svg {
+        width: 1.8rem;
+        height: 1.8rem;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    &__type-nav {
+        color: var(--text-less-prominent);
+    }
+
+    &__copy-label {
+        flex: 1;
+        font-size: 1.3rem;
+    }
+
+    &__copy-state {
+        font-size: 1.2rem;
+        color: var(--text-less-prominent);
+    }
+
+    /* -------------------------------------------------------------- switch */
+
+    &__switch {
+        position: relative;
+        width: 3.6rem;
+        height: 2rem;
+        padding: 0;
+        border: none;
+        border-radius: 1rem;
+        background: var(--border-normal);
+        cursor: pointer;
+        transition: background 0.15s;
+
+        i {
+            position: absolute;
+            top: 0.2rem;
+            inset-inline-start: 0.2rem;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            background: var(--general-main-1);
+            transition: transform 0.15s;
+        }
+
+        &.is-on {
+            background: var(--dt-teal);
+
+            i {
+                transform: translateX(1.6rem);
+            }
+        }
+    }
+
+    /* -------------------------------------------------------------- fields */
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+
+        h3 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--text-less-prominent);
+        }
+    }
+
+    &__info svg {
+        display: block;
+        width: 1.4rem;
+        height: 1.4rem;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+    }
+
+    &__rates {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.4rem;
+        padding: 0.4rem;
+        border-radius: 0.8rem;
+        background: var(--general-section-2, #e6e9e9);
+    }
+
+    &__rate {
+        padding: 0.7rem 0;
+        border: 1px solid transparent;
+        border-radius: 0.6rem;
+        background: transparent;
+        color: var(--text-general);
+        font-family: inherit;
+        font-size: 1.2rem;
+        cursor: pointer;
+
+        &.is-on {
+            border-color: var(--border-normal);
+            background: var(--general-main-1);
+            font-weight: 700;
+        }
+    }
+
+    &__stake {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.6rem 1rem;
+        border: 1px solid var(--border-normal);
+        border-radius: 0.8rem;
+        background: var(--general-main-1);
+
+        input {
+            flex: 1;
+            width: 100%;
+            min-width: 0;
+            border: none;
+            background: transparent;
+            color: var(--text-general);
+            font-family: inherit;
+            font-size: 1.4rem;
+            text-align: center;
+            appearance: textfield;
+
+            &::-webkit-inner-spin-button,
+            &::-webkit-outer-spin-button {
+                appearance: none;
+            }
+
+            &:focus-visible {
+                outline: none;
+            }
+        }
+
+        button {
+            width: 2.6rem;
+            height: 2.6rem;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--text-general);
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+
+            &:hover {
+                background: var(--general-section-1);
+            }
+        }
+
+        &.has-error {
+            border-color: var(--status-danger, #ec3f3f);
+        }
+    }
+
+    &__stake-currency {
+        font-size: 1.2rem;
+        color: var(--text-less-prominent);
+    }
+
+    &__check {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 1rem 1.2rem;
+        border: 1px solid var(--border-normal);
+        border-radius: 0.8rem;
+        background: var(--general-main-1);
+        font-size: 1.3rem;
+        cursor: pointer;
+
+        input {
+            width: 1.6rem;
+            height: 1.6rem;
+            accent-color: var(--dt-teal);
+            cursor: pointer;
+        }
+
+        span {
+            flex: 1;
+        }
+    }
+
+    /* ------------------------------------------------------------ readouts */
+
+    &__readouts {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        margin: 0;
+
+        div {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        dt {
+            font-size: 1.2rem;
+            color: var(--text-less-prominent);
+        }
+
+        dd {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--text-general);
+            border-bottom: 1px dashed var(--border-normal);
+        }
+    }
+
+    &__error {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--status-danger, #ec3f3f);
+    }
+
+    /* ----------------------------------------------------------------- buy */
+
+    &__buy {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        margin-top: auto;
+        padding: 1.4rem;
+        border: none;
+        border-radius: 0.8rem;
+        background: var(--dt-teal);
+        color: #fff;
+        font-family: inherit;
+        font-size: 1.5rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: filter 0.15s;
+
+        &:hover:not(:disabled) {
+            filter: brightness(1.08);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        svg {
+            width: 1.8rem;
+            height: 1.8rem;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    }
+
+    &__buy-icon {
+        display: grid;
+        place-items: center;
+    }
+}

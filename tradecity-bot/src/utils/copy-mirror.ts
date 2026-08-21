@@ -16,7 +16,8 @@ export function setCopyRunningHint(running: boolean): void {
     }
 }
 
-function copyRunningHint(): boolean {
+/** Whether a copy trading session is running, for UI that reflects that state. */
+export function copyRunningHint(): boolean {
     try {
         return sessionStorage.getItem(FLAG_KEY) === '1';
     } catch {
