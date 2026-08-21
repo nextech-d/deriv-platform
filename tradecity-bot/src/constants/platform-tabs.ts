@@ -11,6 +11,8 @@ export type PlatformTabKind =
     | 'ultimate_bot'
     | 'bulk_trader'
     | 'fast_trader'
+    | 'edging'
+    | 'edging_2'
     | 'chart'
     | 'tutorial'
     | 'placeholder';
@@ -66,13 +68,13 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         kind: 'placeholder',
         splitAfter: true,
     },
-    { id: 'edging', hash: 'edging', domId: 'id-edging', label: 'Edging', kind: 'placeholder' },
+    { id: 'edging', hash: 'edging', domId: 'id-edging', label: 'Edging', kind: 'edging' },
     {
         id: 'edging_2',
         hash: 'edging_2',
         domId: 'id-edging-2',
         label: 'Edging 2',
-        kind: 'placeholder',
+        kind: 'edging_2',
         splitAfter: true,
     },
     { id: 'fast_trader', hash: 'fast_trader', domId: 'id-fast-trader', label: 'Fast Trader', kind: 'fast_trader' },

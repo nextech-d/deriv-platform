@@ -42,6 +42,8 @@ import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
 import AnalysisToolPanel from '../../components/analysis-tool-desk/analysis-tool-panel';
 import BulkTraderPanel from '../../components/bulk-trader-desk/bulk-trader-panel';
+import Edging2Panel from '../../components/edging-2-desk/edging-2-panel';
+import EdgingPanel from '../../components/edging-desk/edging-panel';
 import FastTraderPanel from '../../components/fast-trader-desk/fast-trader-panel';
 import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
 import MoneyManagementPanel from '../../components/money-management-desk/money-management-panel';
@@ -457,6 +459,10 @@ const AppWrapper = observer(() => {
                 return <BulkTraderPanel />;
             case 'fast_trader':
                 return <FastTraderPanel />;
+            case 'edging':
+                return <EdgingPanel />;
+            case 'edging_2':
+                return <Edging2Panel />;
             case 'chart':
                 return (
                     <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
