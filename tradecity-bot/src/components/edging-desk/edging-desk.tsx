@@ -277,14 +277,13 @@ const EdgingDesk = ({
                     disabled={!canTrade || mode === 'auto'}
                     onClick={() => fire()}
                 >
-                    Buy Edging (Over {EDGING_OVER_BARRIER} &amp; Under {EDGING_UNDER_BARRIER}) - {nextStake.toFixed(2)}{' '}
-                    {currency}
+                    Buy Over {EDGING_OVER_BARRIER} &amp; Under {EDGING_UNDER_BARRIER} · {nextStake.toFixed(2)} {currency}
                 </button>
 
                 {message ? <p className='edging-desk__message'>{message}</p> : null}
 
                 <div className='edging-desk__section'>
-                    <h3>Recent Digits (Last {WINDOW})</h3>
+                    <h3>Last {WINDOW} digits</h3>
                     <div className='edging-desk__digits-row'>
                         {digits.length ? (
                             digits.map((digit, index) => (
@@ -299,39 +298,39 @@ const EdgingDesk = ({
                                 </span>
                             ))
                         ) : (
-                            <p className='edging-desk__hint'>Waiting on ticks for this market.</p>
+                            <p className='edging-desk__hint'>Waiting for ticks.</p>
                         )}
                     </div>
                 </div>
 
                 <div className='edging-desk__section'>
-                    <h3>Trading Statistics</h3>
+                    <h3>Statistics</h3>
                     <div className='edging-desk__stats-grid'>
                         <div>
-                            <label>Total Trades:</label>
+                            <label>Trades</label>
                             <strong>{stats.trades}</strong>
                         </div>
                         <div>
-                            <label>Wins:</label>
+                            <label>Wins</label>
                             <strong className='is-win'>{stats.wins}</strong>
                         </div>
                         <div>
-                            <label>Losses:</label>
+                            <label>Losses</label>
                             <strong className='is-lose'>{stats.losses}</strong>
                         </div>
                         <div>
-                            <label>Win Rate:</label>
+                            <label>Win rate</label>
                             <strong>{winRate}%</strong>
                         </div>
                         <div>
-                            <label>Total Profit:</label>
+                            <label>Profit</label>
                             <strong className={stats.profit >= 0 ? 'is-win' : 'is-lose'}>
                                 {stats.profit >= 0 ? '+' : ''}
                                 {stats.profit.toFixed(2)} {currency}
                             </strong>
                         </div>
                         <div>
-                            <label>Consecutive Losses:</label>
+                            <label>Kills in a row</label>
                             <strong>{stats.consecutiveLosses}</strong>
                         </div>
                     </div>
@@ -345,12 +344,12 @@ const EdgingDesk = ({
                             setStats({ trades: 0, wins: 0, losses: 0, profit: 0, consecutiveLosses: 0 });
                         }}
                     >
-                        Reset Statistics
+                        Reset
                     </button>
                 </div>
 
                 <div className='edging-desk__section'>
-                    <h3>Digit Frequency (Last {digits.length || WINDOW} ticks)</h3>
+                    <h3>Frequency</h3>
                     <div className='edging-desk__freq-list'>
                         {freqs.map((count, digit) => (
                             <div key={digit} className='edging-desk__freq-row'>
@@ -371,9 +370,8 @@ const EdgingDesk = ({
 
                 <div className='edging-desk__info'>
                     <h3>How it works</h3>
-                    Places Over {EDGING_OVER_BARRIER} and Under {EDGING_UNDER_BARRIER} together. 0-3 pays the Under leg,
-                    6-9 pays the Over leg, and both legs lose only on {EDGING_UNDER_BARRIER} and {EDGING_OVER_BARRIER}.
-                    A cover tick is one win and one loss, so profit stays small unless a kill digit lands.
+                    Buys Over {EDGING_OVER_BARRIER} and Under {EDGING_UNDER_BARRIER} together. 0–3 pays Under, 6–9
+                    pays Over. Both lose only on {EDGING_UNDER_BARRIER} and {EDGING_OVER_BARRIER}.
                 </div>
             </div>
         </div>

@@ -149,9 +149,9 @@ const Edging2Desk = ({
             <div className='edging2-desk'>
                 <div className='edging2-desk__header'>
                     <h2>
-                        <span aria-hidden='true'>📊</span> Edging 2 - Digit Analysis
+                        <span aria-hidden='true'>📊</span> Edging 2
                     </h2>
-                    <p>Analyze digit patterns and trade based on statistical probability</p>
+                    <p>Digit frequency on the last ticks.</p>
                 </div>
 
                 <div className='edging2-desk__controls'>
@@ -202,7 +202,7 @@ const Edging2Desk = ({
                 </div>
 
                 <div className='edging2-desk__section'>
-                    <h3>Digit Analysis (Last {freq.window || WINDOW} Ticks)</h3>
+                    <h3>Last {freq.window || WINDOW} ticks</h3>
                     <div className='edging2-desk__circles'>
                         {Array.from({ length: 10 }, (_, digit) => {
                             const pct = pcts[digit] ?? 0;
@@ -232,27 +232,27 @@ const Edging2Desk = ({
                 <div className='edging2-desk__strategy-row'>
                     <div className='edging2-desk__section edging2-desk__strategy'>
                         <h3>
-                            <span aria-hidden='true'>🎯</span> Trading Strategy
+                            <span aria-hidden='true'>🎯</span> Strategy
                         </h3>
                         <ul className='edging2-desk__legend'>
                             <li>
-                                <strong>Click a digit</strong> to select it for trading
+                                <strong>Click a digit</strong> to trade it
                             </li>
                             <li>
                                 <i className='edging2-desk__dot edging2-desk__dot--green' />
-                                <strong>Green digits (≥15%)</strong> - High frequency, good for MATCHES
+                                <strong>Green (≥15%)</strong> — Matches
                             </li>
                             <li>
                                 <i className='edging2-desk__dot edging2-desk__dot--yellow' />
-                                <strong>Yellow digits (10-14%)</strong> - Average frequency
+                                <strong>Yellow (10–14%)</strong> — Average
                             </li>
                             <li>
                                 <i className='edging2-desk__dot edging2-desk__dot--red' />
-                                <strong>Red digits (&lt;10%)</strong> - Low frequency, good for DIFFERS
+                                <strong>Red (&lt;10%)</strong> — Differs
                             </li>
                         </ul>
                         <p className='edging2-desk__selected'>
-                            Selected Digit: {selectedDigit ?? 'None'}
+                            Selected: {selectedDigit ?? 'None'}
                             {selectedPct != null ? ` (${selectedPct}%)` : ''}
                             {suggest ? ` · bias ${suggest}` : ''}
                         </p>
@@ -285,10 +285,10 @@ const Edging2Desk = ({
                 {message ? <p className='edging2-desk__message'>{message}</p> : null}
 
                 <div className='edging2-desk__section'>
-                    <h3>Trading Statistics</h3>
+                    <h3>Statistics</h3>
                     <div className='edging2-desk__stats-grid'>
                         <div>
-                            <label>Total Trades</label>
+                            <label>Trades</label>
                             <strong>{stats.trades}</strong>
                         </div>
                         <div>
@@ -300,11 +300,11 @@ const Edging2Desk = ({
                             <strong className='is-lose'>{stats.losses}</strong>
                         </div>
                         <div>
-                            <label>Win Rate</label>
+                            <label>Win rate</label>
                             <strong>{winRate}%</strong>
                         </div>
                         <div>
-                            <label>Total Profit</label>
+                            <label>Profit</label>
                             <strong className={stats.profit >= 0 ? 'is-win' : 'is-lose'}>
                                 {stats.profit >= 0 ? '+' : ''}
                                 {stats.profit.toFixed(2)} {currency}
@@ -326,14 +326,12 @@ const Edging2Desk = ({
                             setStats({ trades: 0, wins: 0, losses: 0, profit: 0 });
                         }}
                     >
-                        Reset Statistics
+                        Reset
                     </button>
                 </div>
 
                 <div className='edging2-desk__warning'>
-                    Digit frequency describes what already happened and does not predict the next tick. Every digit
-                    stays close to 10% over a long enough window, so treat a green or red reading as a short-term
-                    imbalance rather than an edge.
+                    Frequency is history, not a prediction. Green or red is a short-term imbalance.
                 </div>
             </div>
         </div>
