@@ -36,9 +36,10 @@
 
 .money-mgmt-toolbar h1 {
     margin: 0;
-    font-size: 1.05rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.6rem;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
 }
 
 .money-mgmt-toolbar-status {
@@ -63,7 +64,8 @@
     border-radius: 6px;
     background: var(--general-section-1);
     color: var(--text-less-prominent);
-    font-size: 0.6875rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -74,10 +76,10 @@
 
 .money-mgmt-body {
     display: grid;
-    gap: 1rem;
-    width: min(96rem, calc(100% + 2rem));
-    margin: 0 -1rem;
-    padding: 1.15rem 0.75rem 1.75rem;
+    gap: 1.1rem;
+    width: min(96rem, 100%);
+    margin-inline: auto;
+    padding: 1.2rem 0.5rem 2rem;
 }
 
 .money-mgmt-fields {
@@ -92,21 +94,22 @@
 }
 
 .money-mgmt-fields span {
-    font-size: 0.6875rem;
-    font-weight: 650;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
     color: var(--text-less-prominent);
 }
 
 .money-mgmt-fields input,
 .money-mgmt-plan td input {
     width: 100%;
-    min-height: 2.15rem;
-    padding: 0 0.65rem;
+    min-height: 2.6rem;
+    padding: 0 0.75rem;
     border: 1px solid var(--general-section-1);
     border-radius: 8px;
     background: var(--general-main-1);
     color: var(--text-general);
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
 }
 
 .money-mgmt-fields input:focus,
@@ -120,7 +123,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     color: var(--text-general);
 }
 
@@ -143,17 +146,19 @@
 
 .money-mgmt-kpi p {
     margin: 0;
-    font-size: 0.625rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.1rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
     color: var(--text-less-prominent);
 }
 
 .money-mgmt-kpi strong {
     display: block;
     margin-top: 0.2rem;
-    font-size: 1rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.5rem;
     color: var(--text-general);
 }
 
@@ -166,7 +171,8 @@
 
 .money-mgmt-plan h2 {
     margin: 0 0 0.75rem;
-    font-size: 0.9375rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.5rem;
     font-weight: 700;
 }
 
@@ -177,7 +183,7 @@
 .money-mgmt-plan table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
 }
 
 .money-mgmt-plan th {
@@ -233,14 +239,14 @@
 
 .money-mgmt-notice p {
     margin: 0;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     color: var(--text-less-prominent);
 }
 
 .money-mgmt-saved {
     margin: 0;
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 1.2rem;
     color: #0f766e;
 }
 
@@ -252,11 +258,12 @@
 }
 
 .money-mgmt-cta {
-    min-height: 2.15rem;
+    min-height: 2.6rem;
     min-width: 10.5rem;
     padding: 0 0.95rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.3rem;
     font-weight: 700;
     cursor: pointer;
 }
@@ -281,6 +288,6 @@
 .money-mgmt-summary {
     margin: 0;
     text-align: center;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     color: var(--text-less-prominent);
 }
