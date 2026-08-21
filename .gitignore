@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+/tradecity-bot/node_modules
+/tradecity-bot/dist
+/tradecity-bot/coverage
 /.pnp
 .pnp.*
 .yarn/*

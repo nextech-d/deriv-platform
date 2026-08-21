@@ -1,10 +1,12 @@
 # Production deployment — East Africa Deriv Platform
 
+> **Current production app:** Deriv [trading-bot-template](https://github.com/deriv-com/trading-bot-template) in `tradecity-bot/`, deployed via root [`vercel.json`](../vercel.json) to **tradecity.trade**. See [PIVOT.md](./PIVOT.md). OAuth redirect: `https://tradecity.trade/`. Vercel env: `CLIENT_ID`, `APP_ID`.
+
 Target region: **AWS `af-south-1`** (Cape Town) for lowest latency to Kenya, Uganda, Tanzania, and Rwanda.
 
 ## Prerequisites
 
-- Deriv OAuth app registered with production redirect URI: `https://tradecity.trade/api/auth/callback`
+- Deriv OAuth app registered with production redirect URI: **`https://tradecity.trade/`** (SPA; legacy Next.js used `/api/auth/callback`)
 - Environment secrets in AWS Secrets Manager or SSM Parameter Store
 - TLS certificate (ACM) on ALB or CloudFront
 
