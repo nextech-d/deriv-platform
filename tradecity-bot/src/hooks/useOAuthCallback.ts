@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { clearCSRFToken, clearOAuthRedirectUri, validateCSRFToken } from '@/components/shared/utils/config/config';
+import { validateCSRFToken } from '@/components/shared/utils/config/config';
 import { clearAuthData } from '@/utils/auth-utils';
 
 /**

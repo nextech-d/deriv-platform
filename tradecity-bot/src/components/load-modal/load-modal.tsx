@@ -16,7 +16,7 @@ import Recent from './recent';
 import RecentFooter from './recent-footer';
 
 const LoadModal: React.FC = observer(() => {
-    const { load_modal, dashboard } = useStore();
+    const { load_modal, dashboard, google_drive } = useStore();
     const {
         active_index,
         is_load_modal_open,
@@ -30,6 +30,7 @@ const LoadModal: React.FC = observer(() => {
     const { setPreviewOnPopup } = dashboard;
     const { isDesktop } = useDevice();
     const header_text = localize('Load strategy');
+    const show_google_drive = google_drive.is_configured;
 
     const handleTabItemClick = (active_index: number) => {
         setActiveTabIndex(active_index);
@@ -55,9 +56,11 @@ const LoadModal: React.FC = observer(() => {
                     <div label={localize('Local')}>
                         <Local />
                     </div>
-                    <div label='Google Drive'>
-                        <GoogleDrive />
-                    </div>
+                    {show_google_drive && (
+                        <div label='Google Drive'>
+                            <GoogleDrive />
+                        </div>
+                    )}
                 </Tabs>
             </MobileFullPageModal>
         );
@@ -88,9 +91,11 @@ const LoadModal: React.FC = observer(() => {
                     <div label={localize('Local')}>
                         <Local />
                     </div>
-                    <div label='Google Drive'>
-                        <GoogleDrive />
-                    </div>
+                    {show_google_drive && (
+                        <div label='Google Drive'>
+                            <GoogleDrive />
+                        </div>
+                    )}
                 </Tabs>
             </Modal.Body>
             {has_recent_strategies && (

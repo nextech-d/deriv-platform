@@ -35,7 +35,7 @@ type TCardArray = {
 };
 
 const Cards = observer(({ is_mobile, has_dashboard_strategies }: TCardProps) => {
-    const { dashboard, load_modal, quick_strategy } = useStore();
+    const { dashboard, load_modal, quick_strategy, google_drive } = useStore();
     const { toggleLoadModal, setActiveTabIndex } = load_modal;
     const { isDesktop } = useDevice();
     const { onCloseDialog, dialog_options, is_dialog_open, setActiveTab, setPreviewOnPopup } = dashboard;
@@ -69,16 +69,20 @@ const Cards = observer(({ is_mobile, has_dashboard_strategies }: TCardProps) => 
                 /* [/AI] */
             },
         },
-        {
-            id: 'google-drive',
-            icon: <DerivLightGoogleDriveIcon height='48px' width='48px' />,
-            content: <Localize i18n_default_text='Google Drive' />,
-            callback: () => {
-                openGoogleDriveDialog();
-                /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
-                /* [/AI] */
-            },
-        },
+        ...(google_drive.is_configured
+            ? [
+                  {
+                      id: 'google-drive',
+                      icon: <DerivLightGoogleDriveIcon height='48px' width='48px' />,
+                      content: <Localize i18n_default_text='Google Drive' />,
+                      callback: () => {
+                          openGoogleDriveDialog();
+                          /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
+                          /* [/AI] */
+                      },
+                  } satisfies TCardArray,
+              ]
+            : []),
         {
             id: 'bot-builder',
             icon: <DerivLightBotBuilderIcon height='48px' width='48px' />,

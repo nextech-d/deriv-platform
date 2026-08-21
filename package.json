@@ -13,6 +13,7 @@
     "start:legacy": "next start",
     "install:bot": "npm install --prefix tradecity-bot && npm run generate:brand-css --prefix tradecity-bot",
     "lint": "eslint",
+    "lint:bot": "npm run lint --prefix tradecity-bot",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

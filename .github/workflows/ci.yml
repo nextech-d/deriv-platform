@@ -13,6 +13,8 @@ jobs:
       ADMIN_SECRET: e2e-test-admin-secret-min-32-chars!!
       NEXT_PUBLIC_DERIV_APP_ID: "000000"
       NEXT_PUBLIC_DEMO_MODE: "true"
+      CLIENT_ID: "34amx1QiDFzvoe7UQPzAw"
+      APP_ID: "34amx1QiDFzvoe7UQPzAw"
 
     steps:
       - uses: actions/checkout@v4

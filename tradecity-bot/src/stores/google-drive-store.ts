@@ -62,10 +62,22 @@ export default class GoogleDriveStore {
         this.setKey();
         this.client = null;
         this.access_token = localStorage.getItem('google_access_token') ?? '';
+
+        // Google Drive is optional — skip loading GSI when credentials are not configured.
+        if (!this.client_id) {
+            this.is_authorised = false;
+            return;
+        }
+
         setTimeout(() => {
             importExternal('https://accounts.google.com/gsi/client').then(() => this.initialiseClient());
             importExternal('https://apis.google.com/js/api.js').then(() => this.initialise());
         }, 3000);
+    }
+
+    /** True when GD_CLIENT_ID is set at build time (Google Drive save/load enabled). */
+    get is_configured(): boolean {
+        return Boolean(this.client_id);
     }
 
     is_google_drive_token_valid = true;
@@ -95,6 +107,10 @@ export default class GoogleDriveStore {
     };
 
     initialiseClient = () => {
+        if (!this.client_id) {
+            return;
+        }
+
         this.client = google.accounts.oauth2.initTokenClient({
             client_id: this.client_id,
             scope: this.scope,
@@ -153,6 +169,10 @@ export default class GoogleDriveStore {
     };
 
     async signIn() {
+        if (!this.client_id || !this.client) {
+            ErrorLogger.warn('GoogleDrive', 'Google Drive is not configured');
+            return;
+        }
         if (!this.is_authorised) {
             await this.client.requestAccessToken();
         }

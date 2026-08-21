@@ -13,6 +13,7 @@
         "start:webpack": "webpack serve --open --config webpack.config.js",
         "build:webpack": "webpack --config webpack.config.js",
         "test:lint": "prettier --log-level silent --write . && eslint \"./src/**/*.?(js|jsx|ts|tsx)\"",
+        "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"./src/**/*.?(js|jsx|ts|tsx)\"",
         "test:fix": "prettier --log-level silent --write . && eslint --fix \"./src/**/*.?(js|jsx|ts|tsx)\"",
         "test": "jest",
         "coverage": "jest --coverage --coverageReporters=json-summary",

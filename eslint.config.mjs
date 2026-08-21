@@ -5,23 +5,16 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  {
-    rules: {
-      // Common hydration / bootstrap patterns; fix incrementally post-launch
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "@typescript-eslint/no-empty-object-type": "warn",
-    },
-  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
     // Vendored SmartCharts bundles copied from npm on postinstall
     "public/smartcharts/**",
+    // Production bot app — linted via tradecity-bot/.eslintrc.js
+    "tradecity-bot/**",
   ]),
 ]);
 
