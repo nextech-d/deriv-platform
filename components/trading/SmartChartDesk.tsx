@@ -6,6 +6,7 @@ import type { SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
 import { loadChartProps, saveChartProps } from "@/lib/chart/smartchart-store";
 import type { ActiveSymbol, TradingTimesMap } from "@deriv-com/smartcharts-champion";
 import type { TickEvent } from "@/lib/ws/protocol";
+import { isSyntheticChartSymbol } from "@/lib/chart/synthetic-symbols";
 
 interface SmartChartDeskProps extends SmartChartFeedSource {
   symbol: string;
@@ -15,7 +16,8 @@ interface SmartChartDeskProps extends SmartChartFeedSource {
   activeSymbols?: ActiveSymbol[];
   tradingTimes?: TradingTimesMap;
   onRequestChartReference?: () => void;
-  demoTicks?: TickEvent[];
+  liveTicks?: TickEvent[];
+  showLastDigitStats?: boolean;
 }
 
 /** Full-page Charts tab — mirrors bot.deriv.com/#chart. */
@@ -29,6 +31,8 @@ export function SmartChartDesk({
   activeSymbols,
   tradingTimes,
   onRequestChartReference,
+  liveTicks,
+  showLastDigitStats,
   demoTicks,
 }: SmartChartDeskProps) {
   const [granularity, setGranularity] = useState(() => loadChartProps().granularity ?? 0);
@@ -54,6 +58,7 @@ export function SmartChartDesk({
         granularity={granularity}
         chartType={chartType}
         isConnected={isConnected}
+        showLastDigitStats={showLastDigitStats ?? isSyntheticChartSymbol(symbol)}
         activeSymbols={activeSymbols}
         tradingTimes={tradingTimes}
         onSymbolChange={(next) => {
@@ -70,6 +75,7 @@ export function SmartChartDesk({
         }}
         fetchChartQuotes={fetchChartQuotes}
         subscribeChartStream={subscribeChartStream}
+        liveTicks={liveTicks}
         demoTicks={demoTicks}
       />
     </section>

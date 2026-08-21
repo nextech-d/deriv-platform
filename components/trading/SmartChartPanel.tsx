@@ -74,6 +74,7 @@ export function SmartChartPanel({
   onChartTypeChange,
   fetchChartQuotes,
   subscribeChartStream,
+  liveTicks,
   demoTicks,
 }: SmartChartPanelProps) {
   const isMobile = useIsMobile();
@@ -81,8 +82,10 @@ export function SmartChartPanel({
   const theme = useDocumentTheme();
 
   const feed = useSmartChartFeed({
+    symbol,
     fetchChartQuotes,
     subscribeChartStream,
+    liveTicks,
     demoTicks,
   });
 

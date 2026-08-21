@@ -49,6 +49,7 @@ import {
   type BuilderTradeType,
 } from "@/lib/terminal/strategy-seed";
 import { SmartChartPanel } from "@/components/trading/SmartChartPanel";
+import { isSyntheticChartSymbol } from "@/lib/chart/synthetic-symbols";
 import type { SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
 import { loadChartProps, saveChartProps } from "@/lib/chart/smartchart-store";
 import type { ActiveSymbol, TradingTimesMap } from "@deriv-com/smartcharts-champion";
@@ -1417,6 +1418,7 @@ export function BotBuilderDesk({
               chartType={chartType}
               isConnected={isConnected}
               isModal
+              showLastDigitStats={isSyntheticChartSymbol(snapshot.symbol)}
               activeSymbols={chartActiveSymbols}
               tradingTimes={chartTradingTimes}
               onSymbolChange={handleChartSymbolChange}
@@ -1424,6 +1426,7 @@ export function BotBuilderDesk({
               onChartTypeChange={handleChartTypeChange}
               fetchChartQuotes={fetchChartQuotes}
               subscribeChartStream={subscribeChartStream}
+              liveTicks={tickHistory}
               demoTicks={fetchChartQuotes ? undefined : tickHistory}
             />
           </div>

@@ -824,6 +824,7 @@ export function DashboardClient({
             onSubscribeTicks={subscribeTicks}
             fetchChartQuotes={fetchChartQuotes}
             subscribeChartStream={subscribeChartStream}
+            liveTicks={tickHistory}
             activeSymbols={chartActiveSymbols}
             tradingTimes={chartTradingTimes}
             onRequestChartReference={requestChartReference}

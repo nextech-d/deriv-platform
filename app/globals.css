@@ -8617,6 +8617,14 @@ details[open] > .deriv-course-intro-section-head::before {
   min-height: 420px;
 }
 
+.dashboard__chart-wrapper .cq-last-digits {
+  z-index: 4;
+}
+
+.dashboard__chart-wrapper .cq-last-digits.show {
+  visibility: visible;
+}
+
 .chart-desk-picker {
   width: 17.5rem;
   flex-shrink: 0;

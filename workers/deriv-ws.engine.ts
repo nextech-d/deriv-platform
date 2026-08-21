@@ -171,7 +171,9 @@ function handleMessage(event: MessageEvent<string>): void {
         message.tick.bid !== undefined))
   ) {
     const tick = message.tick!;
-    const symbol = tick.symbol ?? String(message.echo_req?.ticks ?? "");
+    const symbol =
+      tick.symbol ??
+      String(message.echo_req?.ticks ?? message.echo_req?.ticks_history ?? "");
     if (symbol) liveTickSubscriptions.add(symbol);
     emit({
       type: "TICK",
@@ -182,6 +184,18 @@ function handleMessage(event: MessageEvent<string>): void {
       },
     });
     routeChartStreamFromTick(symbol, tick.epoch ?? Math.floor(Date.now() / 1000), tickQuote(tick));
+  }
+
+  if (message.msg_type === "history" && message.history?.prices?.length) {
+    const symbol = String(message.echo_req?.ticks_history ?? "");
+    const prices = message.history.prices;
+    const times = message.history.times ?? [];
+    const idx = prices.length - 1;
+    const quote = Number(prices[idx]);
+    const epoch = Number(times[idx] ?? 0);
+    if (symbol && Number.isFinite(quote) && Number.isFinite(epoch) && epoch > 0) {
+      routeChartStreamFromTick(symbol, epoch, quote);
+    }
   }
 
   if (message.msg_type === "ohlc" || message.ohlc) {
@@ -427,6 +441,10 @@ async function runRecoverySequence(): Promise<void> {
 
   for (const symbol of tickSubscriptions) {
     sendTickSubscribe(symbol);
+  }
+
+  for (const streamId of [...chartStreams.keys()]) {
+    void resubscribeChartStream(streamId);
   }
 
   if (!isPublicConnection) {
@@ -700,36 +718,47 @@ function routeChartStreamFromOhlc(
 }
 
 function subscribeChartStream(streamId: string, symbol: string, granularity: number): void {
-  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  chartStreams.set(streamId, { symbol, granularity });
+  void resubscribeChartStream(streamId);
+}
 
-  void (async () => {
-    const ticksStyle = granularity <= 0;
-    const payload: Record<string, unknown> = {
-      ticks_history: symbol,
-      subscribe: 1,
-      end: "latest",
-      style: ticksStyle ? "ticks" : "candles",
-      adjust_start_time: 1,
-      ...(ticksStyle ? { count: 1 } : { granularity, count: 1 }),
-    };
+async function resubscribeChartStream(streamId: string): Promise<void> {
+  const stream = chartStreams.get(streamId);
+  if (!stream || !socket || socket.readyState !== WebSocket.OPEN) return;
 
+  if (stream.subscriptionId) {
     try {
-      const message = (await sendWithReqId(payload, "ticks_history", 20_000)) as DerivWsMessage;
-      chartStreams.set(streamId, {
-        symbol,
-        granularity,
-        subscriptionId: message.subscription?.id,
-      });
-    } catch (err) {
-      emit({
-        type: "ERROR",
-        payload: {
-          code: "chart_stream",
-          message: err instanceof Error ? err.message : "Chart stream subscribe failed",
-        },
-      });
+      sendRaw({ forget: stream.subscriptionId });
+    } catch {
+      // ignore disconnect races
     }
-  })();
+  }
+
+  const ticksStyle = stream.granularity <= 0;
+  const payload: Record<string, unknown> = {
+    ticks_history: stream.symbol,
+    subscribe: 1,
+    end: "latest",
+    style: ticksStyle ? "ticks" : "candles",
+    adjust_start_time: 1,
+    ...(ticksStyle ? { count: 1 } : { granularity: stream.granularity, count: 1 }),
+  };
+
+  try {
+    const message = (await sendWithReqId(payload, "ticks_history", 20_000)) as DerivWsMessage;
+    chartStreams.set(streamId, {
+      ...stream,
+      subscriptionId: message.subscription?.id,
+    });
+  } catch (err) {
+    emit({
+      type: "ERROR",
+      payload: {
+        code: "chart_stream",
+        message: err instanceof Error ? err.message : "Chart stream subscribe failed",
+      },
+    });
+  }
 }
 
 function unsubscribeChartStream(streamId: string): void {
