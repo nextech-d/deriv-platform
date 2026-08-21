@@ -1,0 +1,268 @@
+@use 'components/shared/styles/mixins' as *;
+
+/* Free bots catalog — ported from legacy TradeCity globals.css */
+.free-bots {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: var(--tab-content-height);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--general-main-1);
+    color: var(--text-general);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+
+    @include mobile-or-tablet-screen {
+        min-height: var(--tab-content-height-mobile);
+    }
+}
+
+.free-bots-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    padding: 0.45rem 1rem;
+    border-bottom: 1px solid var(--general-section-1);
+    background: var(--general-main-1);
+    flex-shrink: 0;
+}
+
+.free-bots-toolbar-tools {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+}
+
+.free-bots-split {
+    width: 1px;
+    height: 1.35rem;
+    background: var(--general-section-1);
+}
+
+.free-bots-segment {
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    background: var(--general-main-1);
+}
+
+.free-bots-seg {
+    min-height: 2.15rem;
+    padding: 0 0.9rem;
+    border: none;
+    border-right: 1px solid var(--general-section-1);
+    background: var(--general-main-1);
+    color: var(--text-less-prominent);
+    font-size: 0.75rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.free-bots-seg:last-child {
+    border-right: none;
+}
+
+.free-bots-seg:hover {
+    color: var(--text-general);
+    background: var(--general-hover);
+}
+
+.free-bots-seg.is-on {
+    color: #0f766e;
+    background: color-mix(in srgb, #0f766e 14%, #fff);
+}
+
+.free-bots-toolbar-status {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    transform: translateY(-50%);
+}
+
+.free-bots-search {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 12rem;
+    padding: 0.35rem 0.55rem;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    color: #94a3b8;
+    background: var(--general-section-2);
+}
+
+.free-bots-search input {
+    width: 100%;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--text-general);
+    font-size: 0.75rem;
+}
+
+.free-bots-count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.7rem;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, #0f766e 9%, var(--general-main-1));
+    color: #0f766e;
+    font-family: ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+.free-bots-heading {
+    margin: 0;
+    padding: 0.85rem 1.1rem 0.15rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.free-bots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    padding: 0.85rem 1.1rem 1.4rem;
+}
+
+@media (max-width: 1100px) {
+    .free-bots-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .free-bots-search {
+        min-width: 9rem;
+    }
+}
+
+@media (max-width: 720px) {
+    .free-bots-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.free-bots-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 11.5rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    background: var(--general-main-2);
+    box-shadow: 0 1px 3px var(--shadow-drop);
+}
+
+.free-bots-card:hover {
+    border-color: color-mix(in srgb, #0f766e 42%, var(--general-section-1));
+    box-shadow: 0 4px 12px var(--shadow-drop);
+}
+
+.free-bots-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.free-bots-card-top h2 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+.free-bots-card-marks {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.free-bots-new {
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, #0f766e 14%, #fff);
+    color: #0f766e;
+    font-size: 0.5625rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.free-bots-diff {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.free-bots-card-summary {
+    margin: 0;
+    flex: 1;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--text-less-prominent);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.free-bots-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.free-bots-tag {
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    font-weight: 650;
+    color: #0f766e;
+    background: color-mix(in srgb, #0f766e 8%, #fff);
+}
+
+.free-bots-tag.is-market {
+    color: var(--text-less-prominent);
+    background: var(--general-section-2);
+}
+
+.free-bots-load {
+    align-self: flex-start;
+    min-height: 2rem;
+    padding: 0 0.85rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--text-general);
+    color: var(--general-main-1);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.free-bots-load:hover {
+    opacity: 0.88;
+}
+
+.free-bots-empty {
+    margin: 0;
+    padding: 1.5rem 1.1rem;
+    font-size: 0.8125rem;
+    color: var(--text-less-prominent);
+}

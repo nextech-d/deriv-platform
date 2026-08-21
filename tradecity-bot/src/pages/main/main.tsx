@@ -30,6 +30,7 @@ import {
     resetUrlParamProcessing,
     setModalStateChangeCallback,
 } from '@/utils/trade-type-modal-handler';
+import { loadFreeBotInBuilder } from '@/utils/load-free-bot';
 import {
     LabelPairedChartLineCaptionRegularIcon,
     LabelPairedObjectsColumnCaptionRegularIcon,
@@ -39,6 +40,7 @@ import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
+import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
 import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
@@ -424,6 +426,17 @@ const AppWrapper = observer(() => {
                 return <Dashboard handleTabChange={handleTabChange} />;
             case 'bot_builder':
                 return null;
+            case 'free_bots':
+                return (
+                    <FreeBotsDesk
+                        onLoadInBuilder={async strategy => {
+                            const loaded = await loadFreeBotInBuilder(strategy);
+                            if (loaded) {
+                                handleTabChange(BOT_BUILDER);
+                            }
+                        }}
+                    />
+                );
             case 'chart':
                 return (
                     <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
