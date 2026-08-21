@@ -52,7 +52,7 @@ export function SmartChartDesk({
   }
 
   return (
-    <section className="smartchart-desk" aria-label="Charts">
+    <section className="smartchart-desk" data-testid="chart-desk" aria-label="Charts">
       <SmartChartPanel
         symbol={symbol}
         granularity={granularity}

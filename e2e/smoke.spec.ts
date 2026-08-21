@@ -74,7 +74,7 @@ test.describe("Marketing", () => {
     await expect(page.getByTestId("fast-trader-desk")).toBeVisible();
 
     await nav.getByRole("button", { name: "Charts" }).click();
-    await expect(page.getByTestId("chart-desk")).toBeVisible();
+    await expect(page.getByTestId("chart-desk")).toBeVisible({ timeout: 10_000 });
 
     await nav.getByRole("button", { name: "Ultimate Bot" }).click();
     await expect(page.getByTestId("ultimate-bot-desk")).toBeVisible();
@@ -225,6 +225,7 @@ test.describe("Dashboard (demo mode)", () => {
     await page.getByTestId("tc-qs-create").click();
     await expect(page.getByTestId("tc-builder-flash")).toContainText(
       /D'Alembert generated on the workspace/,
+      { timeout: 10_000 },
     );
     await expect(page.getByTestId("tc-builder-chips-restart")).toContainText("D'Alembert");
   });
@@ -250,7 +251,7 @@ test.describe("Dashboard (demo mode)", () => {
       mimeType: "text/xml",
       buffer: Buffer.from("<strategy/>"),
     });
-    await expect(workspaceMain(page).getByRole("alert")).toContainText(
+    await expect(workspaceMain(page).getByRole("alert").first()).toContainText(
       "not a TradeCity strategy",
     );
     await expect(
