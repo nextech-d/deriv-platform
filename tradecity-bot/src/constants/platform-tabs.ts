@@ -7,6 +7,7 @@ export type PlatformTabKind =
     | 'bot_builder'
     | 'free_bots'
     | 'analysis_tool'
+    | 'bulk_trader'
     | 'chart'
     | 'tutorial'
     | 'placeholder';
@@ -74,7 +75,7 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
     { id: 'fast_trader', hash: 'fast_trader', domId: 'id-fast-trader', label: 'Fast Trader', kind: 'placeholder' },
     { id: 'chart', hash: 'chart', domId: 'id-charts', label: 'Charts', kind: 'chart' },
     { id: 'ultimate_bot', hash: 'ultimate_bot', domId: 'id-ultimate-bot', label: 'Ultimate Bot', kind: 'placeholder' },
-    { id: 'bulk_trader', hash: 'bulk_trader', domId: 'id-bulk-trader', label: 'Bulk Trader', kind: 'placeholder' },
+    { id: 'bulk_trader', hash: 'bulk_trader', domId: 'id-bulk-trader', label: 'Bulk Trader', kind: 'bulk_trader' },
     { id: 'tutorial', hash: 'tutorial', domId: 'id-tutorials', label: 'Tutorials', kind: 'tutorial' },
 ];
 

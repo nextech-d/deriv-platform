@@ -41,6 +41,7 @@ import { Localize, localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
 import AnalysisToolPanel from '../../components/analysis-tool-desk/analysis-tool-panel';
+import BulkTraderPanel from '../../components/bulk-trader-desk/bulk-trader-panel';
 import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
 import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
@@ -445,6 +446,8 @@ const AppWrapper = observer(() => {
                         onOpenDTrader={() => handleTabChange(DBOT_TABS.D_TRADER)}
                     />
                 );
+            case 'bulk_trader':
+                return <BulkTraderPanel />;
             case 'chart':
                 return (
                     <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
