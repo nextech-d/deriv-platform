@@ -46,6 +46,19 @@ const MODES: Array<{ id: AnalysisMode; label: string }> = [
 type DigitRank = 'hot' | 'warm' | 'cool' | 'cold' | null;
 
 const EMPTY_COUNTS = Array.from({ length: 10 }, () => 0);
+const MARK_COLORS = ['#ff444f', '#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#eab308'];
+
+const sentenceCase = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+};
+
+const markColor = (id: string): string => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i)) % MARK_COLORS.length;
+    return MARK_COLORS[hash];
+};
 
 function digitRanks(counts: number[]): Record<number, DigitRank> {
     const ranked = counts
@@ -170,57 +183,71 @@ const AnalysisToolDesk = ({
     return (
         <div data-testid='analysis-tool-desk' data-desk className='analysis-tool' data-scroll-pane>
             <header className='analysis-tool-toolbar'>
-                <div className='analysis-tool-segment'>
-                    {(['dcircle', 'analysis'] as const).map(id => (
-                        <button
-                            key={id}
-                            type='button'
-                            className={classNames('analysis-tool-seg', view === id && 'is-on')}
-                            onClick={() => setView(id)}
-                        >
-                            {id === 'dcircle' ? 'DCIRCLE' : 'Analysis'}
-                        </button>
-                    ))}
+                <div className='analysis-tool-toolbar-cluster'>
+                    <div className='analysis-tool-toolbar-tools'>
+                        <div className='analysis-tool-segment'>
+                            {(['dcircle', 'analysis'] as const).map(id => (
+                                <button
+                                    key={id}
+                                    type='button'
+                                    className={classNames('analysis-tool-seg', view === id && 'is-on')}
+                                    onClick={() => setView(id)}
+                                >
+                                    {id === 'dcircle' ? 'Dcircle' : 'Analysis'}
+                                </button>
+                            ))}
+                        </div>
+                        <span className='analysis-tool-rule' aria-hidden />
+                        <div className='analysis-tool-segment'>
+                            {TICK_WINDOWS.map(n => (
+                                <button
+                                    key={n}
+                                    type='button'
+                                    className={classNames('analysis-tool-seg', ticks === n && 'is-on')}
+                                    onClick={() => setTicks(n)}
+                                >
+                                    {n}
+                                </button>
+                            ))}
+                        </div>
+                        {view === 'analysis' ? (
+                            <>
+                                <span className='analysis-tool-rule' aria-hidden />
+                                <div className='analysis-tool-segment'>
+                                    {MODES.map(item => (
+                                        <button
+                                            key={item.id}
+                                            type='button'
+                                            className={classNames('analysis-tool-seg', mode === item.id && 'is-on')}
+                                            onClick={() => setMode(item.id)}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        ) : null}
+                    </div>
+                    <div className='analysis-tool-toolbar-status'>
+                        {view === 'dcircle' ? (
+                            <div className='analysis-tool-legend'>
+                                <span className='is-hot'>Most</span>
+                                <span className='is-warm'>2nd most</span>
+                                <span className='is-cool'>2nd least</span>
+                                <span className='is-cold'>Least</span>
+                            </div>
+                        ) : (
+                            <span className='analysis-tool-chip'>{sentenceCase(symbolLabel)}</span>
+                        )}
+                        <span className='analysis-tool-count'>{strongCount}</span>
+                        {view === 'dcircle' ? (
+                            <button type='button' className='analysis-tool-strip-cta' onClick={onToggleScanAll}>
+                                {allScanning ? 'Stop' : 'Scan all'}
+                            </button>
+                        ) : null}
+                    </div>
                 </div>
             </header>
-
-            <div className='analysis-tool-subbar'>
-                <p>No. of ticks</p>
-                <div className='analysis-tool-windows'>
-                    {TICK_WINDOWS.map(n => (
-                        <button
-                            key={n}
-                            type='button'
-                            className={classNames('analysis-tool-win', ticks === n && 'is-on')}
-                            onClick={() => setTicks(n)}
-                        >
-                            {n}
-                        </button>
-                    ))}
-                </div>
-                {view === 'dcircle' ? (
-                    <div className='analysis-tool-legend'>
-                        <span className='is-hot'>Most</span>
-                        <span className='is-warm'>2nd most</span>
-                        <span className='is-cool'>2nd least</span>
-                        <span className='is-cold'>Least</span>
-                    </div>
-                ) : (
-                    <span className='analysis-tool-chip'>{symbolLabel}</span>
-                )}
-                <div className='analysis-tool-subbar-end'>
-                    <span className='analysis-tool-chip is-signal'>Signals · {strongCount} strong</span>
-                    {view === 'dcircle' ? (
-                        <button
-                            type='button'
-                            className={classNames('analysis-tool-cta', allScanning ? 'is-ghost' : 'is-ink')}
-                            onClick={onToggleScanAll}
-                        >
-                            {allScanning ? 'Stop scans' : 'Auto Scan All 13'}
-                        </button>
-                    ) : null}
-                </div>
-            </div>
 
             {view === 'dcircle' ? (
                 <div className='analysis-tool-grid'>
@@ -229,6 +256,7 @@ const AnalysisToolDesk = ({
                         const total = row.counts.reduce((a, b) => a + b, 0) || 1;
                         const ranks = digitRanks(row.counts);
                         const scanningNow = scanning.has(row.id);
+                        const title = sentenceCase(meta?.shortLabel ?? row.id);
                         return (
                             <article
                                 key={row.id}
@@ -238,22 +266,27 @@ const AnalysisToolDesk = ({
                                     row.strong && 'is-strong'
                                 )}
                             >
-                                <header>
-                                    <button type='button' onClick={() => openAnalysis(row.id)}>
-                                        <strong>{meta?.label ?? row.id}</strong>
-                                        <em>
-                                            {row.live ? 'Live ticks' : 'Waiting'}
-                                            {row.strong ? ' · Strong' : ''}
-                                        </em>
-                                    </button>
-                                    <button
-                                        type='button'
-                                        className={classNames('analysis-tool-scan', scanningNow && 'is-on')}
-                                        onClick={() => onToggleScan(row.id)}
-                                    >
-                                        {scanningNow ? 'Scanning' : 'Start scan'}
-                                    </button>
+                                <header className='analysis-tool-card-top'>
+                                    <h2>
+                                        <i
+                                            className='analysis-tool-mark'
+                                            style={{ background: markColor(row.id) }}
+                                            aria-hidden
+                                        />
+                                        <button type='button' onClick={() => openAnalysis(row.id)}>
+                                            {title}
+                                        </button>
+                                    </h2>
+                                    <div className='analysis-tool-card-marks'>
+                                        {row.strong ? <span className='analysis-tool-pill is-hot'>Strong</span> : null}
+                                        <span className='analysis-tool-pill'>{row.live ? 'Live' : 'Waiting'}</span>
+                                    </div>
                                 </header>
+                                <p className='analysis-tool-card-summary'>
+                                    {sentenceCase(meta?.label ?? row.id)}
+                                    {row.live ? ` · ${ticks} ticks` : ' · Waiting for ticks'}
+                                    {scanningNow ? ' · Scanning' : ''}
+                                </p>
                                 <div className='analysis-tool-digits'>
                                     {row.counts.map((count, digit) => (
                                         <button
@@ -270,37 +303,42 @@ const AnalysisToolDesk = ({
                                         </button>
                                     ))}
                                 </div>
+                                <button
+                                    type='button'
+                                    className='analysis-tool-load'
+                                    onClick={() => onToggleScan(row.id)}
+                                >
+                                    {scanningNow ? 'Stop' : 'Scan'}
+                                </button>
                             </article>
                         );
                     })}
                 </div>
             ) : (
-                <div className='analysis-tool-desk'>
-                    <div className='analysis-tool-desk-main'>
-                        <div className='analysis-tool-modes'>
-                            {MODES.map(item => (
-                                <button
-                                    key={item.id}
-                                    type='button'
-                                    className={classNames('analysis-tool-mode', mode === item.id && 'is-on')}
-                                    onClick={() => setMode(item.id)}
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <p className='analysis-tool-summary'>
-                            {symbolLabel} · {ticks} ticks · Even {parity.evenPct.toFixed(1)}% / Odd{' '}
+                <div className='analysis-tool-work'>
+                    <article className='analysis-tool-card'>
+                        <header className='analysis-tool-card-top'>
+                            <h2>
+                                <i
+                                    className='analysis-tool-mark'
+                                    style={{ background: markColor(symbol) }}
+                                    aria-hidden
+                                />
+                                {sentenceCase(analysisMarketMeta(symbol)?.shortLabel ?? symbol)}
+                            </h2>
+                            <div className='analysis-tool-card-marks'>
+                                <span className='analysis-tool-pill'>{ticks} ticks</span>
+                            </div>
+                        </header>
+                        <p className='analysis-tool-card-summary'>
+                            {sentenceCase(symbolLabel)} · Even {parity.evenPct.toFixed(1)}% / Odd{' '}
                             {parity.oddPct.toFixed(1)}% · Over {barrier} {barrierStats.overPct.toFixed(1)}% · Match{' '}
                             {matchTarget} {matches.matchPct.toFixed(1)}%
                         </p>
-
-                        <div className='analysis-tool-split' aria-hidden>
+                        <div className='analysis-tool-bar' aria-hidden>
                             <i className='is-even' style={{ width: `${parity.evenPct}%` }} />
                             <i className='is-odd' style={{ width: `${parity.oddPct}%` }} />
                         </div>
-
                         <div className='analysis-tool-strip' aria-label='Recent last digits'>
                             {strip.length ? (
                                 strip.map((sample, i) => (
@@ -320,7 +358,6 @@ const AnalysisToolDesk = ({
                                 Last {STRIP_LIMIT} of {liveDigits.length}
                             </p>
                         ) : null}
-
                         <div className='analysis-tool-stats'>
                             {mode === 'parity' ? (
                                 <>
@@ -422,9 +459,18 @@ const AnalysisToolDesk = ({
                                 </div>
                             ) : null}
                         </div>
-                    </div>
+                    </article>
 
-                    <aside className='analysis-tool-desk-side'>
+                    <article className='analysis-tool-card'>
+                        <header className='analysis-tool-card-top'>
+                            <h2>
+                                <i className='analysis-tool-mark' style={{ background: '#000' }} aria-hidden />
+                                Digit pad
+                            </h2>
+                            <div className='analysis-tool-card-marks'>
+                                <span className='analysis-tool-pill'>{bias.label}</span>
+                            </div>
+                        </header>
                         <div className='analysis-tool-pad'>
                             {Array.from({ length: 10 }, (_, digit) => {
                                 const pct = liveFreq.window
@@ -451,25 +497,18 @@ const AnalysisToolDesk = ({
                             })}
                         </div>
                         <div className='analysis-tool-actions'>
-                            <p>
-                                Bias: <strong>{bias.label}</strong>
-                            </p>
-                            <button
-                                type='button'
-                                className='analysis-tool-cta is-ink'
-                                onClick={() => onTradeBias?.(bias)}
-                            >
-                                Open in D-Trader
+                            <button type='button' className='analysis-tool-load' onClick={() => onTradeBias?.(bias)}>
+                                D-Trader
                             </button>
                             <button
                                 type='button'
-                                className='analysis-tool-cta is-teal'
+                                className='analysis-tool-load'
                                 onClick={() => onSendToBuilder?.(bias)}
                             >
-                                Send to Bot Builder
+                                Bot builder
                             </button>
                         </div>
-                    </aside>
+                    </article>
                 </div>
             )}
         </div>
