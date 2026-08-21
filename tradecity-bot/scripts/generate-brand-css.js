@@ -4,31 +4,25 @@ const path = require('path');
 // Import brand configuration from project root
 const brandConfig = require('../brand.config.json');
 
-// Main function to update brand colors in _themes.scss
-const updateBrandColorsInThemes = () => {
-    const themesPath = path.join(__dirname, '../src/components/shared/styles/_themes.scss');
+const START_MARKER = '/* brand:start - generated from brand.config.json by scripts/generate-brand-css.js */';
+const END_MARKER = '/* brand:end */';
 
-    if (!fs.existsSync(themesPath)) {
-        console.error('❌ _themes.scss file not found');
-        process.exit(1);
-    }
+// Comments and declarations emitted by earlier versions of this script. They were written
+// without an end marker, so every run inserted a fresh block above the previous one instead
+// of replacing it. Matching them lets a single run absorb all the copies that accumulated.
+const LEGACY_COMMENT =
+    /^\s*\/\*\s*(Brand colors - dynamically generated|Dynamic brand colors|Brand typography - dynamically)/;
+const LEGACY_DECL =
+    /^\s*--brand-(white|dark-grey|red-coral|orange|primary|secondary|tertiary|success|danger|warning|info|neutral|font-primary|font-secondary|font-monospace)\s*:/;
 
-    // Read the current themes file
-    let themesContent = fs.readFileSync(themesPath, 'utf8');
-    const originalContent = themesContent;
-
-    // Extract colors and typography from brand config
-    const { colors, typography } = brandConfig;
-
-    // Generate brand color variables from config
-    const brandColorLines = [
-        '    /* Brand colors - dynamically generated from brand.config.json */',
+const buildBrandBlock = ({ colors, typography }) => {
+    const lines = [
+        `    ${START_MARKER}`,
         `    --brand-white: ${colors.white};`,
         `    --brand-dark-grey: ${colors.black};`,
         `    --brand-red-coral: ${colors.primary}; /* legacy compatibility */`,
         `    --brand-orange: ${colors.tertiary}; /* legacy compatibility */`,
         '',
-        '    /* Dynamic brand colors (set by brand configuration) */',
         `    --brand-primary: ${colors.primary};`,
         `    --brand-secondary: ${colors.secondary};`,
         `    --brand-tertiary: ${colors.tertiary};`,
@@ -39,104 +33,115 @@ const updateBrandColorsInThemes = () => {
         `    --brand-neutral: ${colors.neutral};`,
     ];
 
-    // Generate typography variables if available
     if (typography && typography.font_family) {
-        brandColorLines.push('');
-        brandColorLines.push('    /* Brand typography - dynamically generated from brand.config.json */');
-        brandColorLines.push(`    --brand-font-primary: ${typography.font_family.primary};`);
-        brandColorLines.push(`    --brand-font-secondary: ${typography.font_family.secondary};`);
-        brandColorLines.push(`    --brand-font-monospace: ${typography.font_family.monospace};`);
+        lines.push('');
+        lines.push(`    --brand-font-primary: ${typography.font_family.primary};`);
+        lines.push(`    --brand-font-secondary: ${typography.font_family.secondary};`);
+        lines.push(`    --brand-font-monospace: ${typography.font_family.monospace};`);
     }
 
-    // Find and replace the brand colors section
-    let insertionPoint = -1;
-    let endPoint = -1;
+    lines.push(`    ${END_MARKER}`);
+    return lines;
+};
 
-    // Look for existing brand colors section (with or without AI markers)
-    const brandCommentStart = themesContent.indexOf(
-        '/* Brand colors - dynamically generated from brand.config.json */'
-    );
-    const legacyBrandStart = themesContent.indexOf('    // Brand primary colors');
+// Inclusive [start, end] line range this script owns, or null when it has never run here.
+const findGeneratedRegion = lines => {
+    const start = lines.findIndex(line => line.includes(START_MARKER));
+    if (start !== -1) {
+        const end = lines.findIndex((line, index) => index >= start && line.includes(END_MARKER));
+        if (end !== -1) return [start, end];
+    }
 
-    if (brandCommentStart !== -1) {
-        // Found modern brand section with comment
-        insertionPoint = themesContent.lastIndexOf('\n', brandCommentStart) + 1;
+    const first = lines.findIndex(line => LEGACY_COMMENT.test(line) || LEGACY_DECL.test(line));
+    if (first === -1) return null;
 
-        // Look for end marker - either AI closing tag or next major section
-        const aiEndMarker = themesContent.indexOf('/* [/AI] */', brandCommentStart);
-        if (aiEndMarker !== -1) {
-            endPoint = themesContent.indexOf('\n', aiEndMarker) + 1;
-        } else {
-            // Find end by looking for next CSS section or end of root block
-            const nextSection = themesContent.indexOf('\n    // App Cards', brandCommentStart);
-            const nextComment = themesContent.indexOf('\n    /*', brandCommentStart + 100); // Skip current comment
-            const nextThemeClass = themesContent.indexOf('\n    .theme--', brandCommentStart);
+    // Blank lines separate the sub-sections, so walk past them and stop at the first
+    // line that belongs to whatever section follows.
+    let last = first;
+    for (let index = first; index < lines.length; index++) {
+        if (LEGACY_COMMENT.test(lines[index]) || LEGACY_DECL.test(lines[index])) last = index;
+        else if (lines[index].trim() !== '') break;
+    }
+    return [first, last];
+};
 
-            endPoint = Math.min(...[nextSection, nextComment, nextThemeClass].filter(pos => pos > -1));
-            if (endPoint === Infinity) {
-                // Fallback - find next blank lines
-                endPoint = themesContent.indexOf('\n\n    ', brandCommentStart + 100);
-            }
-        }
-    } else if (legacyBrandStart !== -1) {
-        // Found legacy brand section
-        insertionPoint = legacyBrandStart;
-        endPoint = themesContent.indexOf('\n    // App Cards', legacyBrandStart);
-        if (endPoint === -1) {
-            endPoint = themesContent.indexOf('\n    .theme--', legacyBrandStart);
-        }
+const applyBrandBlock = (content, block) => {
+    const lines = content.split('\n');
+    const region = findGeneratedRegion(lines);
+
+    let start;
+    let removeCount;
+
+    if (region) {
+        start = region[0];
+        removeCount = region[1] - region[0] + 1;
     } else {
-        // No existing brand section - insert after text align
-        const textAlignEnd = themesContent.indexOf('    --text-align-center: center;');
-        if (textAlignEnd !== -1) {
-            insertionPoint = themesContent.indexOf('\n', textAlignEnd) + 1;
-            endPoint = insertionPoint;
-        }
+        const anchor = lines.findIndex(line => line.includes('--text-align-center:'));
+        if (anchor === -1) return null;
+        start = anchor + 1;
+        removeCount = 0;
     }
 
-    if (insertionPoint === -1) {
+    const before = lines.slice(0, start);
+    const after = lines.slice(start + removeCount);
+
+    // Surround the block with exactly one blank line on each side so repeat runs
+    // cannot stack up whitespace the way they used to.
+    while (before.length && before[before.length - 1].trim() === '') before.pop();
+    while (after.length && after[0].trim() === '') after.shift();
+
+    return [...before, '', ...block, '', ...after].join('\n');
+};
+
+// Main function to update brand colors in _themes.scss
+const updateBrandColorsInThemes = () => {
+    const themesPath = path.join(__dirname, '../src/components/shared/styles/_themes.scss');
+
+    if (!fs.existsSync(themesPath)) {
+        console.error('❌ _themes.scss file not found');
+        process.exit(1);
+    }
+
+    const originalContent = fs.readFileSync(themesPath, 'utf8');
+    const { colors, typography } = brandConfig;
+
+    const themesContent = applyBrandBlock(originalContent, buildBrandBlock({ colors, typography }));
+
+    if (themesContent === null) {
         console.error('❌ Could not find insertion point in _themes.scss');
         process.exit(1);
     }
 
-    // Replace or insert the brand colors section
-    const beforeSection = themesContent.substring(0, insertionPoint);
-    const afterSection =
-        endPoint > insertionPoint ? themesContent.substring(endPoint) : themesContent.substring(insertionPoint);
-
-    themesContent = beforeSection + '\n\n' + brandColorLines.join('\n') + '\n' + afterSection;
-
-    // Write the updated file
-    fs.writeFileSync(themesPath, themesContent, 'utf8');
-
-    // Check if changes were made
     const hasChanges = originalContent !== themesContent;
 
-    if (hasChanges) {
-        console.log('✅ Brand styling updated successfully in _themes.scss!');
-        console.log(`📁 Updated: ${themesPath}`);
-        console.log('📊 Changes made:');
-        console.log('   Colors:');
-        console.log(`      • Brand White: ${colors.white}`);
-        console.log(`      • Brand Dark Grey: ${colors.black}`);
-        console.log(`      • Primary: ${colors.primary}`);
-        console.log(`      • Secondary: ${colors.secondary}`);
-        console.log(`      • Tertiary: ${colors.tertiary}`);
-        console.log(`      • Success: ${colors.success}`);
-        console.log(`      • Danger: ${colors.danger}`);
-        console.log(`      • Warning: ${colors.warning}`);
-        console.log(`      • Info: ${colors.info}`);
-        if (typography && typography.font_family) {
-            console.log('   Typography:');
-            console.log(`      • Primary Font: ${typography.font_family.primary.substring(0, 50)}...`);
-            console.log(`      • Secondary Font: ${typography.font_family.secondary}`);
-            console.log(`      • Monospace Font: ${typography.font_family.monospace}`);
-        }
-    } else {
+    if (!hasChanges) {
         console.log('✓ No changes needed - brand styling already up to date');
+        return false;
     }
 
-    return hasChanges;
+    fs.writeFileSync(themesPath, themesContent, 'utf8');
+
+    console.log('✅ Brand styling updated successfully in _themes.scss!');
+    console.log(`📁 Updated: ${themesPath}`);
+    console.log('📊 Changes made:');
+    console.log('   Colors:');
+    console.log(`      • Brand White: ${colors.white}`);
+    console.log(`      • Brand Dark Grey: ${colors.black}`);
+    console.log(`      • Primary: ${colors.primary}`);
+    console.log(`      • Secondary: ${colors.secondary}`);
+    console.log(`      • Tertiary: ${colors.tertiary}`);
+    console.log(`      • Success: ${colors.success}`);
+    console.log(`      • Danger: ${colors.danger}`);
+    console.log(`      • Warning: ${colors.warning}`);
+    console.log(`      • Info: ${colors.info}`);
+    if (typography && typography.font_family) {
+        console.log('   Typography:');
+        console.log(`      • Primary Font: ${typography.font_family.primary.substring(0, 50)}...`);
+        console.log(`      • Secondary Font: ${typography.font_family.secondary}`);
+        console.log(`      • Monospace Font: ${typography.font_family.monospace}`);
+    }
+
+    return true;
 };
 
 // Validation function
@@ -221,7 +226,7 @@ if (require.main === module) {
 
     console.log('\n🎯 Next steps:');
     if (hasChanges) {
-        console.log('1. The brand colors in _themes.scss have been updated with AI markers');
+        console.log('1. The brand block in _themes.scss has been rewritten in place');
         console.log('2. To regenerate: npm run generate:brand-css');
         console.log('3. Restart your dev server to see the changes');
     } else {
@@ -233,4 +238,6 @@ if (require.main === module) {
 module.exports = {
     updateBrandColorsInThemes,
     validateBrandConfig,
+    applyBrandBlock,
+    buildBrandBlock,
 };
