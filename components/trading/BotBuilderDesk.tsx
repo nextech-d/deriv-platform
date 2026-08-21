@@ -341,27 +341,6 @@ export function BotBuilderDesk({
   }
 
   useEffect(() => {
-    const runAfter = consumeBuilderRunAfter();
-    if (skipFirstSeed.current) {
-      skipFirstSeed.current = false;
-      onSymbolChangeRef.current?.(snapshot.symbol);
-      setVhOpen(Boolean(snapshot.virtualHook));
-      if (runAfter) {
-        installBot(snapshot, `${snapshot.sourceLabel} generated on the workspace`, true);
-      } else if (seed) {
-        const text = `${seed.sourceLabel} ready on the workspace`;
-        setNotice(text);
-        setFlash({ tone: "ok", text });
-      }
-      return;
-    }
-    const next = seed ?? consumeBuilderHandoff();
-    if (!next) return;
-    installBot(next, `${next.sourceLabel} ready on the workspace`, runAfter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seedKey]);
-
-  useEffect(() => {
     writeBuilderWorkspace({
       snapshot,
       chips,
@@ -442,11 +421,41 @@ export function BotBuilderDesk({
       const runningText = `Bot running · ${normalized.purchase} ${normalized.tradeType} · ${normalized.market}`;
       setNotice(runningText);
       setFlash({ tone: "run", text: runningText });
-      log(`Run · ${normalized.tradeType} · ${normalized.symbol}`);
+      setJournal((prev) =>
+        [
+          {
+            id: crypto.randomUUID(),
+            at: Date.now(),
+            text: `Run · ${normalized.tradeType} · ${normalized.symbol}`,
+          },
+          ...prev,
+        ].slice(0, 40),
+      );
       return;
     }
     setFlash({ tone: "ok", text: message });
   }
+
+  useEffect(() => {
+    const runAfter = consumeBuilderRunAfter();
+    if (skipFirstSeed.current) {
+      skipFirstSeed.current = false;
+      onSymbolChangeRef.current?.(snapshot.symbol);
+      setVhOpen(Boolean(snapshot.virtualHook));
+      if (runAfter) {
+        installBot(snapshot, `${snapshot.sourceLabel} generated on the workspace`, true);
+      } else if (seed) {
+        const text = `${seed.sourceLabel} ready on the workspace`;
+        setNotice(text);
+        setFlash({ tone: "ok", text });
+      }
+      return;
+    }
+    const next = seed ?? consumeBuilderHandoff();
+    if (!next) return;
+    installBot(next, `${next.sourceLabel} ready on the workspace`, runAfter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedKey]);
 
   function patchSnapshot(partial: Partial<BotBuilderSnapshot>, journalText?: string) {
     const next: BotBuilderSnapshot = {

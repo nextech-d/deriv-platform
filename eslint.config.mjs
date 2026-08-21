@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored SmartCharts bundles copied from npm on postinstall
+    "public/smartcharts/**",
   ]),
 ]);
 

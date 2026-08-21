@@ -22,8 +22,15 @@ declare module "@deriv-com/smartcharts-champion" {
     High?: number;
     Low?: number;
     Close: number;
-    tick?: unknown;
-    ohlc?: unknown;
+    tick?: { quote: number; epoch: number };
+    ohlc?: {
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      epoch: number;
+      open_time: number;
+    };
     DT?: Date;
     prevClose?: number;
     Volume?: number;
