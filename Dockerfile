@@ -6,6 +6,7 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
+COPY scripts/prepare-smartcharts.mjs scripts/prepare-smartcharts.mjs
 RUN npm ci
 
 FROM base AS builder
@@ -18,6 +19,7 @@ ARG NEXT_PUBLIC_DERIV_SIGNUP_URL=
 ENV NEXT_PUBLIC_DEMO_MODE=$NEXT_PUBLIC_DEMO_MODE
 ENV NEXT_PUBLIC_DERIV_APP_ID=$NEXT_PUBLIC_DERIV_APP_ID
 ENV NEXT_PUBLIC_DERIV_SIGNUP_URL=$NEXT_PUBLIC_DERIV_SIGNUP_URL
+RUN npm run prepare-smartcharts
 RUN npm run build
 
 FROM base AS runner
