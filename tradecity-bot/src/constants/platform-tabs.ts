@@ -90,7 +90,7 @@ export const TAB_HASHES = PLATFORM_TABS.map(tab => tab.hash);
 export const TAB_DOM_IDS = PLATFORM_TABS.map(tab => tab.domId);
 
 /** Tabs that own the Blockly run control. Hidden elsewhere unless the bot is already running. */
-export const RUN_CONTROL_KINDS: ReadonlySet<PlatformTabKind> = new Set(['dashboard', 'bot_builder', 'chart']);
+export const RUN_CONTROL_KINDS: ReadonlySet<PlatformTabKind> = new Set(['bot_builder', 'chart']);
 
 export const tabIndexById = (id: string): number => PLATFORM_TABS.findIndex(tab => tab.id === id);
 
