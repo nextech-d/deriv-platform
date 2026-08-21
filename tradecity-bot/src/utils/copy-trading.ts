@@ -1,3 +1,5 @@
+import { OAuthTokenExchangeService } from '@/services/oauth-token-exchange.service';
+
 export interface CopyAccount {
     accountId: string;
     loginid: string;
@@ -40,8 +42,14 @@ export const EMPTY_COPY_STATE: CopyState = {
     blocker: null,
 };
 
-/** The Deriv session token the SPA already holds; proves identity to our API. */
+/**
+ * The Deriv session token the SPA already holds; proves identity to our API.
+ * OAuth keeps it in sessionStorage under `auth_info`; `authToken` is only set
+ * by the legacy account-switch URL flow, so both are checked.
+ */
 function sessionToken(): string {
+    const oauthToken = OAuthTokenExchangeService.getAccessToken();
+    if (oauthToken) return oauthToken;
     try {
         return localStorage.getItem('authToken') || '';
     } catch {

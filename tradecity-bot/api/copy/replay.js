@@ -13,7 +13,11 @@ const ALLOWED_CONTRACTS = new Set([
     'DIGITUNDER',
 ]);
 
-/** Rebuilds the buy payload from scratch so a caller cannot smuggle fields through. */
+/**
+ * Rebuilds the buy payload from scratch so a caller cannot smuggle fields
+ * through. This Deriv options API keys the market as `underlying_symbol` and
+ * carries digit predictions in both `barrier` and `selected_tick`.
+ */
 function sanitize(input) {
     const contractType = String(input.contract_type || '');
     if (!ALLOWED_CONTRACTS.has(contractType)) return null;
@@ -23,6 +27,9 @@ function sanitize(input) {
     if (!Number.isFinite(amount) || amount <= 0) return null;
     if (!Number.isFinite(duration) || duration <= 0) return null;
 
+    const market = String(input.underlying_symbol || input.symbol || '');
+    if (!market) return null;
+
     const parameters = {
         amount: Math.round(amount * 100) / 100,
         basis: 'stake',
@@ -30,12 +37,15 @@ function sanitize(input) {
         currency: String(input.currency || 'USD'),
         duration: Math.round(duration),
         duration_unit: String(input.duration_unit || 't'),
-        symbol: String(input.symbol || ''),
+        underlying_symbol: market,
     };
-    if (!parameters.symbol) return null;
 
-    if (input.barrier !== undefined && input.barrier !== null && String(input.barrier) !== '') {
-        parameters.barrier = String(input.barrier);
+    const prediction = input.selected_tick !== undefined ? input.selected_tick : input.barrier;
+    if (prediction !== undefined && prediction !== null && String(prediction) !== '') {
+        const digit = Number(prediction);
+        if (!Number.isFinite(digit)) return null;
+        parameters.barrier = digit;
+        parameters.selected_tick = digit;
     }
     return parameters;
 }

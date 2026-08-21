@@ -1,3 +1,4 @@
+import { mirrorContract } from '@/utils/copy-mirror';
 import { LogTypes } from '../../../constants/messages';
 import { api_base } from '../../api/api-base';
 import { contractStatus, info, log } from '../utils/broadcast';
@@ -28,6 +29,11 @@ export default Engine =>
 
                 this.contractId = buy.contract_id;
                 this.store.dispatch(purchaseSuccessful());
+
+                // Replay the same contract onto any enabled copy-trading accounts.
+                // Both purchase paths above are driven by this.tradeOptions, so the
+                // payload is rebuilt here rather than captured per branch.
+                mirrorContract(tradeOptionToBuy(contract_type, this.tradeOptions).parameters, buy.buy_price);
 
                 if (this.is_proposal_subscription_required) {
                     this.renewProposalsOnPurchase();

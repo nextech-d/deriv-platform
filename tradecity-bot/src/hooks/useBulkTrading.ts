@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton';
+import { tradeOptionToBuy } from '@/external/bot-skeleton/services/tradeEngine/utils/helpers';
 import { mirrorContract } from '@/utils/copy-mirror';
 
 export interface OpenContractRecord {
@@ -197,18 +198,21 @@ export function useBulkTrading(currency: string) {
                 return batchId;
             }
 
-            const parameters: Record<string, unknown> = {
+            // Built by the bot's own helper so these desks send exactly the payload
+            // the trade engine sends — this API expects `underlying_symbol`, not `symbol`.
+            const buyRequest = tradeOptionToBuy(request.contractType, {
                 amount: request.amount,
                 basis: 'stake',
-                contract_type: request.contractType,
                 currency,
                 duration: request.duration,
                 duration_unit: request.durationUnit,
                 symbol: request.symbol,
-            };
-            if (NEEDS_BARRIER.includes(request.contractType) && request.lastDigitPrediction != null) {
-                parameters.barrier = String(request.lastDigitPrediction);
-            }
+                prediction:
+                    NEEDS_BARRIER.includes(request.contractType) && request.lastDigitPrediction != null
+                        ? request.lastDigitPrediction
+                        : undefined,
+            });
+            const parameters = buyRequest.parameters as Record<string, unknown>;
 
             void (async () => {
                 setBusy(true);
@@ -217,7 +221,7 @@ export function useBulkTrading(currency: string) {
                     for (let i = 0; i < request.count; i += 1) {
                         // Sequential so a rejected contract stops the batch instead of firing all of them.
                         // eslint-disable-next-line no-await-in-loop
-                        const response = await api.send({ buy: '1', price: request.amount, parameters });
+                        const response = await api.send(buyRequest);
                         const contract = response?.buy;
                         if (!contract?.contract_id) continue;
 

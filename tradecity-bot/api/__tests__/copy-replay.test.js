@@ -30,8 +30,9 @@ const VALID = {
     currency: 'USD',
     duration: 1,
     duration_unit: 't',
-    symbol: 'R_100',
-    barrier: '5',
+    underlying_symbol: 'R_100',
+    barrier: 5,
+    selected_tick: 5,
 };
 
 function makeRes() {
@@ -99,12 +100,38 @@ describe('copy trading replay guards', () => {
         ['a negative stake', { amount: -50 }],
         ['a zero stake', { amount: 0 }],
         ['a non-numeric stake', { amount: 'lots' }],
-        ['a missing symbol', { symbol: '' }],
+        ['a missing market', { underlying_symbol: '' }],
         ['a zero duration', { duration: 0 }],
+        ['a non-numeric digit prediction', { barrier: 'seven', selected_tick: undefined }],
     ])('rejects %s without buying anything', async (_label, override) => {
         const out = await post({ ...VALID, ...override });
         expect(out.code).toBe(400);
         expect(mockBuys).toHaveLength(0);
+    });
+
+    it('sends the market as underlying_symbol, which is what this API expects', async () => {
+        await post({ ...VALID });
+        expect(mockBuys[0].parameters.underlying_symbol).toBe('R_100');
+        expect(mockBuys[0].parameters.symbol).toBeUndefined();
+    });
+
+    it('carries a digit prediction as a number in both barrier and selected_tick', async () => {
+        await post({ ...VALID, barrier: 5, selected_tick: 5 });
+        expect(mockBuys[0].parameters.barrier).toBe(5);
+        expect(mockBuys[0].parameters.selected_tick).toBe(5);
+    });
+
+    it('accepts the legacy symbol key so older callers still work', async () => {
+        const { underlying_symbol: _omit, ...legacy } = VALID;
+        await post({ ...legacy, symbol: 'R_50' });
+        expect(mockBuys[0].parameters.underlying_symbol).toBe('R_50');
+    });
+
+    it('omits the digit fields entirely for a rise/fall contract', async () => {
+        const { barrier: _b, selected_tick: _s, ...noDigit } = VALID;
+        await post({ ...noDigit, contract_type: 'CALL' });
+        expect(mockBuys[0].parameters.barrier).toBeUndefined();
+        expect(mockBuys[0].parameters.selected_tick).toBeUndefined();
     });
 
     it('drops unexpected fields instead of forwarding them to Deriv', async () => {

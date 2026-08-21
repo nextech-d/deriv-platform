@@ -3,7 +3,9 @@
  * Mirrors the account shape the SPA already uses (see src/utils/account-helpers).
  */
 
-const REST_BASE = 'https://api.derivws.com';
+// Matches brand.config.json platform.derivws.url. Override on staging with
+// DERIV_REST_BASE=https://staging-api.derivws.com so it does not hit production.
+const REST_BASE = (process.env.DERIV_REST_BASE || 'https://api.derivws.com').replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 12_000;
 const BUY_TIMEOUT_MS = 20_000;
 
