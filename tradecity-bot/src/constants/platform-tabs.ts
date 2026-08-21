@@ -32,12 +32,12 @@ export interface PlatformTabDefinition {
 
 export const PLATFORM_TABS: PlatformTabDefinition[] = [
     { id: 'dashboard', hash: 'dashboard', domId: 'id-dbot-dashboard', label: 'Dashboard', kind: 'dashboard' },
-    { id: 'bot_builder', hash: 'bot_builder', domId: 'id-bot-builder', label: 'Bot Builder', kind: 'bot_builder' },
+    { id: 'bot_builder', hash: 'bot_builder', domId: 'id-bot-builder', label: 'Bot builder', kind: 'bot_builder' },
     {
         id: 'free_bots',
         hash: 'free_bots',
         domId: 'id-free-bots',
-        label: 'Free Bots',
+        label: 'Free bots',
         kind: 'free_bots',
         splitAfter: true,
     },
@@ -46,28 +46,28 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         id: 'analysis_tool',
         hash: 'analysis_tool',
         domId: 'id-analysis-tool',
-        label: 'Analysis Tool',
+        label: 'Analysis tool',
         kind: 'analysis_tool',
     },
     {
         id: 'signal_center',
         hash: 'signal_center',
         domId: 'id-signal-center',
-        label: 'Signal Center',
+        label: 'Signal center',
         kind: 'signal_center',
     },
     {
         id: 'money_management',
         hash: 'money_management',
         domId: 'id-money-management',
-        label: 'Money Management',
+        label: 'Money management',
         kind: 'money_management',
     },
     {
         id: 'copy_trader',
         hash: 'copy_trader',
         domId: 'id-copy-trader',
-        label: 'Copy Trader',
+        label: 'Copy trader',
         kind: 'copy_trader',
         splitAfter: true,
     },
@@ -80,10 +80,10 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         kind: 'edging_2',
         splitAfter: true,
     },
-    { id: 'fast_trader', hash: 'fast_trader', domId: 'id-fast-trader', label: 'Fast Trader', kind: 'fast_trader' },
+    { id: 'fast_trader', hash: 'fast_trader', domId: 'id-fast-trader', label: 'Fast trader', kind: 'fast_trader' },
     { id: 'chart', hash: 'chart', domId: 'id-charts', label: 'Charts', kind: 'chart' },
-    { id: 'ultimate_bot', hash: 'ultimate_bot', domId: 'id-ultimate-bot', label: 'Ultimate Bot', kind: 'ultimate_bot' },
-    { id: 'bulk_trader', hash: 'bulk_trader', domId: 'id-bulk-trader', label: 'Bulk Trader', kind: 'bulk_trader' },
+    { id: 'ultimate_bot', hash: 'ultimate_bot', domId: 'id-ultimate-bot', label: 'Ultimate bot', kind: 'ultimate_bot' },
+    { id: 'bulk_trader', hash: 'bulk_trader', domId: 'id-bulk-trader', label: 'Bulk trader', kind: 'bulk_trader' },
 ];
 
 export const TAB_HASHES = PLATFORM_TABS.map(tab => tab.hash);

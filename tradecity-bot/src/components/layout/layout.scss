@@ -1,5 +1,7 @@
 @use 'components/shared/styles/mixins' as *;
 
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@700&display=swap');
+
 .layout {
     display: flex;
     flex-direction: column;
@@ -8,6 +10,20 @@
     .deriv-header {
         background: var(--general-main-1);
         height: 5.6rem;
+    }
+
+    @include desktop-screen {
+        .deriv-header {
+            height: 8.8rem;
+            align-items: flex-start;
+            overflow: visible;
+        }
+
+        // Keep logo, login and the rest on the original first row.
+        .deriv-header > * {
+            height: 5.6rem;
+            align-self: flex-start;
+        }
     }
 
     &.quick-strategy-active {

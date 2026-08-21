@@ -34,6 +34,10 @@
     height: calc(100vh - 9rem);
     padding: 1.6rem;
 
+    @include desktop-screen {
+        height: calc(100vh - 12.4rem);
+    }
+
     @include mobile-or-tablet-screen {
         height: calc(100vh - 6rem);
         padding: 0;
@@ -177,6 +181,21 @@
                     color: var(--text-general);
                 }
 
+                @include desktop-screen {
+                    height: 3.2rem;
+                    padding: 0 0.5rem;
+                    flex: 0 1 auto;
+                    min-width: 0;
+                    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+                    font-size: 1.2rem;
+                    font-weight: 700;
+                    letter-spacing: 0;
+
+                    svg {
+                        display: none;
+                    }
+                }
+
                 svg {
                     padding-inline-end: 0;
                     margin-inline-end: 0.5rem;
@@ -212,15 +231,11 @@
                     max-width: 100%;
 
                     @include desktop-screen {
-                        overflow-x: auto;
-                        overflow-y: hidden;
-                        scrollbar-width: none;
-                        // Keep the last tabs out from under the Run widget.
-                        padding-inline-end: 24rem;
-
-                        &::-webkit-scrollbar {
-                            display: none;
-                        }
+                        overflow: hidden;
+                        width: 100%;
+                        max-width: 100%;
+                        height: 3.2rem;
+                        justify-content: space-evenly;
                     }
                 }
 
@@ -234,6 +249,25 @@
                     margin-inline-end: 0.6rem;
                     padding-inline-end: 1rem;
                     border-inline-end: 1px solid var(--general-section-1);
+                }
+
+                @include desktop-screen {
+                    .dc-tabs__list--header--main__tabs {
+                        position: fixed;
+                        top: 5.6rem;
+                        inset-inline: 0;
+                        z-index: 6;
+                        height: 3.2rem;
+                        background: var(--general-main-1);
+                        border-bottom: 1px solid var(--general-section-1);
+                    }
+
+                    .dc-tabs__item:nth-child(3),
+                    .dc-tabs__item:nth-child(8),
+                    .dc-tabs__item:nth-child(10) {
+                        margin-inline-end: 0;
+                        padding-inline-end: 0.5rem;
+                    }
                 }
             }
         }

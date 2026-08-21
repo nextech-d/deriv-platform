@@ -509,7 +509,6 @@ const AppWrapper = observer(() => {
                             className='main__tabs'
                             onTabItemClick={handleTabChange}
                             top
-                            is_scrollable
                             header_fit_content
                         >
                             {PLATFORM_TABS.map(tab => (
