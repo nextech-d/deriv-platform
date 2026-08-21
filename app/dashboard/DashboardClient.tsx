@@ -22,7 +22,7 @@ import { ProAiDesk } from "@/components/trading/ProAiDesk";
 import { DerivCourseDesk } from "@/components/trading/DerivCourseDesk";
 import { AutoTraderDesk } from "@/components/trading/AutoTraderDesk";
 import { DTraderDesk } from "@/components/trading/DTraderDesk";
-import { ChartDesk } from "@/components/trading/ChartDesk";
+import { SmartChartDesk } from "@/components/trading/SmartChartDesk";
 import { MoneyManagementDesk } from "@/components/trading/MoneyManagementDesk";
 import { EdgingDesk } from "@/components/trading/EdgingDesk";
 import { Edging2Desk } from "@/components/trading/Edging2Desk";
@@ -817,21 +817,16 @@ export function DashboardClient({
 
       case "chart":
         return (
-          <ChartDesk
+          <SmartChartDesk
             symbol={symbol}
             onSymbolChange={setSymbol}
-            lastQuote={
-              tickHistory.filter((tick) => tick.symbol === symbol).at(-1)?.quote ??
-              (lastTick?.symbol === symbol ? lastTick.quote : null)
-            }
-            tickHistory={tickHistory}
             isConnected={isConnected}
-            onSubscribe={setSymbol}
-            onOpenAnalysis={() => handleViewChange("analysis-tool")}
-            onOpenDTrader={() => handleViewChange("d-trader")}
-            chartHistory={chartHistory}
-            chartHistoryLoading={chartHistoryLoading}
-            onRequestHistory={requestChartHistory}
+            onSubscribeTicks={subscribeTicks}
+            fetchChartQuotes={fetchChartQuotes}
+            subscribeChartStream={subscribeChartStream}
+            activeSymbols={chartActiveSymbols}
+            tradingTimes={chartTradingTimes}
+            onRequestChartReference={requestChartReference}
           />
         );
 

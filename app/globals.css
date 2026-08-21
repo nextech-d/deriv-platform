@@ -7158,6 +7158,7 @@ html[data-theme] .bot-builder-animation {
 .marketing-live-desk:has(.free-bots),
 .marketing-live-desk:has(.d-trader),
 .marketing-live-desk:has(.chart-desk),
+.marketing-live-desk:has(.smartchart-desk),
 .marketing-live-desk:has(.analysis-tool),
 .marketing-live-desk:has(.signal-center),
 .marketing-live-desk:has(.money-mgmt),
@@ -8542,7 +8543,8 @@ details[open] > .deriv-course-intro-section-head::before {
 }
 
 /* Chart desk */
-.chart-desk {
+.chart-desk,
+.smartchart-desk {
   display: flex;
   height: 100%;
   min-height: 0;
@@ -8551,6 +8553,12 @@ details[open] > .deriv-course-intro-section-head::before {
   background: var(--surface);
   color: var(--foreground);
   font-family: var(--font-ibm-plex-sans), "IBM Plex Sans", system-ui, sans-serif;
+}
+
+.smartchart-desk .dashboard__chart-wrapper {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
 }
 
 .chart-desk-picker {
@@ -22055,6 +22063,7 @@ body {
 .tc-shell .free-bots,
 .tc-shell .d-trader,
 .tc-shell .chart-desk,
+.tc-shell .smartchart-desk,
 .tc-shell .analysis-tool,
 .tc-shell .signal-center,
 .tc-shell .money-mgmt,

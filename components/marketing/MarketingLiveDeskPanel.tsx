@@ -8,7 +8,7 @@ import { AiBotDesk } from "@/components/trading/MenuDesks";
 import { ProAiDesk } from "@/components/trading/ProAiDesk";
 import { DerivCourseDesk } from "@/components/trading/DerivCourseDesk";
 import { AutoTraderDesk } from "@/components/trading/AutoTraderDesk";
-import { ChartDesk } from "@/components/trading/ChartDesk";
+import { SmartChartDesk } from "@/components/trading/SmartChartDesk";
 import { DTraderDesk } from "@/components/trading/DTraderDesk";
 import { TradeTicket } from "@/components/trading/TradeTicket";
 import { BotPanel } from "@/components/trading/BotPanel";
@@ -348,15 +348,11 @@ export function MarketingLiveDeskPanel({
         {navId === "d-trader" ? <MarketingDTraderDesk /> : null}
 
         {navId === "chart" ? (
-          <ChartDesk
+          <SmartChartDesk
             symbol="R_100"
             onSymbolChange={() => undefined}
-            lastQuote={DEMO_TICKS.at(-1)?.quote ?? null}
-            tickHistory={DEMO_TICKS}
             isConnected={false}
-            onSubscribe={() => undefined}
-            onOpenAnalysis={() => onNavigate?.("analysis-tool", "analysis-tool")}
-            onOpenDTrader={() => onNavigate?.("d-trader", "d-trader")}
+            demoTicks={DEMO_TICKS}
           />
         ) : null}
 
