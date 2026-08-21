@@ -172,6 +172,7 @@
         grid-template-columns: repeat(5, 1fr);
         gap: 0.4rem;
         padding: 0.4rem;
+        border: 1px solid var(--border-normal);
         border-radius: 0.8rem;
         background: var(--general-section-2, #e6e9e9);
     }
@@ -262,8 +263,12 @@
         cursor: pointer;
 
         input {
+            // The shared styles strip the native control, which leaves nothing to click.
+            appearance: auto;
+            flex: none;
             width: 1.6rem;
             height: 1.6rem;
+            margin: 0;
             accent-color: var(--dt-teal);
             cursor: pointer;
         }
