@@ -4,6 +4,9 @@
 .money-mgmt {
     display: flex;
     flex-direction: column;
+    // The tab panel is a flex row, so claim the full width or this shrink-wraps to its content.
+    width: 100%;
+    min-width: 0;
     height: 100%;
     min-height: var(--tab-content-height);
     overflow-y: auto;
