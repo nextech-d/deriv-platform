@@ -3,6 +3,10 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@700&display=swap');
 
 .layout {
+    --tc-brand-h: 5.6rem;
+    --tc-menu-h: 4.4rem;
+    --tc-header-h: calc(var(--tc-brand-h) + var(--tc-menu-h));
+
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -14,17 +18,25 @@
 
     @include desktop-screen {
         .deriv-header {
-            height: 10rem;
-            align-items: flex-start;
+            height: var(--tc-header-h) !important;
+            min-height: var(--tc-header-h) !important;
+            align-items: flex-start !important;
             overflow: visible;
             border-bottom: 1px solid var(--general-section-1);
             box-shadow: none;
+            background: var(--general-main-1);
         }
 
         // Keep logo, login and the rest on the original first row.
         .deriv-header > * {
-            height: 5.6rem;
+            height: var(--tc-brand-h);
+            min-height: var(--tc-brand-h);
             align-self: flex-start;
+        }
+
+        // Keep the account menu above the tab labels when it opens downward.
+        .deriv-account-switcher__container {
+            z-index: 30;
         }
     }
 
