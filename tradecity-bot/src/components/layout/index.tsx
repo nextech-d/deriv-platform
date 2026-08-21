@@ -9,6 +9,7 @@ import { crypto_currencies_display_order, fiat_currencies_display_order } from '
 import Footer from './footer';
 import AppHeader from './header';
 import Body from './main-body';
+import PlatformNavBar from './platform-nav/platform-nav-bar';
 import './layout.scss';
 
 const Layout = observer(() => {
@@ -149,6 +150,7 @@ const Layout = observer(() => {
             })}
         >
             {!isCallbackPage && <AppHeader isAuthenticating={isAuthenticating || !isInitialAuthCheckComplete} />}
+            {!isCallbackPage && <PlatformNavBar />}
             <Body>
                 <Outlet />
             </Body>

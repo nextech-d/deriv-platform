@@ -20,7 +20,8 @@ ENV NEXT_PUBLIC_DEMO_MODE=$NEXT_PUBLIC_DEMO_MODE
 ENV NEXT_PUBLIC_DERIV_APP_ID=$NEXT_PUBLIC_DERIV_APP_ID
 ENV NEXT_PUBLIC_DERIV_SIGNUP_URL=$NEXT_PUBLIC_DERIV_SIGNUP_URL
 RUN npm run prepare-smartcharts
-RUN npm run build
+# Root `npm run build` targets tradecity-bot (Vercel). Docker image is legacy Next.js.
+RUN npm run build:legacy
 
 FROM base AS runner
 WORKDIR /app

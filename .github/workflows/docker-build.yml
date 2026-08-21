@@ -7,7 +7,6 @@ on:
     paths:
       - "Dockerfile"
       - ".dockerignore"
-      - "package.json"
       - "package-lock.json"
       - "app/**"
       - "components/**"
@@ -17,6 +16,7 @@ on:
       - "public/**"
       - "next.config.ts"
       - ".github/workflows/docker-build.yml"
+      # Note: root package.json is excluded — its build script now targets tradecity-bot (Vercel).
 
 jobs:
   build-image:
