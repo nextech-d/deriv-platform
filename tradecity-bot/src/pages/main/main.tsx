@@ -43,6 +43,8 @@ import RunPanel from '../../components/run-panel';
 import AnalysisToolPanel from '../../components/analysis-tool-desk/analysis-tool-panel';
 import BulkTraderPanel from '../../components/bulk-trader-desk/bulk-trader-panel';
 import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
+import MoneyManagementPanel from '../../components/money-management-desk/money-management-panel';
+import UltimateBotPanel from '../../components/ultimate-bot-desk/ultimate-bot-panel';
 import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
@@ -446,6 +448,10 @@ const AppWrapper = observer(() => {
                         onOpenDTrader={() => handleTabChange(DBOT_TABS.D_TRADER)}
                     />
                 );
+            case 'money_management':
+                return <MoneyManagementPanel />;
+            case 'ultimate_bot':
+                return <UltimateBotPanel />;
             case 'bulk_trader':
                 return <BulkTraderPanel />;
             case 'chart':

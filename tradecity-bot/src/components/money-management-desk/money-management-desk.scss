@@ -1,0 +1,283 @@
+@use 'components/shared/styles/mixins' as *;
+
+/* Money Management — ported from legacy TradeCity globals.css */
+.money-mgmt {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: var(--tab-content-height);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--general-main-1);
+    color: var(--text-general);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+
+    @include mobile-or-tablet-screen {
+        min-height: var(--tab-content-height-mobile);
+    }
+}
+
+.money-mgmt-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    padding: 0.45rem 1rem;
+    border-bottom: 1px solid var(--general-section-1);
+    background: var(--general-main-1);
+    flex-shrink: 0;
+}
+
+.money-mgmt-toolbar h1 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.money-mgmt-toolbar-status {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transform: translateY(-50%);
+
+    @include mobile-or-tablet-screen {
+        display: none;
+    }
+}
+
+.money-mgmt-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.7rem;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    background: var(--general-section-1);
+    color: var(--text-less-prominent);
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+.money-mgmt-chip.is-hit {
+    color: #0f766e;
+    background: color-mix(in srgb, #0f766e 9%, var(--general-main-1));
+}
+
+.money-mgmt-body {
+    display: grid;
+    gap: 1rem;
+    width: min(72rem, 100%);
+    margin: 0 auto;
+    padding: 1.15rem 1.25rem 1.75rem;
+}
+
+.money-mgmt-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.money-mgmt-fields label {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.money-mgmt-fields span {
+    font-size: 0.6875rem;
+    font-weight: 650;
+    color: var(--text-less-prominent);
+}
+
+.money-mgmt-fields input,
+.money-mgmt-plan td input {
+    width: 100%;
+    min-height: 2.15rem;
+    padding: 0 0.65rem;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    background: var(--general-main-1);
+    color: var(--text-general);
+    font-size: 0.8125rem;
+}
+
+.money-mgmt-fields input:focus,
+.money-mgmt-plan td input:focus {
+    outline: none;
+    border-color: color-mix(in srgb, #0f766e 42%, var(--general-section-1));
+    box-shadow: 0 0 0 3px color-mix(in srgb, #0f766e 12%, transparent);
+}
+
+.money-mgmt-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-general);
+}
+
+.money-mgmt-toggle input {
+    accent-color: #0f766e;
+}
+
+.money-mgmt-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.money-mgmt-kpi {
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    background: var(--general-section-1);
+}
+
+.money-mgmt-kpi p {
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-less-prominent);
+}
+
+.money-mgmt-kpi strong {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 1rem;
+    color: var(--text-general);
+}
+
+.money-mgmt-plan {
+    padding: 1rem;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    background: var(--general-main-1);
+}
+
+.money-mgmt-plan h2 {
+    margin: 0 0 0.75rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.money-mgmt-table-wrap {
+    overflow-x: auto;
+}
+
+.money-mgmt-plan table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.money-mgmt-plan th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.65rem 0.75rem;
+    background: var(--text-general);
+    color: var(--general-main-1);
+    font-weight: 650;
+    text-align: left;
+}
+
+.money-mgmt-plan td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--general-section-1);
+    color: var(--text-general);
+}
+
+.money-mgmt-plan tr.is-hit td {
+    background: color-mix(in srgb, #0f766e 6%, var(--general-main-1));
+}
+
+.money-mgmt-plan tr.is-miss td {
+    background: var(--general-section-1);
+}
+
+.money-mgmt-flag {
+    display: inline-flex;
+    min-width: 2.4rem;
+    justify-content: center;
+    color: var(--text-less-prominent);
+    font-weight: 700;
+}
+
+.money-mgmt-flag.is-yes {
+    color: #0f766e;
+}
+
+.money-mgmt-flag.is-no {
+    color: var(--text-less-prominent);
+}
+
+.money-mgmt-notice {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--general-section-1);
+    border-radius: 8px;
+    background: var(--general-section-1);
+    text-align: center;
+}
+
+.money-mgmt-notice p {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-less-prominent);
+}
+
+.money-mgmt-saved {
+    margin: 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #0f766e;
+}
+
+.money-mgmt-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.45rem;
+}
+
+.money-mgmt-cta {
+    min-height: 2.15rem;
+    min-width: 10.5rem;
+    padding: 0 0.95rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.money-mgmt-cta.is-ink {
+    border: none;
+    background: var(--text-general);
+    color: var(--general-main-1);
+}
+
+.money-mgmt-cta.is-ghost {
+    border: 1px solid var(--general-section-1);
+    background: var(--general-main-1);
+    color: var(--text-less-prominent);
+}
+
+.money-mgmt-cta.is-ghost:hover {
+    color: var(--text-general);
+    background: var(--general-section-1);
+}
+
+.money-mgmt-summary {
+    margin: 0;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--text-less-prominent);
+}
