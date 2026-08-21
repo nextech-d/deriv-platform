@@ -89,7 +89,7 @@ const AppWrapper = observer(() => {
         [key: string]: string;
     };
     const { clear } = summary_card;
-    const { DASHBOARD, BOT_BUILDER, CHART, TUTORIAL } = DBOT_TABS;
+    const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
     const hash = TAB_HASHES;
     const { isDesktop } = useDevice();
@@ -136,7 +136,8 @@ const AppWrapper = observer(() => {
     const GetHashedValue = (tab: number) => {
         tab_value = location.hash?.split('#')[1];
         if (!tab_value) return tab;
-        return Number(hash.indexOf(String(tab_value)));
+        const idx = hash.indexOf(String(tab_value));
+        return idx >= 0 ? idx : tab;
     };
     const active_hash_tab = GetHashedValue(active_tab);
 
@@ -154,7 +155,7 @@ const AppWrapper = observer(() => {
 
     React.useEffect(() => {
         const el_dashboard = document.getElementById('id-dbot-dashboard');
-        const el_tutorial = document.getElementById('id-tutorials');
+        const el_last_tab = document.getElementById(TAB_IDS[TAB_IDS.length - 1]);
 
         const observer_dashboard = new window.IntersectionObserver(
             ([entry]) => {
@@ -183,8 +184,8 @@ const AppWrapper = observer(() => {
                 threshold: 0.5, // set offset 0.1 means trigger if atleast 10% of element in viewport
             }
         );
-        observer_dashboard.observe(el_dashboard);
-        observer_tutorial.observe(el_tutorial);
+        if (el_dashboard) observer_dashboard.observe(el_dashboard);
+        if (el_last_tab) observer_tutorial.observe(el_last_tab);
     });
 
     React.useEffect(() => {
