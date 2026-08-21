@@ -36,52 +36,50 @@
 .copy-trader-desk__inner {
     width: 100%;
     margin-inline: auto;
+    text-align: center;
 }
 
 .copy-trader-desk__eyebrow {
     display: block;
     margin-bottom: 0.375rem;
     color: var(--ct-teal);
-    font-size: 0.6875rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .copy-trader-desk__header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 1rem;
     margin-bottom: 1.5rem;
+    text-align: center;
 
     h2 {
         margin: 0 0 0.5rem;
-        font-size: 2rem;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        font-size: 2.2rem;
         font-weight: 700;
         line-height: 1.2;
     }
 
     p {
-        margin: 0;
-        max-width: 42rem;
+        margin: 0 auto;
+        max-width: 56rem;
         color: var(--ct-muted);
-        font-size: 0.875rem;
+        font-size: 1.3rem;
         line-height: 1.5;
-    }
-
-    @include mobile-or-tablet-screen {
-        flex-direction: column;
-
-        h2 {
-            font-size: 1.5rem;
-        }
     }
 }
 
 .copy-trader-desk__status {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     flex-shrink: 0;
     padding: 0.5rem 1rem;
@@ -89,12 +87,13 @@
     border-radius: 999px;
     background: var(--ct-surface);
     color: var(--ct-muted);
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
 
     span {
         color: var(--ct-muted);
-        font-size: 0.625rem;
+        font-size: 1.1rem;
     }
 
     &.running {
@@ -113,7 +112,8 @@
     border-radius: 0.5rem;
     background: var(--ct-surface);
     color: var(--ct-red);
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
+    text-align: center;
 }
 
 .copy-trader-desk__card {
@@ -125,14 +125,15 @@
 
     h3 {
         margin: 0 0 0.375rem;
-        font-size: 1.125rem;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        font-size: 1.6rem;
         font-weight: 700;
     }
 
     > p {
-        margin: 0;
+        margin: 0 auto;
         color: var(--ct-muted);
-        font-size: 0.875rem;
+        font-size: 1.3rem;
         line-height: 1.5;
     }
 }
@@ -140,43 +141,46 @@
 /* --- Add a PAT --- */
 .copy-trader-desk__pat {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    gap: 2rem;
-    align-items: start;
-
-    @include mobile-or-tablet-screen {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+    justify-items: center;
+    text-align: center;
 }
 
 .copy-trader-desk__pat-copy p {
-    margin: 0;
+    margin: 0 auto;
     color: var(--ct-muted);
-    font-size: 0.875rem;
+    font-size: 1.3rem;
     line-height: 1.5;
+}
+
+.copy-trader-desk__pat-form {
+    width: min(56rem, 100%);
 }
 
 .copy-trader-desk__pat-form label {
     display: block;
     margin-bottom: 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
 }
 
 .copy-trader-desk__pat-row {
     display: flex;
+    justify-content: center;
     gap: 0.5rem;
 
     input {
         flex: 1;
         min-width: 0;
+        min-height: 2.6rem;
         padding: 0.625rem 0.75rem;
         border: 1px solid var(--ct-border);
         border-radius: 0.5rem;
         background: var(--ct-surface);
         color: var(--ct-text);
-        font-size: 0.8125rem;
+        font-size: 1.3rem;
         font-family: inherit;
 
         &:focus-visible {
@@ -191,8 +195,9 @@
     flex-shrink: 0;
     padding: 0.625rem 1rem;
     border-radius: 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
     font-family: inherit;
     cursor: pointer;
 
@@ -225,7 +230,8 @@
         gap: 0.75rem;
         padding: 0.5rem 0;
         border-top: 1px solid var(--ct-border);
-        font-size: 0.8125rem;
+        justify-content: center;
+        font-size: 1.3rem;
     }
 
     code {
@@ -233,7 +239,6 @@
     }
 
     span {
-        flex: 1;
         color: var(--ct-muted);
     }
 
@@ -241,7 +246,7 @@
         border: none;
         background: none;
         color: var(--ct-red);
-        font-size: 0.8125rem;
+        font-size: 1.3rem;
         font-family: inherit;
         cursor: pointer;
 
@@ -255,21 +260,17 @@
 /* --- Mode chooser --- */
 .copy-trader-desk__mode-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1.5rem;
-    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+    justify-items: center;
     margin-top: 1rem;
-
-    @include mobile-or-tablet-screen {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
 }
 
 .copy-trader-desk__mode-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
+    width: min(56rem, 100%);
 
     @include mobile-or-tablet-screen {
         grid-template-columns: 1fr;
@@ -279,12 +280,13 @@
 .copy-trader-desk__mode-option {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
     border: 1px solid var(--ct-border);
     border-radius: 0.625rem;
     background: var(--ct-surface);
-    text-align: left;
+    text-align: center;
     font-family: inherit;
     cursor: pointer;
 
@@ -323,13 +325,14 @@
     min-width: 0;
 
     strong {
-        font-size: 0.875rem;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        font-size: 1.4rem;
         font-weight: 700;
     }
 
     em {
         color: var(--ct-muted);
-        font-size: 0.75rem;
+        font-size: 1.2rem;
         font-style: normal;
     }
 }
@@ -340,19 +343,15 @@
     border-radius: 999px;
     background: var(--ct-page);
     color: var(--ct-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 1.2rem;
+    font-weight: 700;
 }
 
 .copy-trader-desk__start {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
     gap: 0.625rem;
-
-    @include mobile-or-tablet-screen {
-        align-items: stretch;
-    }
 }
 
 .copy-trader-desk__blocker {
@@ -361,11 +360,11 @@
     gap: 0.375rem;
     margin: 0;
     color: var(--ct-amber);
-    font-size: 0.75rem;
-    text-align: right;
+    font-size: 1.2rem;
+    text-align: center;
 
     span {
-        font-size: 0.625rem;
+        font-size: 1.1rem;
     }
 }
 
@@ -402,13 +401,15 @@
 .copy-trader-desk__accounts-head {
     display: flex;
     gap: 0.875rem;
+    justify-content: center;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--ct-border);
+    text-align: center;
 
     p {
         margin: 0 0 0.5rem;
         color: var(--ct-muted);
-        font-size: 0.8125rem;
+        font-size: 1.3rem;
         line-height: 1.45;
     }
 }
@@ -421,7 +422,7 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 1.3rem;
     font-weight: 700;
 
     .is-real & {
@@ -436,7 +437,7 @@
 }
 
 .copy-trader-desk__tally {
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     font-weight: 700;
 }
 
@@ -448,11 +449,11 @@
     li {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         gap: 0.75rem;
         padding: 0.625rem 0;
         border-bottom: 1px solid var(--ct-border);
-        font-size: 0.8125rem;
+        font-size: 1.3rem;
 
         &:last-child {
             border-bottom: none;
@@ -488,15 +489,16 @@
 
     h4 {
         margin: 0 0 0.375rem;
-        font-size: 1rem;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        font-size: 1.5rem;
         font-weight: 700;
     }
 
     p {
         margin: 0 auto;
-        max-width: 22rem;
+        max-width: 28rem;
         color: var(--ct-muted);
-        font-size: 0.8125rem;
+        font-size: 1.3rem;
         line-height: 1.5;
     }
 }
