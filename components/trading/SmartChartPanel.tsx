@@ -7,6 +7,7 @@ import type { ActiveSymbol, TGranularity, TradingTimesMap } from "@deriv-com/sma
 import { useSmartChartFeed, type SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
 import { getMarketsOrder } from "@/lib/chart/smartchart-store";
 import { smartchartsActiveSymbols } from "@/lib/chart/smartcharts-symbols";
+import { loadSmartCharts } from "@/lib/chart/smartcharts-loader";
 import { SmartChartTitle, SmartChartToolbar } from "@/components/trading/SmartChartToolbar";
 import { cn } from "@/lib/utils/cn";
 
@@ -32,7 +33,11 @@ export function normalizeSmartChartType(type: string): string {
 }
 
 const SmartChart = dynamic(
-  () => import("@deriv-com/smartcharts-champion").then((module) => module.SmartChart),
+  () =>
+    loadSmartCharts().then((module) => {
+      module.setSmartChartsPublicPath("/smartcharts/");
+      return module.SmartChart;
+    }),
   {
     ssr: false,
     loading: () => <div className="smartchart-panel__loading">Loading chart…</div>,
@@ -133,10 +138,12 @@ export function SmartChartPanel({
   );
 
   useEffect(() => {
-    void import("@deriv-com/smartcharts-champion").then((module) => {
+    void loadSmartCharts().then((module) => {
       module.setSmartChartsPublicPath("/smartcharts/");
     });
   }, []);
+
+  const connectionOpen = true;
 
   if (!symbol) return null;
 
@@ -159,7 +166,7 @@ export function SmartChartPanel({
         unsubscribeQuotes={feed.unsubscribeQuotes}
         chartData={chartData}
         feedCall={{ activeSymbols: false, tradingTimes: false }}
-        isConnectionOpened={isConnected}
+        isConnectionOpened={connectionOpen}
         settings={settings}
         barriers={[]}
         showLastDigitStats={showLastDigitStats}

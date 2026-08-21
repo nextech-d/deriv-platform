@@ -2241,7 +2241,7 @@ html[data-boot-hold] body {
 .dashboard__chart-wrapper .cq-chart-area,
 .dashboard__chart-wrapper .chartContainer {
   height: 100%;
-  min-height: 0;
+  min-height: 420px;
 }
 
 .dashboard__chart-wrapper .cq-top-ui-widgets {
@@ -8549,7 +8549,7 @@ details[open] > .deriv-course-intro-section-head::before {
 .smartchart-desk {
   display: flex;
   height: 100%;
-  min-height: 0;
+  min-height: min(720px, calc(100dvh - 8.5rem));
   width: 100%;
   flex: 1;
   background: var(--surface);
@@ -8557,10 +8557,33 @@ details[open] > .deriv-course-intro-section-head::before {
   font-family: var(--font-ibm-plex-sans), "IBM Plex Sans", system-ui, sans-serif;
 }
 
-.smartchart-desk .dashboard__chart-wrapper {
+.terminal-workspace > .animate-view-in {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   width: 100%;
+}
+
+.smartchart-desk .dashboard__chart-wrapper {
+  flex: 1;
+  min-height: 480px;
+  width: 100%;
+}
+
+.dashboard__chart-wrapper .smartcharts {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 480px;
+  width: 100%;
+}
+
+.dashboard__chart-wrapper .ciq-chart-area,
+.dashboard__chart-wrapper .ciq-chart,
+.dashboard__chart-wrapper .chartContainer {
+  flex: 1;
+  min-height: 420px;
 }
 
 .chart-desk-picker {

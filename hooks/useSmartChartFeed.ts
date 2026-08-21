@@ -73,32 +73,38 @@ export function useSmartChartFeed(source: SmartChartFeedSource) {
       const g = asGranularity(granularity);
 
       if (source.fetchChartQuotes) {
-        const result = await source.fetchChartQuotes({
-          symbol,
-          granularity: g,
-          count,
-          start,
-          end,
-        });
+        try {
+          const result = await source.fetchChartQuotes({
+            symbol,
+            granularity: g,
+            count,
+            start,
+            end,
+          });
 
-        if (g === 0) {
+          if (g === 0) {
+            return {
+              history: {
+                prices: result.prices ?? [],
+                times: (result.times ?? []).map((time) => derivEpoch(time)),
+              },
+            };
+          }
+
           return {
-            history: {
-              prices: result.prices ?? [],
-              times: (result.times ?? []).map((time) => derivEpoch(time)),
-            },
+            candles: (result.candles ?? []).map((candle) => ({
+              open: candle.open,
+              high: candle.high,
+              low: candle.low,
+              close: candle.close,
+              epoch: derivEpoch(candle.epoch),
+            })),
           };
+        } catch {
+          return g === 0
+            ? { history: { prices: [], times: [] } }
+            : { candles: [] };
         }
-
-        return {
-          candles: (result.candles ?? []).map((candle) => ({
-            open: candle.open,
-            high: candle.high,
-            low: candle.low,
-            close: candle.close,
-            epoch: derivEpoch(candle.epoch),
-          })),
-        };
       }
 
       if (g === 0 && source.demoTicks?.length) {
