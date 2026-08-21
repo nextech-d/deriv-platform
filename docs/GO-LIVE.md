@@ -2,6 +2,21 @@
 
 Production URL: **https://tradecity.trade**
 
+## Scope (Deriv parity)
+
+**Keep exactly what Deriv ships today — no more, no less:**
+
+| In production | Out of scope |
+| --- | --- |
+| `tradecity-bot/` ([trading-bot-template](https://github.com/deriv-com/trading-bot-template)) | Custom Next.js bot engine (`app/`, `lib/bot/`) |
+| Blockly toolbox + blocks (RSI, purchase, martingale, etc.) | Custom MA/RSI auto-trader tab |
+| SmartCharts, Run, Journal, Quick strategies | Hand-built chart modal / custom Blockly fork |
+| OAuth via Deriv App Manager | Legacy `/api/auth/callback` Next.js route |
+
+Bot Builder default workspace = upstream `main.xml` (4 blocks: Trade parameters, Purchase, Sell, Restart). Strategies like RSI bots are built from **standard Deriv blocks only**. Toolbar **Reset** restores that default.
+
+Only intentional diffs from upstream template: TradeCity shell branding (`brand.config.json`, logo, tab title) and OAuth `redirect_uri` trailing slash fix.
+
 ## Done
 
 - [x] Deriv trading-bot-template deployed (`tradecity-bot/`)
@@ -33,7 +48,7 @@ vercel deploy --prebuilt --prod
 
 ## Legacy Next.js
 
-The old custom platform under `app/` is **not deployed**. Do not point Vercel at the repo root Next.js build.
+The old custom platform under `app/` is **not deployed**. See **[legacy/README.md](../legacy/README.md)**. Do not point Vercel at the repo root Next.js build.
 
 ## Support
 

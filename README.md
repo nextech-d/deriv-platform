@@ -22,13 +22,13 @@ Deploy that folder as a static SPA. See **[docs/GO-LIVE.md](./docs/GO-LIVE.md)**
 
 ## Legacy Next.js app
 
-The earlier custom platform (custom bot builder, Next.js dashboard) is kept for reference:
+The earlier custom platform (custom bot builder, Next.js dashboard, MA/RSI auto-trader) is **archived — not production**:
 
 ```bash
-npm run dev:legacy    # http://localhost:3000
+npm run dev:legacy    # http://localhost:3000 — reference only
 ```
 
-Do not use it for bot/charts — it is deprecated.
+See **[legacy/README.md](./legacy/README.md)**. Do not use it for bot/charts — production is `tradecity-bot/` only (Deriv template).
 
 ## Branding
 
