@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import classNames from 'classnames';
 import { BULK_TRADER_MARKETS } from '@/constants/bulk-markets';
-import type { OpenContractRecord } from '@/hooks/useBulkTrading';
-import { analyzeFrequency, digitsFromQuotes, lastDigitFromQuote } from '@/utils/analysis-tool';
+import type { BatchResult, OpenContractRecord, SettlementEvent } from '@/hooks/useBulkTrading';
+import { analyzeFrequency, digitsFromQuotes } from '@/utils/analysis-tool';
 import {
     BULK_AUTO_ACTION_DEFAULT,
     BULK_AUTO_CONDITION_DEFAULT,
@@ -24,7 +24,6 @@ import {
     bulkPair,
     bulkPayout,
     bulkPipSize,
-    bulkPnl,
     bulkRiskStop,
     bulkScannerSignal,
     bulkWinRates,
@@ -33,7 +32,6 @@ import {
     clampBulkDuration,
     clampBulkStake,
     clampBulkWindow,
-    exitTickAfter,
     ticksForMarket,
     type BulkAutoCondition,
     type BulkContract,
@@ -57,6 +55,7 @@ interface BulkTraderDeskProps {
     tradingLocked?: boolean;
     busy?: boolean;
     historyLoading?: boolean;
+    /** Returns the batch id the purchased contracts are grouped under. */
     onTrade?: (payload: {
         symbol?: string;
         contractType: BulkContract;
@@ -66,7 +65,9 @@ interface BulkTraderDeskProps {
         durationUnit?: string;
         amount?: number;
         count?: number;
-    }) => void;
+    }) => number | void;
+    settlements?: SettlementEvent[];
+    batchResults?: BatchResult[];
     contracts?: OpenContractRecord[];
     formatLocal?: (value: number) => string;
     onCloseContract?: (contractId: number) => void;
@@ -84,6 +85,8 @@ const BulkTraderDesk = ({
     busy = false,
     historyLoading = false,
     onTrade,
+    settlements = [],
+    batchResults = [],
     contracts = [],
     formatLocal = value => `$${value.toFixed(2)}`,
     onCloseContract,
@@ -123,19 +126,13 @@ const BulkTraderDesk = ({
     const [journal, setJournal] = useState<string[]>([]);
     const [hiddenIds, setHiddenIds] = useState<number[]>([]);
 
-    const pendingRef = useRef<{
-        epoch: number;
-        stake: number;
-        duration: number;
-        count: number;
-        type: BulkContract;
-        prediction: number;
-        track: boolean;
-    } | null>(null);
+    const pendingRef = useRef<{ batchId: number; type: BulkContract; symbol: string; track: boolean } | null>(null);
     const autoArmedRef = useRef(false);
     const autoPnlRef = useRef(0);
     const autoStakeRef = useRef(BULK_DEFAULT_STAKE);
     const scannerFiredRef = useRef(false);
+    const settledSeenRef = useRef(0);
+    const batchSeenRef = useRef(0);
     const pipSize = bulkPipSize(symbol);
     const visibleContracts = useMemo(
         () => contracts.filter(contract => !hiddenIds.includes(contract.contractId)),
@@ -222,17 +219,7 @@ const BulkTraderDesk = ({
             setMessage('Waiting for the feed.');
             return;
         }
-        const tick = ticks.at(-1);
-        pendingRef.current = {
-            epoch: tick?.epoch ?? 0,
-            stake: sized,
-            duration,
-            count,
-            type: contractType,
-            prediction,
-            track: Boolean(options?.track),
-        };
-        onTrade({
+        const batchId = onTrade({
             symbol: market,
             contractType,
             duration,
@@ -241,44 +228,24 @@ const BulkTraderDesk = ({
             count,
             ...(bulkContractNeedsDigit(contractType) ? { lastDigitPrediction: prediction, barrier: prediction } : {}),
         });
+        if (typeof batchId === 'number') {
+            pendingRef.current = { batchId, type: contractType, symbol: market, track: Boolean(options?.track) };
+        }
         const name = contractType.replace('DIGIT', '');
         setMessage(`Sent ${count} ${name} contract${count > 1 ? 's' : ''}.`);
     }
 
+    // Session P/L and martingale step off settled contracts, in settlement order.
     useEffect(() => {
-        const pending = pendingRef.current;
-        if (!pending) return;
-        const exit = exitTickAfter(ticks, pending.epoch, pending.duration);
-        if (!exit?.quote) return;
-        const exitDigit = lastDigitFromQuote(exit.quote, pipSize);
-        const win =
-            pending.type === 'DIGITEVEN'
-                ? exitDigit % 2 === 0
-                : pending.type === 'DIGITODD'
-                  ? exitDigit % 2 === 1
-                  : pending.type === 'DIGITOVER'
-                    ? exitDigit > pending.prediction
-                    : pending.type === 'DIGITUNDER'
-                      ? exitDigit < pending.prediction
-                      : pending.type === 'DIGITMATCH'
-                        ? exitDigit === pending.prediction
-                        : exitDigit !== pending.prediction;
-        const profit = Number((bulkPnl(win, pending.stake) * pending.count).toFixed(2));
-        pendingRef.current = null;
-        autoPnlRef.current = Number((autoPnlRef.current + profit).toFixed(2));
-        autoStakeRef.current = bulkMartingaleStake(autoStakeRef.current, win, risk);
-        if (pending.track) {
-            setResult({
-                win: profit >= 0,
-                profit,
-                symbol,
-                contractType: bulkLabel(pending.type),
-                closed: pending.count,
-                total: pending.count,
-            });
-            setDrawerTab('transactions');
-            setDrawerOpen(true);
+        if (settlements.length <= settledSeenRef.current) return;
+        const fresh = settlements.slice(settledSeenRef.current);
+        settledSeenRef.current = settlements.length;
+
+        for (const settled of fresh) {
+            autoPnlRef.current = Number((autoPnlRef.current + settled.profit).toFixed(2));
+            autoStakeRef.current = bulkMartingaleStake(autoStakeRef.current, settled.won, risk);
         }
+
         if (autoRunning) {
             const stop = bulkRiskStop(autoPnlRef.current, risk);
             if (stop) {
@@ -289,7 +256,33 @@ const BulkTraderDesk = ({
                 );
             }
         }
-    }, [ticks, pipSize, risk, autoRunning, symbol]);
+    }, [settlements, risk, autoRunning]);
+
+    // A batch is done once every contract it bought has settled.
+    useEffect(() => {
+        if (batchResults.length <= batchSeenRef.current) return;
+        const fresh = batchResults.slice(batchSeenRef.current);
+        batchSeenRef.current = batchResults.length;
+
+        const pending = pendingRef.current;
+        if (!pending) return;
+        const mine = fresh.find(batch => batch.batchId === pending.batchId);
+        if (!mine) return;
+
+        pendingRef.current = null;
+        if (pending.track && mine.total > 0) {
+            setResult({
+                win: mine.won,
+                profit: mine.profit,
+                symbol: mine.symbol,
+                contractType: bulkLabel(pending.type),
+                closed: mine.closed,
+                total: mine.total,
+            });
+            setDrawerTab('transactions');
+            setDrawerOpen(true);
+        }
+    }, [batchResults]);
 
     useEffect(() => {
         if (!autoRunning) {

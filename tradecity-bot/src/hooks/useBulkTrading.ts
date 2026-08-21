@@ -4,11 +4,34 @@ import { api_base } from '@/external/bot-skeleton';
 export interface OpenContractRecord {
     contractId: number;
     symbol: string;
+    contractType: string;
     buyPrice: number;
     profit: number | null;
     isSold: boolean;
     status: string | null;
     currency: string;
+    batchId: number;
+}
+
+/** One settled contract, in the order Deriv reported it. */
+export interface SettlementEvent {
+    batchId: number;
+    contractId: number;
+    symbol: string;
+    contractType: string;
+    profit: number;
+    won: boolean;
+}
+
+/** Emitted once every contract bought under a batch id has settled. */
+export interface BatchResult {
+    batchId: number;
+    symbol: string;
+    contractType: string;
+    profit: number;
+    closed: number;
+    total: number;
+    won: boolean;
 }
 
 export interface BulkTradeRequest {
@@ -27,18 +50,55 @@ type TApi = {
     onMessage: () => { subscribe: (cb: (msg: { data: Record<string, any> }) => void) => { unsubscribe: () => void } };
 };
 
+interface BatchState {
+    symbol: string;
+    contractType: string;
+    total: number;
+    totalKnown: boolean;
+    settled: number;
+    profit: number;
+    emitted: boolean;
+}
+
 const NEEDS_BARRIER = ['DIGITOVER', 'DIGITUNDER', 'DIGITMATCH', 'DIGITDIFF'];
 
 /**
- * Buys bulk digit contracts and tracks each one through proposal_open_contract.
- * Subscriptions are forgotten individually so the bot's own streams are untouched.
+ * Buys digit contracts and tracks each one through proposal_open_contract.
+ * Win/loss and profit come from the settled contract rather than a local
+ * estimate, so desk statistics agree with the account. Subscriptions are
+ * forgotten individually so the bot's own streams are untouched.
  */
 export function useBulkTrading(currency: string) {
     const [contracts, setContracts] = useState<OpenContractRecord[]>([]);
+    const [settlements, setSettlements] = useState<SettlementEvent[]>([]);
+    const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
     const [busy, setBusy] = useState(false);
     const [closingId, setClosingId] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+
     const subscriptionIds = useRef<string[]>([]);
+    const contractsRef = useRef<OpenContractRecord[]>([]);
+    const batchesRef = useRef<Map<number, BatchState>>(new Map());
+    const batchSeq = useRef(0);
+
+    const finalizeBatch = useCallback((batchId: number) => {
+        const batch = batchesRef.current.get(batchId);
+        if (!batch || batch.emitted || !batch.totalKnown) return;
+        if (batch.settled < batch.total) return;
+        batch.emitted = true;
+        setBatchResults(prev => [
+            ...prev,
+            {
+                batchId,
+                symbol: batch.symbol,
+                contractType: batch.contractType,
+                profit: Number(batch.profit.toFixed(2)),
+                closed: batch.settled,
+                total: batch.total,
+                won: batch.profit >= 0,
+            },
+        ]);
+    }, []);
 
     useEffect(() => {
         const api = api_base?.api as TApi | null;
@@ -50,18 +110,46 @@ export function useBulkTrading(currency: string) {
             const contractId = Number(poc.contract_id);
             if (!contractId) return;
 
-            setContracts(prev =>
-                prev.map(item =>
-                    item.contractId === contractId
-                        ? {
-                              ...item,
-                              profit: poc.profit == null ? item.profit : Number(poc.profit),
-                              isSold: Boolean(poc.is_sold),
-                              status: poc.status ?? item.status,
-                          }
-                        : item
-                )
+            const existing = contractsRef.current.find(item => item.contractId === contractId);
+            if (!existing) return;
+
+            const profit = poc.profit == null ? existing.profit : Number(poc.profit);
+            const isSold = Boolean(poc.is_sold);
+            const justSettled = isSold && !existing.isSold;
+            const updated: OpenContractRecord = {
+                ...existing,
+                profit,
+                isSold,
+                status: poc.status ?? existing.status,
+            };
+
+            contractsRef.current = contractsRef.current.map(item =>
+                item.contractId === contractId ? updated : item
             );
+            setContracts(contractsRef.current);
+
+            if (!justSettled) return;
+
+            const settledProfit = profit ?? 0;
+            const won = poc.status ? poc.status === 'won' : settledProfit > 0;
+            setSettlements(prev => [
+                ...prev,
+                {
+                    batchId: updated.batchId,
+                    contractId,
+                    symbol: updated.symbol,
+                    contractType: updated.contractType,
+                    profit: settledProfit,
+                    won,
+                },
+            ]);
+
+            const batch = batchesRef.current.get(updated.batchId);
+            if (batch) {
+                batch.settled += 1;
+                batch.profit += settledProfit;
+                finalizeBatch(updated.batchId);
+            }
         });
 
         return () => {
@@ -70,7 +158,7 @@ export function useBulkTrading(currency: string) {
             subscriptionIds.current = [];
             ids.forEach(id => api.forget(id));
         };
-    }, []);
+    }, [finalizeBatch]);
 
     const trackContract = useCallback((contractId: number) => {
         const api = api_base?.api as TApi | null;
@@ -85,12 +173,27 @@ export function useBulkTrading(currency: string) {
             });
     }, []);
 
+    /** Allocates a batch id synchronously and purchases in the background. */
     const buy = useCallback(
-        async (request: BulkTradeRequest) => {
+        (request: BulkTradeRequest): number => {
+            const batchId = (batchSeq.current += 1);
+            batchesRef.current.set(batchId, {
+                symbol: request.symbol,
+                contractType: request.contractType,
+                total: 0,
+                totalKnown: false,
+                settled: 0,
+                profit: 0,
+                emitted: false,
+            });
+
             const api = api_base?.api as TApi | null;
             if (!api) {
                 setNotice('Waiting for the feed.');
-                return;
+                const batch = batchesRef.current.get(batchId)!;
+                batch.totalKnown = true;
+                finalizeBatch(batchId);
+                return batchId;
             }
 
             const parameters: Record<string, unknown> = {
@@ -106,34 +209,49 @@ export function useBulkTrading(currency: string) {
                 parameters.barrier = String(request.lastDigitPrediction);
             }
 
-            setBusy(true);
-            try {
-                for (let i = 0; i < request.count; i += 1) {
-                    // Sequential so a rejected contract stops the batch instead of firing all of them.
-                    // eslint-disable-next-line no-await-in-loop
-                    const response = await api.send({ buy: '1', price: request.amount, parameters });
-                    const bought = response?.buy;
-                    if (!bought?.contract_id) continue;
+            void (async () => {
+                setBusy(true);
+                let bought = 0;
+                try {
+                    for (let i = 0; i < request.count; i += 1) {
+                        // Sequential so a rejected contract stops the batch instead of firing all of them.
+                        // eslint-disable-next-line no-await-in-loop
+                        const response = await api.send({ buy: '1', price: request.amount, parameters });
+                        const contract = response?.buy;
+                        if (!contract?.contract_id) continue;
 
-                    const record: OpenContractRecord = {
-                        contractId: Number(bought.contract_id),
-                        symbol: request.symbol,
-                        buyPrice: Number(bought.buy_price ?? request.amount),
-                        profit: null,
-                        isSold: false,
-                        status: 'open',
-                        currency,
-                    };
-                    setContracts(prev => [record, ...prev]);
-                    trackContract(record.contractId);
+                        const record: OpenContractRecord = {
+                            contractId: Number(contract.contract_id),
+                            symbol: request.symbol,
+                            contractType: request.contractType,
+                            buyPrice: Number(contract.buy_price ?? request.amount),
+                            profit: null,
+                            isSold: false,
+                            status: 'open',
+                            currency,
+                            batchId,
+                        };
+                        bought += 1;
+                        contractsRef.current = [record, ...contractsRef.current];
+                        setContracts(contractsRef.current);
+                        trackContract(record.contractId);
+                    }
+                } catch (error: any) {
+                    setNotice(error?.error?.message ?? 'Could not place the trade.');
+                } finally {
+                    setBusy(false);
+                    const batch = batchesRef.current.get(batchId);
+                    if (batch) {
+                        batch.total = bought;
+                        batch.totalKnown = true;
+                        finalizeBatch(batchId);
+                    }
                 }
-            } catch (error: any) {
-                setNotice(error?.error?.message ?? 'Could not place the trade.');
-            } finally {
-                setBusy(false);
-            }
+            })();
+
+            return batchId;
         },
-        [currency, trackContract]
+        [currency, trackContract, finalizeBatch]
     );
 
     const closeContract = useCallback((contractId: number) => {
@@ -145,5 +263,5 @@ export function useBulkTrading(currency: string) {
             .finally(() => setClosingId(null));
     }, []);
 
-    return { contracts, buy, closeContract, closingId, busy, notice, setNotice };
+    return { contracts, settlements, batchResults, buy, closeContract, closingId, busy, notice, setNotice };
 }

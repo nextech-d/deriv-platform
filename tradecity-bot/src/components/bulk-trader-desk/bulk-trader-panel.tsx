@@ -20,7 +20,8 @@ const BulkTraderPanel = observer(() => {
 
     const currency = client?.currency || 'USD';
     const isLoggedIn = Boolean(client?.is_logged_in);
-    const { contracts, buy, closeContract, closingId, busy, notice } = useBulkTrading(currency);
+    const { contracts, settlements, batchResults, buy, closeContract, closingId, busy, notice } =
+        useBulkTrading(currency);
 
     const tickHistory = quotes as BulkTick[];
     const lastTick = useMemo(() => ticksForMarket(tickHistory, symbol).at(-1) ?? null, [tickHistory, symbol]);
@@ -36,7 +37,7 @@ const BulkTraderPanel = observer(() => {
             durationUnit?: string;
             amount?: number;
             count?: number;
-        }) => {
+        }) =>
             buy({
                 symbol: payload.symbol ?? symbol,
                 contractType: payload.contractType,
@@ -45,8 +46,7 @@ const BulkTraderPanel = observer(() => {
                 durationUnit: payload.durationUnit ?? 't',
                 amount: payload.amount ?? 0,
                 count: payload.count ?? 1,
-            });
-        },
+            }),
         [buy, symbol]
     );
 
@@ -61,6 +61,8 @@ const BulkTraderPanel = observer(() => {
             busy={busy}
             historyLoading={tickHistory.length === 0}
             onTrade={handleTrade}
+            settlements={settlements}
+            batchResults={batchResults}
             contracts={contracts}
             formatLocal={formatLocal}
             onCloseContract={closeContract}

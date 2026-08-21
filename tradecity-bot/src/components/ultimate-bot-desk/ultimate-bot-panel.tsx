@@ -17,7 +17,7 @@ const UltimateBotPanel = observer(() => {
 
     const currency = client?.currency || 'USD';
     const isLoggedIn = Boolean(client?.is_logged_in);
-    const { contracts, buy, closeContract, closingId, busy } = useBulkTrading(currency);
+    const { contracts, settlements, buy, closeContract, closingId, busy } = useBulkTrading(currency);
 
     const tickHistory = quotes as UltimateTick[];
 
@@ -31,7 +31,7 @@ const UltimateBotPanel = observer(() => {
             duration?: number;
             durationUnit?: string;
             amount?: number;
-        }) => {
+        }) =>
             buy({
                 symbol: payload.symbol ?? symbol,
                 contractType: payload.contractType,
@@ -40,8 +40,7 @@ const UltimateBotPanel = observer(() => {
                 durationUnit: payload.durationUnit ?? 't',
                 amount: payload.amount ?? 0,
                 count: 1,
-            });
-        },
+            }),
         [buy, symbol]
     );
 
@@ -55,6 +54,7 @@ const UltimateBotPanel = observer(() => {
             busy={busy}
             formatLocal={formatLocal}
             onTrade={handleTrade}
+            settlements={settlements}
             contracts={contracts}
             onCloseContract={closeContract}
             closingId={closingId}

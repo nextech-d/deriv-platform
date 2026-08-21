@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { ULTIMATE_BOT_MARKETS } from '@/constants/ultimate-markets';
-import type { OpenContractRecord } from '@/hooks/useBulkTrading';
-import { lastDigitFromQuote } from '@/utils/analysis-tool';
-import { exitTickAfter, pendingProgress, ticksForMarket } from '@/utils/tick-series';
+import type { OpenContractRecord, SettlementEvent } from '@/hooks/useBulkTrading';
+import { pendingProgress, ticksForMarket } from '@/utils/tick-series';
 import {
     ULTIMATE_INITIAL,
     ULTIMATE_MIN_STAKE,
@@ -16,10 +15,8 @@ import {
     formatTickTime,
     parityTape,
     ultimateInitialScan,
-    ultimatePnl,
     ultimateRecoveryScan,
     ultimateStake,
-    ultimateWins,
     type UltimateSide,
 } from '@/utils/ultimate-bot';
 import TradesDrawer, { type TradesDrawerTab } from '../bulk-trader-desk/trades-drawer';
@@ -47,7 +44,8 @@ interface UltimateBotDeskProps {
         duration?: number;
         durationUnit?: string;
         amount?: number;
-    }) => void;
+    }) => number | void;
+    settlements?: SettlementEvent[];
     contracts?: OpenContractRecord[];
     onCloseContract?: (contractId: number) => void;
     closingId?: number | null;
@@ -66,6 +64,7 @@ const UltimateBotDesk = ({
     busy = false,
     formatLocal = dollars,
     onTrade,
+    settlements = [],
     contracts = [],
     onCloseContract,
     closingId = null,
@@ -105,6 +104,7 @@ const UltimateBotDesk = ({
     const pendingRef = useRef<PendingTicket | null>(null);
     const skipEpochRef = useRef(0);
     const armedRef = useRef<ArmedTicket | null>(null);
+    const settledSeenRef = useRef(0);
 
     function resetTickets() {
         pendingRef.current = null;
@@ -226,43 +226,53 @@ const UltimateBotDesk = ({
         return null;
     }
 
+    // Scores, P/L and the martingale step come from settled contracts.
     useEffect(() => {
+        if (settlements.length <= settledSeenRef.current) return;
+        const fresh = settlements.slice(settledSeenRef.current);
+        settledSeenRef.current = settlements.length;
+
+        setStats(prev =>
+            fresh.reduce(
+                (acc, settled) => ({
+                    trades: acc.trades + 1,
+                    wins: acc.wins + (settled.won ? 1 : 0),
+                    losses: acc.losses + (settled.won ? 0 : 1),
+                    profit: Number((acc.profit + settled.profit).toFixed(2)),
+                    consecutiveLosses: settled.won ? 0 : acc.consecutiveLosses + 1,
+                }),
+                prev
+            )
+        );
+
         const pending = pendingRef.current;
-        if (!pending) {
-            const armed = armedRef.current;
-            if (armed && canTrade) {
-                const series = bySymbol.get(armed.marketId) ?? [];
-                const epoch = series.at(-1)?.epoch ?? 0;
-                if (epoch > skipEpochRef.current) {
-                    armedRef.current = null;
-                    setArmedTicket(null);
-                    fire(armed.marketId, armed.side);
-                }
-                return;
-            }
-            if (!isRunning || !canTrade) return;
-            const next = pickSignal();
-            if (!next) return;
-            fire(next.marketId, next.side);
-            if (pendingRef.current) skipEpochRef.current = pendingRef.current.epoch;
-            return;
-        }
-        const series = bySymbol.get(pending.symbol) ?? [];
-        const exit = exitTickAfter(series, pending.epoch, pending.duration);
-        if (!exit?.quote) return;
-        const win = ultimateWins(pending.side, lastDigitFromQuote(exit.quote), exit.quote, pending.entryQuote);
-        const pnl = ultimatePnl(win, pending.stake);
+        if (!pending) return;
+        // Don't re-enter on the tick the contract settled on.
+        skipEpochRef.current = bySymbol.get(pending.symbol)?.at(-1)?.epoch ?? skipEpochRef.current;
         pendingRef.current = null;
         setPendingTicket(null);
         setPendingUi(false);
-        skipEpochRef.current = exit.epoch ?? skipEpochRef.current;
-        setStats(prev => ({
-            trades: prev.trades + 1,
-            wins: prev.wins + (win ? 1 : 0),
-            losses: prev.losses + (win ? 0 : 1),
-            profit: Number((prev.profit + pnl).toFixed(2)),
-            consecutiveLosses: win ? 0 : prev.consecutiveLosses + 1,
-        }));
+    }, [settlements, bySymbol]);
+
+    useEffect(() => {
+        if (pendingRef.current) return;
+        const armed = armedRef.current;
+        if (armed && canTrade) {
+            const series = bySymbol.get(armed.marketId) ?? [];
+            const epoch = series.at(-1)?.epoch ?? 0;
+            if (epoch > skipEpochRef.current) {
+                armedRef.current = null;
+                setArmedTicket(null);
+                fire(armed.marketId, armed.side);
+            }
+            return;
+        }
+        if (!isRunning || !canTrade) return;
+        const next = pickSignal();
+        if (!next) return;
+        fire(next.marketId, next.side);
+        const fired = pendingRef.current as PendingTicket | null;
+        if (fired) skipEpochRef.current = fired.epoch;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bySymbol, isRunning, canTrade, nextStake, duration, tp, sl, stats.profit, stats.consecutiveLosses]);
 
