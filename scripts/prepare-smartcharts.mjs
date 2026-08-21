@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,8 +14,16 @@ if (!existsSync(sourceDir)) {
 mkdirSync(targetDir, { recursive: true });
 
 for (const name of readdirSync(sourceDir)) {
-  if (name.endsWith(".smartcharts.js") || name.endsWith(".smartcharts.js.map") || name === "smartcharts.css") {
-    cpSync(join(sourceDir, name), join(targetDir, name), { force: true });
+  const from = join(sourceDir, name);
+  if (!statSync(from).isFile()) continue;
+  if (
+    name.endsWith(".smartcharts.js") ||
+    name.endsWith(".smartcharts.js.map") ||
+    name.endsWith(".smartcharts.svg") ||
+    name === "smartcharts.css" ||
+    name === "smartcharts.css.map"
+  ) {
+    cpSync(from, join(targetDir, name), { force: true });
   }
 }
 

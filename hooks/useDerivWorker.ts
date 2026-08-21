@@ -38,6 +38,7 @@ import type {
 } from "@/lib/ws/protocol";
 import {
   activeSymbolsFromDerivApi,
+  mergeChartReferenceData,
   tradingTimesFromDerivApi,
   type DerivActiveSymbolRow,
 } from "@/lib/chart/active-symbols";
@@ -686,10 +687,12 @@ export function useDerivWorker(
 
         case "CHART_REFERENCE": {
           if (!message.payload.error) {
-            setChartActiveSymbols(
+            const merged = mergeChartReferenceData(
               activeSymbolsFromDerivApi(message.payload.activeSymbols as DerivActiveSymbolRow[]),
+              tradingTimesFromDerivApi(message.payload.tradingTimes),
             );
-            setChartTradingTimes(tradingTimesFromDerivApi(message.payload.tradingTimes));
+            setChartActiveSymbols(merged.activeSymbols);
+            setChartTradingTimes(merged.tradingTimes);
           }
           break;
         }

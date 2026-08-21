@@ -739,6 +739,11 @@ function unsubscribeChartStream(streamId: string): void {
   }
 }
 
+function chartTradingTimesDate(): string {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+}
+
 async function requestChartReference(): Promise<void> {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     emit({
@@ -751,7 +756,7 @@ async function requestChartReference(): Promise<void> {
   try {
     const [symbolsMessage, timesMessage] = (await Promise.all([
       sendWithReqId({ active_symbols: "brief" }, "active_symbols", 20_000),
-      sendWithReqId({ trading_times: "all" }, "trading_times", 20_000),
+      sendWithReqId({ trading_times: chartTradingTimesDate() }, "trading_times", 20_000),
     ])) as [DerivWsMessage, DerivWsMessage];
 
     emit({

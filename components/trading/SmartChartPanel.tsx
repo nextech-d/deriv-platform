@@ -6,7 +6,7 @@ import "@deriv-com/smartcharts-champion/dist/smartcharts.css";
 import type { ActiveSymbol, TGranularity, TradingTimesMap } from "@deriv-com/smartcharts-champion";
 import { useSmartChartFeed, type SmartChartFeedSource } from "@/hooks/useSmartChartFeed";
 import { getMarketsOrder } from "@/lib/chart/smartchart-store";
-import { smartchartsActiveSymbols } from "@/lib/chart/smartcharts-symbols";
+import { mergeChartReferenceData } from "@/lib/chart/active-symbols";
 import { loadSmartCharts } from "@/lib/chart/smartcharts-loader";
 import { SmartChartTitle, SmartChartToolbar } from "@/components/trading/SmartChartToolbar";
 import { cn } from "@/lib/utils/cn";
@@ -118,10 +118,7 @@ export function SmartChartPanel({
   });
 
   const chartData = useMemo(
-    () => ({
-      activeSymbols: activeSymbols?.length ? activeSymbols : smartchartsActiveSymbols(),
-      tradingTimes: tradingTimes ?? {},
-    }),
+    () => mergeChartReferenceData(activeSymbols, tradingTimes),
     [activeSymbols, tradingTimes],
   );
 

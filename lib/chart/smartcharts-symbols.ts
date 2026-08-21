@@ -37,6 +37,7 @@ export function smartchartsActiveSymbols(): ActiveSymbol[] {
           pip: pipForSymbol(item.id),
           exchange_is_open: 1,
           is_trading_suspended: 0,
+          delay_amount: 0,
         });
       }
     }
