@@ -16,7 +16,9 @@ npm run dev           # https://localhost:8443
 
 Build: `npm run build` → `tradecity-bot/dist/`
 
-Deploy that folder as a static SPA. See **[docs/PIVOT.md](./docs/PIVOT.md)** for OAuth redirect URI (`https://tradecity.trade/`) and Vercel/Cloudflare settings.
+**Live:** [tradecity.trade](https://tradecity.trade)
+
+Deploy that folder as a static SPA. See **[docs/GO-LIVE.md](./docs/GO-LIVE.md)** and **[docs/PIVOT.md](./docs/PIVOT.md)** for OAuth redirect URI (`https://tradecity.trade/`) and Vercel settings.
 
 ## Legacy Next.js app
 

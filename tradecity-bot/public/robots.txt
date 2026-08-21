@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tradecity.trade/sitemap.xml

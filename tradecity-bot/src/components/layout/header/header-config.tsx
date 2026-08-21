@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { standalone_routes } from '@/components/shared';
+import { BrandLogo } from '@/components/layout/app-logo/BrandLogo';
 import { LegacyHomeNewIcon as TradershubLogo } from '@deriv/quill-icons/Legacy';
 import {
-    DerivProductBrandLightDerivBotLogoWordmarkIcon as DerivBotLogo,
     DerivProductBrandLightDerivTraderLogoWordmarkIcon as DerivTraderLogo,
     PartnersProductBrandLightSmarttraderLogoWordmarkIcon as SmarttraderLogo,
 } from '@deriv/quill-icons/Logo';
@@ -47,10 +47,10 @@ export const platformsConfig: PlatformsConfig[] = [
     },
     {
         active: true,
-        buttonIcon: <DerivBotLogo height={25} width={94} />,
+        buttonIcon: <BrandLogo height={25} width={110} />,
         description: localize('Automated trading at your fingertips. No coding needed.'),
         href: standalone_routes.bot,
-        icon: <DerivBotLogo height={32} width={121} />,
+        icon: <BrandLogo height={32} width={132} />,
         showInEU: false,
     },
     {
