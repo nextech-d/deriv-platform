@@ -1,0 +1,38 @@
+---
+description: Charts tab must match bot.deriv.com/#chart — SmartCharts parity, no bot shell bleed
+globs: components/trading/SmartChart*.tsx,components/trading/*Chart*.tsx,lib/chart/**,app/dashboard/DashboardClient.tsx,e2e/**/*chart*
+alwaysApply: false
+---
+
+# Charts tab = Deriv `#chart` only
+
+Reference: **https://bot.deriv.com/#chart** (Chrome). Match Deriv’s chart window — **no more, no less**.
+
+## Definition of done (check all before commit/push)
+
+1. **Layout**: Full-page chart desk only. **No** Bot Builder run bar, Summary/Transactions/Journal, or wallet on the Charts nav tab.
+2. **Market selector**: SmartCharts `ChartTitle` — left categories (Favorites, Derived → Synthetics, etc.), right symbol list with search and favorites. Must not flicker while ticks update.
+3. **Toolbar**: Chart type, Studies, Views, Draw tools, Share/Download visible and working (same bundle as `SmartChart` — no async orphan chunks).
+4. **Live chart**: Line/candles move on synthetic symbols (e.g. `R_100` / 1s indices). Verify WS ticks in Chrome DevTools.
+5. **Last-digit panel**: Enabled on synthetic/volatility symbols (`showLastDigitStats` + `isSyntheticChartSymbol`).
+6. **Verify in Chrome** at `http://localhost:3000/dashboard` → Charts tab. Compare side-by-side with Deriv. List anything still missing in the PR/commit message.
+
+## Do not
+
+- Ship “chart loads” or “flicker fixed” as complete without the checklist above.
+- **Remove the Bot Builder chart modal** or replace it with nav to Charts tab — Deriv keeps builder context; toolbar Charts opens a **full-viewport overlay**, not a tab switch.
+- Embed the Charts **nav tab** layout inside Bot Builder shell (run bar + chart side-by-side) when SmartCharts `ChartTitle` exists.
+- Re-request `active_symbols` on every symbol change (once per session unless list empty).
+- Pass unstable props into `<SmartChart>` on every tick (`topWidgets`, `subscribeQuotes`, inline `settings` objects) — use refs/memo.
+
+## Key files
+
+- `SmartChartDesk.tsx` — Charts tab shell (must stay chart-only)
+- `SmartChartRuntime.tsx` — single chunk: SmartChart + toolbar widgets
+- `SmartChartPanel.tsx` / `useSmartChartFeed.ts` — feed + stable callbacks
+- `lib/chart/active-symbols.ts` — symbol reference data
+- `DashboardClient.tsx` — `case "chart"` must render `SmartChartDesk`, not builder desk
+
+## Browser
+
+Google Chrome only for manual QA (see `chrome-browser.mdc`).
