@@ -265,8 +265,9 @@ export default class ToolboxStore {
     };
 
     hasSubCategory = (category: HTMLElement[]) => {
+        if (!category) return false;
         const subCategory = Object.keys(category).filter(key => {
-            if (category[Number(key)].tagName.toUpperCase() === 'CATEGORY') {
+            if (category[Number(key)]?.tagName?.toUpperCase() === 'CATEGORY') {
                 return category[Number(key)];
             }
         });

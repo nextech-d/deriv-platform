@@ -31,7 +31,9 @@ class DBot {
 
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         var that = this;
-        window.Blockly.Blocks.trade_definition_tradetype.onchange = function (event) {
+        const trade_type_block = window.Blockly?.Blocks?.trade_definition_tradetype;
+        if (trade_type_block) {
+        trade_type_block.onchange = function (event) {
             if (!this.workspace || window.Blockly.derivWorkspace.isFlyoutVisible || this.workspace.isDragging()) {
                 return;
             }
@@ -47,7 +49,10 @@ class DBot {
                 if (is_symbol_list_change || is_trade_type_cat_list_change) {
                     const { contracts_for } = ApiHelpers?.instance ?? {};
                     const top_parent_block = this.getTopParent();
-                    const market_block = top_parent_block.getChildByType('trade_definition_market');
+                    const market_block = top_parent_block?.getChildByType?.('trade_definition_market');
+                    if (!market_block) {
+                        return;
+                    }
                     const market = market_block.getFieldValue('MARKET_LIST');
                     const submarket = market_block.getFieldValue('SUBMARKET_LIST');
                     const symbol = market_block.getFieldValue('SYMBOL_LIST');
@@ -108,6 +113,7 @@ class DBot {
                 }
             }
         };
+        }
 
         return new Promise((resolve, reject) => {
             __webpack_public_path__ = public_path; // eslint-disable-line no-global-assign
@@ -204,12 +210,12 @@ class DBot {
                 window.addEventListener('dragover', DBot.handleDragOver);
                 window.addEventListener('drop', e => DBot.handleDropOver(e, handleFileChange));
                 // disable overflow
-                el_scratch_div.parentNode.style.overflow = 'hidden';
+                if (el_scratch_div.parentNode) {
+                    el_scratch_div.parentNode.style.overflow = 'hidden';
+                }
                 resolve();
             } catch (error) {
-                // TODO: Handle error.
                 reject(error);
-                throw error;
             }
         });
     }

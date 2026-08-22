@@ -9,7 +9,9 @@ const modifyBlocklyWorkSpaceContextMenu = () => {
     const exclude_item = ['blockInline'];
     exclude_item.forEach(item_id => {
         const option = window.Blockly.ContextMenuRegistry.registry.getItem(item_id);
-        option.preconditionFn = () => 'hidden';
+        if (option) {
+            option.preconditionFn = () => 'hidden';
+        }
     });
 
     const items_to_localize = {
@@ -23,7 +25,9 @@ const modifyBlocklyWorkSpaceContextMenu = () => {
 
     Object.keys(items_to_localize).forEach(item_id => {
         const option = window.Blockly.ContextMenuRegistry.registry.getItem(item_id);
-        option.displayText = localize(items_to_localize[item_id]);
+        if (option) {
+            option.displayText = localize(items_to_localize[item_id]);
+        }
     });
 };
 

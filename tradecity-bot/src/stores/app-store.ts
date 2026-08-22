@@ -115,9 +115,10 @@ export default class AppStore {
         blockly_store.setWorkspaceReady(false);
         DBot.terminateBot();
         DBot.terminateConnection();
+        // Keep the Blockly workspace. Bot Builder stays mounted in the shell;
+        // disposing here is what blanked or crashed the tab after a remount.
         if (window.Blockly?.derivWorkspace) {
             clearInterval(window.Blockly?.derivWorkspace.save_workspace_interval);
-            window.Blockly.derivWorkspace?.dispose();
         }
         if (typeof this.disposeReloadOnLanguageChangeReaction === 'function') {
             this.disposeReloadOnLanguageChangeReaction();
@@ -245,13 +246,13 @@ export default class AppStore {
 
     onClickOutsideBlockly = (event: Event) => {
         if (document.querySelector('.injectionDiv')) {
-            const path = event.path || (event.composedPath && event.composedPath());
+            const path = (typeof event.composedPath === 'function' ? event.composedPath() : []) as Element[];
             const is_click_outside_blockly = !path.some(
                 (el: Element) => el.classList && el.classList.contains('injectionDiv')
             );
 
             if (is_click_outside_blockly) {
-                window.Blockly?.hideChaff(/* allowToolbox */ false);
+                window.Blockly?.hideChaff?.(/* allowToolbox */ false);
             }
         }
     };
