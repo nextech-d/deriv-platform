@@ -38,6 +38,11 @@ const BotBuilder = observer(() => {
     }, [onMount, onUnmount]);
 
     React.useEffect(() => {
+        if (active_tab !== BOT_BUILDER || is_preview_on_popup) return;
+        void app.ensureBlocklyWorkspace();
+    }, [active_tab, app, is_preview_on_popup]);
+
+    React.useEffect(() => {
         const workspace = window.Blockly?.derivWorkspace;
         if (workspace && is_running && !is_blockly_listener_registered.current) {
             is_blockly_listener_registered.current = true;
@@ -120,9 +125,8 @@ const BotBuilder = observer(() => {
                     'bot-builder--tour-active': active_tour,
                 })}
             >
-                <div id='scratch_div' ref={el_ref}>
-                    <WorkspaceWrapper />
-                </div>
+                <WorkspaceWrapper />
+                <div id='scratch_div' ref={el_ref} />
             </div>
             {active_tab === BOT_BUILDER && <BotBuilderTourHandler is_mobile={!isDesktop} />}
             {/* removed this outside from toolbar becuase it needs to loaded seperately without dependency */}

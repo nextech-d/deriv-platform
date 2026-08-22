@@ -2,6 +2,7 @@ import { action, makeObservable, reaction } from 'mobx';
 import { api_base, ApiHelpers, DBot, runIrreversibleEvents } from '@/external/bot-skeleton';
 import { setCurrency } from '@/external/bot-skeleton/scratch/utils';
 import { TApiHelpersStore } from '@/types/stores.types';
+import { waitForDomElement } from '@/utils/dom-observer';
 import RootStore from './root-store';
 
 export default class AppStore {
@@ -26,6 +27,7 @@ export default class AppStore {
             registerResidenceChangeReaction: action,
             setDBotEngineStores: action,
             onClickOutsideBlockly: action,
+            ensureBlocklyWorkspace: action,
         });
 
         this.root_store = root_store;
@@ -35,9 +37,48 @@ export default class AppStore {
         this.timer = null;
     }
 
+    initBlocklyWorkspace = async (): Promise<boolean> => {
+        const { blockly_store } = this.root_store;
+        const { ui } = this.core;
+
+        if (!this.dbot_store) {
+            this.setDBotEngineStores();
+        }
+        if (!this.dbot_store) return false;
+        if (window.Blockly?.derivWorkspace) {
+            blockly_store.setWorkspaceReady(true);
+            return true;
+        }
+
+        blockly_store.setLoading(true);
+        blockly_store.setWorkspaceReady(false);
+        try {
+            await waitForDomElement('#scratch_div');
+            await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
+            blockly_store.setContainerSize();
+            blockly_store.setWorkspaceReady(Boolean(window.Blockly?.derivWorkspace));
+            return blockly_store.workspace_ready;
+        } catch (error) {
+            console.error('[BotBuilder] Blockly workspace init failed', error);
+            blockly_store.setWorkspaceReady(false);
+            return false;
+        } finally {
+            blockly_store.setLoading(false);
+        }
+    };
+
+    ensureBlocklyWorkspace = async (): Promise<boolean> => {
+        if (window.Blockly?.derivWorkspace) {
+            this.root_store.blockly_store.setWorkspaceReady(true);
+            this.root_store.blockly_store.setContainerSize();
+            window.dispatchEvent(new Event('resize'));
+            return true;
+        }
+        return this.initBlocklyWorkspace();
+    };
+
     onMount = async () => {
         const { blockly_store, run_panel } = this.root_store;
-        const { ui } = this.core;
 
         let timer_counter = 1;
 
@@ -53,13 +94,11 @@ export default class AppStore {
             }
         }, 10000);
 
-        if (!this.dbot_store) return;
+        if (!this.dbot_store) {
+            this.setDBotEngineStores();
+        }
 
-        blockly_store.setLoading(true);
-        await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
-
-        blockly_store.setContainerSize();
-        blockly_store.setLoading(false);
+        await this.initBlocklyWorkspace();
 
         this.registerCurrencyReaction.call(this);
         this.registerOnAccountSwitch.call(this);
@@ -72,6 +111,8 @@ export default class AppStore {
     };
 
     onUnmount = () => {
+        const { blockly_store } = this.root_store;
+        blockly_store.setWorkspaceReady(false);
         DBot.terminateBot();
         DBot.terminateConnection();
         if (window.Blockly?.derivWorkspace) {
