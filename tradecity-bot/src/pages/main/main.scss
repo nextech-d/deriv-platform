@@ -434,6 +434,11 @@
         width: 100%;
         transition: all 0.4s;
 
+        .smartcharts {
+            height: 100%;
+            width: 100%;
+        }
+
         @include mobile-or-tablet-screen {
             height: var(--tab-content-height-mobile);
             background: var(--general-main-1);

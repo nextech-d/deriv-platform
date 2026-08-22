@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { buildSmartchartsChampionAdapter } from '@/adapters/smartcharts-champion';
 import { createServices } from '@/adapters/smartcharts-champion/services';
 import { createTransport } from '@/adapters/smartcharts-champion/transport';
+import { FALLBACK_CHART_SYMBOLS } from '@/constants/chart-symbols';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
+import { quoteEpoch } from '@/utils/smartchart-quotes';
 import type { SmartchartsChampionAdapter } from '@/types/smartchart.types';
 import type {
     ActiveSymbols,
@@ -78,6 +80,11 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
         };
     }, []);
 
+    // Ensure chart websocket is ready before adapter init
+    useEffect(() => {
+        void chart_api.init();
+    }, []);
+
     // Initialize adapter - runs once when chart_api.api is available
     useEffect(() => {
         if (!adapterInitialized && chart_api.api) {
@@ -133,7 +140,8 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     }
 
                     setChartData({
-                        activeSymbols: data.activeSymbols,
+                        activeSymbols:
+                            data.activeSymbols.length > 0 ? data.activeSymbols : FALLBACK_CHART_SYMBOLS,
                         tradingTimes: data.tradingTimes,
                     });
                     setError(null);
@@ -159,7 +167,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     setError(err instanceof Error ? err : new Error('Failed to load chart data'));
                     // Set fallback data to prevent undefined
                     setChartData({
-                        activeSymbols: [] as ActiveSymbols,
+                        activeSymbols: FALLBACK_CHART_SYMBOLS,
                         tradingTimes: {} as TradingTimesMap,
                     });
                 }
@@ -201,22 +209,20 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
 
             // Transform adapter result to SmartCharts Champion format
             if (params.granularity === 0) {
-                // For ticks, return history format
                 return {
                     history: {
                         prices: result.quotes.map(q => q.Close),
-                        times: result.quotes.map(q => parseInt(q.Date)),
+                        times: result.quotes.map(q => quoteEpoch(q.Date)),
                     },
                 };
             } else {
-                // For candles, return candles format
                 return {
                     candles: result.quotes.map(q => ({
                         open: q.Open || q.Close,
                         high: q.High || q.Close,
                         low: q.Low || q.Close,
                         close: q.Close,
-                        epoch: parseInt(q.Date),
+                        epoch: quoteEpoch(q.Date),
                     })),
                 };
             }

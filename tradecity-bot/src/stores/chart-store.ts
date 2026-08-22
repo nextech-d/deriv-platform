@@ -1,5 +1,6 @@
 import { action, computed, makeObservable, observable, reaction } from 'mobx';
 import { LocalStore } from '@/components/shared';
+import { DEFAULT_CHART_SYMBOL } from '@/constants/chart-symbols';
 import { api_base } from '@/external/bot-skeleton';
 import RootStore from './root-store';
 
@@ -75,7 +76,9 @@ export default class ChartStore {
             market_block?.getFieldValue('SYMBOL_LIST') ??
             (api_base?.active_symbols[0]
                 ? (api_base.active_symbols[0] as any).underlying_symbol || (api_base.active_symbols[0] as any).symbol
-                : undefined);
+                : undefined) ??
+            this.symbol ??
+            DEFAULT_CHART_SYMBOL;
         this.symbol = symbol;
     };
 
@@ -121,6 +124,7 @@ export default class ChartStore {
             } else {
                 this.granularity = 0;
                 this.chart_type = 'line';
+                this.symbol = DEFAULT_CHART_SYMBOL;
             }
         } catch {
             LocalStore.remove('bot.chart_props');
