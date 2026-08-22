@@ -238,7 +238,7 @@ const EdgingDesk = ({
                         <span className='edging-desk__hint'>Doubles after a kill</span>
                     </div>
                     <div className='edging-desk__field'>
-                        <span className='edging-desk__hint'>Last digit</span>
+                        <label>Last digit</label>
                         <span
                             className={classNames('edging-desk__digit', {
                                 'is-lose': lastDigit != null && EDGING_LOSE_DIGITS.has(lastDigit),
