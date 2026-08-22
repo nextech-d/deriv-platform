@@ -36,6 +36,19 @@ jest.mock('@/external/bot-skeleton/services/api/api-base', () => ({
     api_base: { is_running: false, api: { send: (...args: unknown[]) => mockSend(...(args as [])) } },
 }));
 
+jest.mock('@/services/derivws-accounts.service', () => ({
+    DerivWSAccountsService: {
+        getStoredAccounts: jest.fn(() => null),
+        fetchAccountsList: jest.fn(() => Promise.resolve([])),
+    },
+}));
+
+jest.mock('@/services/oauth-token-exchange.service', () => ({
+    OAuthTokenExchangeService: {
+        getAccessToken: jest.fn(() => null),
+    },
+}));
+
 jest.mock('@deriv-com/translations', () => ({
     Localize: ({ i18n_default_text }: { i18n_default_text: string }) => <span>{i18n_default_text}</span>,
     localize: (text: string) => text,

@@ -7,6 +7,8 @@ import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { useApiBase } from '@/hooks/useApiBase';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
+import { DerivWSAccountsService, type DerivAccount } from '@/services/derivws-accounts.service';
+import { OAuthTokenExchangeService } from '@/services/oauth-token-exchange.service';
 import { isDemoAccount } from '@/utils/account-helpers';
 import { Localize, localize } from '@deriv-com/translations';
 import { TAccountSwitcher } from './common/types';
@@ -63,6 +65,9 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const [tab, setTab] = useState<TAccountTab>('real');
     const [isResetting, setIsResetting] = useState(false);
     const [resetMessage, setResetMessage] = useState('');
+    const [storedAccounts, setStoredAccounts] = useState<DerivAccount[]>(
+        () => DerivWSAccountsService.getStoredAccounts() ?? []
+    );
     const wrapperRef = useRef<HTMLDivElement>(null);
     const { accountList, activeLoginid } = useApiBase();
     const { client, run_panel } = useStore() ?? {};
@@ -96,6 +101,29 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
             return !prev;
         });
     }, [activeAccount?.isVirtual]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const stored = DerivWSAccountsService.getStoredAccounts() ?? [];
+        setStoredAccounts(stored);
+
+        const token = OAuthTokenExchangeService.getAccessToken();
+        if (!token) return;
+
+        let cancelled = false;
+        DerivWSAccountsService.fetchAccountsList(token)
+            .then(accounts => {
+                if (!cancelled && accounts?.length) setStoredAccounts(accounts);
+            })
+            .catch(() => {
+                if (!cancelled) setStoredAccounts(DerivWSAccountsService.getStoredAccounts() ?? stored);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen]);
 
     const handleAccountSelect = useCallback(
         (loginid: string) => {
@@ -142,33 +170,60 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     }, [is_bot_running, isResetting]);
 
     const formattedAccounts = useMemo(() => {
-        const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-        if (isLocalHost && (!accountList || accountList.length === 0)) {
-            return [
-                {
-                    loginid: DESIGN_PREVIEW_ACCOUNT.loginid,
-                    currency: 'USD',
-                    balance: DESIGN_PREVIEW_ACCOUNT.balance,
-                    isVirtual: true,
-                    isActive: true,
-                },
-            ];
-        }
-        if (!accountList) return [];
-        return accountList
-            .map(account => {
-                const liveBalance = client?.all_accounts_balance?.accounts?.[account.loginid]?.balance;
-                const amount = liveBalance ?? account.balance ?? 0;
-                return {
-                    loginid: account.loginid,
+        const byLoginid = new Map<
+            string,
+            {
+                loginid: string;
+                currency: string;
+                balance: string;
+                isVirtual: boolean;
+                isActive: boolean;
+            }
+        >();
+
+        storedAccounts
+            .filter(account => !account.status || account.status === 'active')
+            .forEach(account => {
+                const amount = Number(account.balance) || 0;
+                byLoginid.set(account.account_id, {
+                    loginid: account.account_id,
                     currency: account.currency,
-                    balance: addComma(Number(amount).toFixed(getDecimalPlaces(account.currency))),
-                    isVirtual: isDemoAccount(account.loginid),
-                    isActive: account.loginid === activeLoginid,
-                };
-            })
-            .sort((a, b) => (a.isActive ? -1 : b.isActive ? 1 : 0));
-    }, [accountList, activeLoginid, client?.all_accounts_balance]);
+                    balance: addComma(amount.toFixed(getDecimalPlaces(account.currency))),
+                    isVirtual: account.account_type === 'demo' || isDemoAccount(account.account_id),
+                    isActive: account.account_id === activeLoginid,
+                });
+            });
+
+        accountList?.forEach(account => {
+            const liveBalance = client?.all_accounts_balance?.accounts?.[account.loginid]?.balance;
+            const amount = liveBalance ?? account.balance ?? 0;
+            const stored = byLoginid.get(account.loginid);
+            const isVirtual =
+                account.is_virtual === 1 ||
+                stored?.isVirtual === true ||
+                (account.is_virtual !== 0 && isDemoAccount(account.loginid));
+            byLoginid.set(account.loginid, {
+                loginid: account.loginid,
+                currency: account.currency || stored?.currency || 'USD',
+                balance: addComma(Number(amount).toFixed(getDecimalPlaces(account.currency || stored?.currency))),
+                isVirtual,
+                isActive: account.loginid === activeLoginid,
+            });
+        });
+
+        const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        if (isLocalHost && byLoginid.size === 0) {
+            byLoginid.set(DESIGN_PREVIEW_ACCOUNT.loginid, {
+                loginid: DESIGN_PREVIEW_ACCOUNT.loginid,
+                currency: 'USD',
+                balance: DESIGN_PREVIEW_ACCOUNT.balance,
+                isVirtual: true,
+                isActive: true,
+            });
+        }
+
+        return Array.from(byLoginid.values()).sort((a, b) => (a.isActive ? -1 : b.isActive ? 1 : 0));
+    }, [accountList, activeLoginid, client?.all_accounts_balance, storedAccounts]);
 
     const visibleAccounts = useMemo(
         () => formattedAccounts.filter(account => (tab === 'demo' ? account.isVirtual : !account.isVirtual)),
