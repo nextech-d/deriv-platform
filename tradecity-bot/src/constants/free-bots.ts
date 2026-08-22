@@ -236,6 +236,15 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
         tags: ['AI'],
     },
     {
+        id: 'kasongo-ai',
+        name: 'kasongo Ai',
+        summary: AI_BLURB,
+        category: 'premium',
+        markets: ['1HZ10V', 'R_100'],
+        difficulty: 'advanced',
+        tags: ['Premium', 'AI'],
+    },
+    {
         id: 'premium-matrix',
         name: 'Matrix AI Lane',
         summary: 'Premium multi-signal digit desk with parity and barrier confirmation.',

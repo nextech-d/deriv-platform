@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bot-pack tier="standard" version="1">
   <defaults template="/bots/templates/standard-default.xml" />
-  <bot id="poverty-sanitizer-ai" name="poverty sanitizer Ai" />
+  <bot id="poverty-sanitizer-ai" name="poverty sanitizer Ai" template="/bots/templates/standard-default.xml" />
   <bot id="tradecity-speed-bot" name="tradecity speed bot" />
   <bot id="under-8-strategy" name="Under 8 Strategy" />
   <bot id="under-7-manual" name="Under 7 Manual" />

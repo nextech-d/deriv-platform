@@ -1,9 +1,13 @@
 # Trading bot XML catalogs
 
-Replace these files with your own bot packs:
+Your bot strategies live here:
 
-- `standard-bots.xml` — Standard tier (Trading bots → Standard)
-- `premium-bots.xml` — Premium tier (Trading bots → Premium)
+| Tier | Catalog | Strategy XML |
+|------|---------|--------------|
+| **Standard** | `standard-bots.xml` | `templates/standard-default.xml` ← **poverty sanitizer Ai** |
+| **Premium** | `premium-bots.xml` | `templates/premium-default.xml` ← **kasongo Ai** |
+
+Replace `templates/standard-default.xml` or `templates/premium-default.xml` to update the whole tier.
 
 Each pack lists `<bot id="..." />` entries. Optional per-bot overrides:
 
