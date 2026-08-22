@@ -253,32 +253,35 @@ const EdgingDesk = ({
                     </div>
                 </div>
 
-                <div className='edging-desk__mode-tabs' role='tablist' aria-label='Edging mode'>
-                    {(['manual', 'auto'] as const).map(item => (
-                        <button
-                            key={item}
-                            type='button'
-                            role='tab'
-                            aria-selected={mode === item}
-                            className={classNames({ active: mode === item })}
-                            onClick={() => {
-                                if (item === 'auto') skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
-                                setMode(item);
-                            }}
-                        >
-                            {item === 'manual' ? 'Manual' : 'Auto'}
-                        </button>
-                    ))}
-                </div>
+                <div className='edging-desk__actions'>
+                    <div className='edging-desk__mode-tabs' role='tablist' aria-label='Edging mode'>
+                        {(['manual', 'auto'] as const).map(item => (
+                            <button
+                                key={item}
+                                type='button'
+                                role='tab'
+                                aria-selected={mode === item}
+                                className={classNames({ active: mode === item })}
+                                onClick={() => {
+                                    if (item === 'auto') skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
+                                    setMode(item);
+                                }}
+                            >
+                                {item === 'manual' ? 'Manual mode' : 'Auto mode'}
+                            </button>
+                        ))}
+                    </div>
 
-                <button
-                    type='button'
-                    className='edging-desk__buy-btn'
-                    disabled={!canTrade || mode === 'auto'}
-                    onClick={() => fire()}
-                >
-                    Buy Over {EDGING_OVER_BARRIER} &amp; Under {EDGING_UNDER_BARRIER} · {nextStake.toFixed(2)} {currency}
-                </button>
+                    <button
+                        type='button'
+                        className='edging-desk__buy-btn'
+                        disabled={!canTrade || mode === 'auto'}
+                        onClick={() => fire()}
+                    >
+                        Buy Over {EDGING_OVER_BARRIER} &amp; Under {EDGING_UNDER_BARRIER} · {nextStake.toFixed(2)}{' '}
+                        {currency}
+                    </button>
+                </div>
 
                 {message ? <p className='edging-desk__message'>{message}</p> : null}
 
@@ -353,7 +356,7 @@ const EdgingDesk = ({
                     <div className='edging-desk__freq-list'>
                         {freqs.map((count, digit) => (
                             <div key={digit} className='edging-desk__freq-row'>
-                                <label>Digit {digit}:</label>
+                                <label>Digit {digit}</label>
                                 <span>{count}</span>
                                 <i className='edging-desk__freq-track'>
                                     <b

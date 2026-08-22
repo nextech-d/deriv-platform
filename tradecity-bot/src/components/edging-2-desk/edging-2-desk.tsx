@@ -229,35 +229,32 @@ const Edging2Desk = ({
                     </div>
                 </div>
 
-                <div className='edging2-desk__strategy-row'>
-                    <div className='edging2-desk__section edging2-desk__strategy'>
-                        <h3>
-                            <span aria-hidden='true'>🎯</span> Strategy
-                        </h3>
-                        <ul className='edging2-desk__legend'>
-                            <li>
-                                <strong>Click a digit</strong> to trade it
-                            </li>
-                            <li>
-                                <i className='edging2-desk__dot edging2-desk__dot--green' />
-                                <strong>Green (≥15%)</strong> — Matches
-                            </li>
-                            <li>
-                                <i className='edging2-desk__dot edging2-desk__dot--yellow' />
-                                <strong>Yellow (10–14%)</strong> — Average
-                            </li>
-                            <li>
-                                <i className='edging2-desk__dot edging2-desk__dot--red' />
-                                <strong>Red (&lt;10%)</strong> — Differs
-                            </li>
-                        </ul>
-                        <p className='edging2-desk__selected'>
-                            Selected: {selectedDigit ?? 'None'}
-                            {selectedPct != null ? ` (${selectedPct}%)` : ''}
-                            {suggest ? ` · bias ${suggest}` : ''}
-                        </p>
-                    </div>
-
+                <div className='edging2-desk__section edging2-desk__strategy'>
+                    <h3>
+                        <span aria-hidden='true'>🎯</span> Strategy
+                    </h3>
+                    <ul className='edging2-desk__legend'>
+                        <li>
+                            <strong>Click a digit</strong> to trade it
+                        </li>
+                        <li>
+                            <i className='edging2-desk__dot edging2-desk__dot--green' />
+                            <strong>Green (≥15%)</strong> — Matches
+                        </li>
+                        <li>
+                            <i className='edging2-desk__dot edging2-desk__dot--yellow' />
+                            <strong>Yellow (10–14%)</strong> — Average
+                        </li>
+                        <li>
+                            <i className='edging2-desk__dot edging2-desk__dot--red' />
+                            <strong>Red (&lt;10%)</strong> — Differs
+                        </li>
+                    </ul>
+                    <p className='edging2-desk__selected'>
+                        Selected: {selectedDigit ?? 'None'}
+                        {selectedPct != null ? ` (${selectedPct}%)` : ''}
+                        {suggest ? ` · bias ${suggest}` : ''}
+                    </p>
                     <div className='edging2-desk__trade-btns'>
                         <button
                             type='button'
