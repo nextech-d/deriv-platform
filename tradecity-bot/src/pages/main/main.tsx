@@ -10,6 +10,7 @@ import MobileWrapper from '@/components/shared_ui/mobile-wrapper';
 import Tabs from '@/components/shared_ui/tabs/tabs';
 import TradeTypeConfirmationModal from '@/components/trade-type-confirmation-modal';
 import TradingViewModal from '@/components/trading-view-chart/trading-view-modal';
+import EntryScanner from '@/components/entry-scanner/entry-scanner';
 import { DBOT_TABS, TAB_HASHES, TAB_IDS } from '@/constants/bot-contents';
 import { PLATFORM_TABS, RUN_CONTROL_KINDS } from '@/constants/platform-tabs';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
@@ -561,6 +562,7 @@ const AppWrapper = observer(() => {
                     />
                 );
             })()}
+            <EntryScanner />
         </React.Fragment>
     );
 });

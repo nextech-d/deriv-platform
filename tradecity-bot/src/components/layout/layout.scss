@@ -32,8 +32,8 @@
             min-height: var(--tc-header-h) !important;
             align-items: flex-start !important;
             overflow: visible;
-            border-bottom: 1px solid var(--general-section-1);
-            box-shadow: none;
+            border-bottom: 1px solid color-mix(in srgb, var(--text-general) 10%, var(--general-section-1));
+            box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
             background: var(--general-main-1);
         }
 

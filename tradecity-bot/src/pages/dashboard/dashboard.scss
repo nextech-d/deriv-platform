@@ -136,7 +136,8 @@
 
             .title {
                 text-align: center;
-                height: 7.2rem;
+                height: auto;
+                margin-bottom: 0.4rem;
 
                 @include mobile-or-tablet-screen {
                     height: auto;
@@ -166,13 +167,61 @@
             }
         }
 
+        &__hero {
+            position: relative;
+            isolation: isolate;
+            overflow: visible;
+            width: 100%;
+            max-width: 72rem;
+            margin-inline: auto;
+            padding: 2.8rem 2.4rem 2.4rem;
+            border: 1px solid color-mix(in srgb, var(--general-section-1) 72%, var(--brand-red-coral, #ff444f) 18%);
+            border-radius: 0.95rem;
+            background:
+                linear-gradient(
+                    168deg,
+                    color-mix(in srgb, var(--general-main-1) 86%, #fff 6%) 0%,
+                    color-mix(in srgb, var(--general-main-1) 94%, transparent) 58%,
+                    color-mix(in srgb, var(--brand-red-coral, #ff444f) 7%, var(--general-main-1)) 100%
+                );
+            box-shadow:
+                0 18px 40px rgb(15 23 42 / 8%),
+                inset 0 1px 0 rgb(255 255 255 / 42%);
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: 0;
+                pointer-events: none;
+                background: radial-gradient(
+                    120% 90% at 8% -15%,
+                    color-mix(in srgb, var(--brand-red-coral, #ff444f) 18%, transparent),
+                    transparent 52%
+                );
+            }
+
+            > * {
+                position: relative;
+                z-index: 1;
+            }
+
+            .announcements {
+                z-index: 2;
+            }
+
+            @include mobile-or-tablet-screen {
+                padding: 2rem 1.4rem 1.6rem;
+            }
+        }
+
         &__content {
             display: flex;
             align-items: flex-start;
             height: var(--tab-content-height);
             flex-grow: 1;
             background: var(--general-main-1);
-            overflow: hidden;
+            overflow: auto;
             position: relative;
 
             @include mobile-or-tablet-screen {
@@ -180,7 +229,8 @@
             }
 
             @include desktop-screen {
-                padding: 80px 216px 0;
+                padding: 3.2rem 6vw 4rem;
+                justify-content: center;
             }
 
             @include mobile-or-tablet-screen {

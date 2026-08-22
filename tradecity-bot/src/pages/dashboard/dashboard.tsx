@@ -29,40 +29,48 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                 })}
             >
                 <div className='tab__dashboard__content'>
-                    {client.is_logged_in && (
-                        <Announcements is_mobile={!isDesktop} is_tablet={isTablet} handleTabChange={handleTabChange} />
-                    )}
-                    <div className='quick-panel'>
-                        <div
-                            className={classNames('tab__dashboard__header', {
-                                'tab__dashboard__header--listed': isDesktop && has_dashboard_strategies,
-                            })}
-                        >
-                            {!has_dashboard_strategies && (
-                                <Text
-                                    className='title'
-                                    as='h2'
-                                    color='prominent'
-                                    size={isDesktop ? 'sm' : 's'}
-                                    lineHeight='xxl'
-                                    weight='bold'
-                                >
-                                    {localize('Load or build your bot')}
-                                </Text>
-                            )}
-                            <Text
-                                as='p'
-                                color='prominent'
-                                lineHeight='s'
-                                size={isDesktop ? 's' : 'xxs'}
-                                className={classNames('subtitle', { 'subtitle__has-list': has_dashboard_strategies })}
+                    <div className='tab__dashboard__hero'>
+                        {client.is_logged_in && (
+                            <Announcements
+                                is_mobile={!isDesktop}
+                                is_tablet={isTablet}
+                                handleTabChange={handleTabChange}
+                            />
+                        )}
+                        <div className='quick-panel'>
+                            <div
+                                className={classNames('tab__dashboard__header', {
+                                    'tab__dashboard__header--listed': isDesktop && has_dashboard_strategies,
+                                })}
                             >
-                                {localize(
-                                    'Import a bot from your computer or Google Drive, build it from scratch, or start with a quick strategy.'
+                                {!has_dashboard_strategies && (
+                                    <Text
+                                        className='title'
+                                        as='h2'
+                                        color='prominent'
+                                        size={isDesktop ? 'sm' : 's'}
+                                        lineHeight='xxl'
+                                        weight='bold'
+                                    >
+                                        {localize('Load or build your bot')}
+                                    </Text>
                                 )}
-                            </Text>
+                                <Text
+                                    as='p'
+                                    color='prominent'
+                                    lineHeight='s'
+                                    size={isDesktop ? 's' : 'xxs'}
+                                    className={classNames('subtitle', {
+                                        'subtitle__has-list': has_dashboard_strategies,
+                                    })}
+                                >
+                                    {localize(
+                                        'Import a bot from your computer or Google Drive, build it from scratch, or start with a quick strategy.'
+                                    )}
+                                </Text>
+                            </div>
+                            <Cards has_dashboard_strategies={has_dashboard_strategies} is_mobile={!isDesktop} />
                         </div>
-                        <Cards has_dashboard_strategies={has_dashboard_strategies} is_mobile={!isDesktop} />
                     </div>
                 </div>
             </div>

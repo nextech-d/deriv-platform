@@ -28,8 +28,15 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
     const { isMobile } = useDevice();
 
     const { is_contract_completed, profit } = summary_card;
-    const { contract_stage, is_stop_button_visible, is_stop_button_disabled, onRunButtonClick, onStopBotClick } =
-        run_panel;
+    const {
+        contract_stage,
+        is_stop_button_visible,
+        is_stop_button_disabled,
+        onRunButtonClick,
+        onStopBotClick,
+        run_speed = 'fast',
+        setRunSpeed,
+    } = run_panel;
     const [shouldDisable, setShouldDisable] = React.useState(false);
     const is_unavailable_for_payment_agent = false;
 
@@ -166,6 +173,7 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
 
     return (
         <div className={classNames('animation__wrapper', className)}>
+            <div className='animation__run-row'>
             {should_show_tooltip ? (
                 <div className='run__button_wrapper'>
                     <Tooltip
@@ -235,6 +243,25 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
                         <CircularWrapper key={`status_class-${status_class}-${i}`} className={status_class} />
                     ))}
                 </div>
+            </div>
+            </div>
+            <div className='animation__speed' role='group' aria-label={localize('Run speed')}>
+                <button
+                    type='button'
+                    className={classNames({ 'is-on': run_speed === 'fast' })}
+                    aria-pressed={run_speed === 'fast'}
+                    onClick={() => setRunSpeed?.('fast')}
+                >
+                    <Localize i18n_default_text='Fast' />
+                </button>
+                <button
+                    type='button'
+                    className={classNames({ 'is-on': run_speed === 'slow' })}
+                    aria-pressed={run_speed === 'slow'}
+                    onClick={() => setRunSpeed?.('slow')}
+                >
+                    <Localize i18n_default_text='Slow' />
+                </button>
             </div>
         </div>
     );

@@ -89,6 +89,23 @@ describe('AccountSwitcher', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         expect(screen.getByText('Real account')).toBeInTheDocument();
         expect(screen.getByTestId('dt_balance')).toHaveTextContent('100.00 USD');
+        expect(screen.getByTestId('dt_acc_mark')).toHaveAttribute('data-mode', 'real');
+        expect(screen.getByTestId('dt_acc_mark')).toHaveTextContent('R');
+    });
+
+    it('shows a branded D when the active account is demo', () => {
+        render(
+            <AccountSwitcher
+                activeAccount={{
+                    ...mockActiveAccount,
+                    loginid: 'VRTC456',
+                    isVirtual: true,
+                    balance: '9992.15',
+                }}
+            />
+        );
+        expect(screen.getByTestId('dt_acc_mark')).toHaveAttribute('data-mode', 'demo');
+        expect(screen.getByTestId('dt_acc_mark')).toHaveTextContent('D');
     });
 
     it('opens dropdown on click when multiple accounts exist', () => {

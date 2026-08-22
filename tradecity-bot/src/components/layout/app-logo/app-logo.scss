@@ -4,8 +4,8 @@
         align-items: center;
         height: 100%;
         padding-inline-start: 2.4rem;
-        padding-inline-end: 1.6rem;
-        border-inline-end: 1px solid var(--general-section-1);
+        padding-inline-end: 1.8rem;
+        border-inline-end: 1px solid color-mix(in srgb, var(--text-general) 12%, var(--general-section-1));
         text-decoration: none;
     }
 

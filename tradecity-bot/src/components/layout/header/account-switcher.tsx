@@ -12,6 +12,17 @@ import { TAccountSwitcher } from './common/types';
 import AccountInfoWrapper from './account-info-wrapper';
 import './account-switcher.scss';
 
+const AccountMark = ({ isVirtual }: { isVirtual: boolean }) => (
+    <span
+        className={classNames('acc-mark', isVirtual ? 'acc-mark--demo' : 'acc-mark--real')}
+        data-testid='dt_acc_mark'
+        data-mode={isVirtual ? 'demo' : 'real'}
+        aria-hidden='true'
+    >
+        {isVirtual ? 'D' : 'R'}
+    </span>
+);
+
 const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -92,7 +103,9 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                         }
                     }}
                 >
-                    <span className='acc-info__id' aria-hidden='true'></span>
+                    <span className='acc-info__id'>
+                        <AccountMark isVirtual={Boolean(isVirtual)} />
+                    </span>
                     <div className='acc-info__content'>
                         <div className='acc-info__account-type-header'>
                             <Text as='p' size='xs' className='acc-info__account-type'>
@@ -159,6 +172,8 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                                 }
                             }}
                         >
+                            <AccountMark isVirtual={account.isVirtual} />
+                            <div className='acc-dropdown__copy'>
                             <Text
                                 size='xxxs'
                                 className={classNames('acc-dropdown__account-type', {
@@ -178,6 +193,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                                     <Localize i18n_default_text='No currency assigned' />
                                 )}
                             </Text>
+                            </div>
                         </div>
                     ))}
                 </div>

@@ -255,8 +255,9 @@
 
 .auth-actions {
     display: flex;
-    padding-block: 8px;
+    padding-block: 6px;
     align-items: center;
+    gap: 0.4rem;
 
     button {
         font-weight: 400;

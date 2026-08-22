@@ -26,8 +26,6 @@ export interface PlatformTabDefinition {
     domId: string;
     label: string;
     kind: PlatformTabKind;
-    /** Visual divider after this tab (legacy nav grouping). */
-    splitAfter?: boolean;
 }
 
 export const PLATFORM_TABS: PlatformTabDefinition[] = [
@@ -37,11 +35,10 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         id: 'free_bots',
         hash: 'free_bots',
         domId: 'id-free-bots',
-        label: 'Free bots',
+        label: 'Trading bots',
         kind: 'free_bots',
-        splitAfter: true,
     },
-    { id: 'd_trader', hash: 'd_trader', domId: 'id-d-trader', label: 'D-Trader', kind: 'd_trader' },
+    { id: 'd_trader', hash: 'd_trader', domId: 'id-d-trader', label: 'D-trader', kind: 'd_trader' },
     {
         id: 'analysis_tool',
         hash: 'analysis_tool',
@@ -69,7 +66,6 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         domId: 'id-copy-trader',
         label: 'Copy trader',
         kind: 'copy_trader',
-        splitAfter: true,
     },
     { id: 'edging', hash: 'edging', domId: 'id-edging', label: 'Edging', kind: 'edging' },
     {
@@ -78,7 +74,6 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
         domId: 'id-edging-2',
         label: 'Edging 2',
         kind: 'edging_2',
-        splitAfter: true,
     },
     { id: 'fast_trader', hash: 'fast_trader', domId: 'id-fast-trader', label: 'Fast trader', kind: 'fast_trader' },
     { id: 'chart', hash: 'chart', domId: 'id-charts', label: 'Charts', kind: 'chart' },

@@ -1,6 +1,7 @@
 import { applyMiddleware, createStore } from 'redux';
 import { thunk } from 'redux-thunk';
 import { getLocalizedErrorMessage } from '@/constants/backend-error-messages';
+import { runSpeedDelayMs } from '@/utils/run-speed';
 import { createError } from '../../../utils/error';
 import { observer as globalObserver } from '../../../utils/observer';
 import { api_base } from '../../api/api-base';
@@ -152,14 +153,29 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
     }
 
     makeDirectPurchaseDecision() {
-        const { has_payout_block, is_basis_payout } = checkBlocksForProposalRequest();
-        this.is_proposal_subscription_required = has_payout_block || is_basis_payout;
-
-        if (this.is_proposal_subscription_required) {
-            this.makeProposals({ ...this.options, ...this.tradeOptions });
-            this.checkProposalReady();
-        } else {
-            this.store.dispatch(proposalsReady());
+        if (this.slow_run_timeout) {
+            clearTimeout(this.slow_run_timeout);
+            this.slow_run_timeout = null;
         }
+
+        const proceed = () => {
+            if (this.$scope?.stopped) return;
+            const { has_payout_block, is_basis_payout } = checkBlocksForProposalRequest();
+            this.is_proposal_subscription_required = has_payout_block || is_basis_payout;
+
+            if (this.is_proposal_subscription_required) {
+                this.makeProposals({ ...this.options, ...this.tradeOptions });
+                this.checkProposalReady();
+            } else {
+                this.store.dispatch(proposalsReady());
+            }
+        };
+
+        const delay = runSpeedDelayMs();
+        if (delay > 0) {
+            this.slow_run_timeout = setTimeout(proceed, delay);
+            return;
+        }
+        proceed();
     }
 }

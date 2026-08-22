@@ -66,8 +66,46 @@
 
     &__wrapper {
         display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+        height: auto;
+    }
+
+    &__run-row {
+        display: flex;
         align-items: center;
         height: 40px;
+    }
+
+    &__speed {
+        display: flex;
+        align-items: stretch;
+        height: 2.2rem;
+        border: 1px solid var(--border-normal);
+        border-radius: 999px;
+        overflow: hidden;
+        background: var(--general-main-1);
+
+        button {
+            flex: 1;
+            margin: 0;
+            padding: 0 0.8rem;
+            border: none;
+            background: transparent;
+            color: var(--text-general);
+            font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            line-height: 1;
+            cursor: pointer;
+
+            &.is-on {
+                background: var(--brand-red-coral, #ff444f);
+                color: #fff;
+            }
+        }
     }
 
     &__overlay {
