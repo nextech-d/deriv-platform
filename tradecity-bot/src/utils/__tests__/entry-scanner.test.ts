@@ -1,4 +1,15 @@
-import { barriersForMode, pickBestMarket, scoreDigits, scoreMarket, toScanResult } from '../entry-scanner';
+import {
+    barriersForMode,
+    clampEntryLimit,
+    clampEntryMartingale,
+    clampEntryStake,
+    clampScanDepth,
+    pickBestMarket,
+    qualityPct,
+    scoreDigits,
+    scoreMarket,
+    toScanResult,
+} from '../entry-scanner';
 
 describe('barriersForMode', () => {
     it('maps the two recovery pairs', () => {
@@ -49,6 +60,7 @@ describe('pickBestMarket', () => {
                 score: 0.99,
                 ticks: 3000,
                 recovered: false,
+                lastDigit: 9,
             },
             {
                 symbol: 'R_100',
@@ -60,6 +72,7 @@ describe('pickBestMarket', () => {
                 score: 0.7,
                 ticks: 3000,
                 recovered: true,
+                lastDigit: 0,
             },
         ]);
         expect(best?.symbol).toBe('R_100');
@@ -77,5 +90,22 @@ describe('scoreMarket', () => {
         expect(scored.side).toBe('over');
         expect(scored.recovered).toBe(true);
         expect(toScanResult(scored, '01-08')?.contractType).toBe('DIGITOVER');
+        expect(scored.lastDigit).toBe(9);
+    });
+});
+
+describe('entry scanner clamps', () => {
+    it('keeps scan depth inside the request window', () => {
+        expect(clampScanDepth(3000)).toBe(3000);
+        expect(clampScanDepth(10)).toBe(100);
+        expect(clampScanDepth(9000)).toBe(5000);
+    });
+
+    it('keeps stake, martingale and limits tradeable', () => {
+        expect(clampEntryStake(0.1)).toBe(0.35);
+        expect(clampEntryMartingale(0)).toBe(2);
+        expect(clampEntryMartingale(9)).toBe(5);
+        expect(clampEntryLimit(-4)).toBe(0);
+        expect(qualityPct(0.9489)).toBe(94.89);
     });
 });
