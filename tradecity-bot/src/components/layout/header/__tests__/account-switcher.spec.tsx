@@ -111,18 +111,16 @@ describe('AccountSwitcher', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('shows only the account letter in the header', () => {
+    it('shows the US flag and balance in the header trigger', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
-        expect(screen.getByTestId('dt_acc_mark')).toHaveAttribute('data-mode', 'real');
-        expect(screen.getByTestId('dt_acc_mark')).toHaveTextContent('R');
-        expect(screen.queryByTestId('dt_balance')).not.toBeInTheDocument();
-        expect(screen.queryByText('Real account')).not.toBeInTheDocument();
+        expect(screen.getByTestId('dt_acc_balance')).toHaveTextContent('100.00 USD');
+        expect(screen.getByTestId('dt_acc_info').textContent).toContain('🇺🇸');
+        expect(screen.queryByTestId('dt_acc_mark')).not.toBeInTheDocument();
     });
 
-    it('shows a branded D when the active account is demo', () => {
+    it('shows demo balance in the header when the active account is demo', () => {
         render(<AccountSwitcher activeAccount={mockDemoAccount} />);
-        expect(screen.getByTestId('dt_acc_mark')).toHaveAttribute('data-mode', 'demo');
-        expect(screen.getByTestId('dt_acc_mark')).toHaveTextContent('D');
+        expect(screen.getByTestId('dt_acc_balance')).toHaveTextContent('9992.15 USD');
     });
 
     it('opens dropdown on click', () => {
@@ -219,6 +217,7 @@ describe('AccountSwitcher', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         expect(screen.getByTestId('dt_balance')).toHaveTextContent('100.00 USD');
+        expect(screen.getAllByTestId('dt_acc_mark').length).toBeGreaterThan(0);
     });
 
     it('tops up the demo balance from Reset balance', async () => {

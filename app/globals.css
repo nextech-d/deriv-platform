@@ -21671,15 +21671,21 @@ body {
 
 .tc-acc-balance {
   font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: -0.02em;
   white-space: nowrap;
+  color: #2eb88a;
 }
 
 .tc-acc-chevron {
   flex-shrink: 0;
   opacity: 0.65;
+  transition: transform 0.2s ease;
+}
+
+.tc-acc-chevron.is-open {
+  transform: rotate(180deg);
 }
 
 .tc-acc-dropdown {
@@ -21796,6 +21802,27 @@ body {
   font-size: 10px;
   font-weight: 600;
   color: var(--positive);
+}
+
+.tc-acc-row-balance {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
+.tc-acc-hub {
+  display: block;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  color: #ff444f;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.tc-acc-hub:hover {
+  text-decoration: underline;
 }
 
 .tc-acc-empty {

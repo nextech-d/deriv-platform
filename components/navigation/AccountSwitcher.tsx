@@ -6,6 +6,7 @@ import { formatWalletBalance } from "@/lib/utils/format-wallet";
 import { cn } from "@/lib/utils/cn";
 
 const US_FLAG = "🇺🇸";
+const TRADERS_HUB_URL = "https://hub.deriv.com/";
 
 type AccountTab = "real" | "demo";
 
@@ -38,7 +39,7 @@ export function AccountSwitcher({
 
   const walletLabel = balance
     ? formatWalletBalance(balance.amount, balance.currency)
-    : "…";
+    : "0.00 USD";
 
   useEffect(() => {
     if (!open) return;
@@ -76,33 +77,6 @@ export function AccountSwitcher({
 
   return (
     <div className="tc-acc-switcher" ref={wrapperRef}>
-      <div className="tc-account-switch" role="group" aria-label="Account type">
-        <button
-          type="button"
-          className={cn("tc-account-switch-btn", active.isDemo && "is-on")}
-          aria-pressed={active.isDemo}
-          disabled={!demoAccounts.length}
-          onClick={() => {
-            const demo = demoAccounts[0];
-            if (demo && demo.accountId !== active.accountId) selectAccount(demo.accountId);
-          }}
-        >
-          Demo
-        </button>
-        <button
-          type="button"
-          className={cn("tc-account-switch-btn", !active.isDemo && "is-on")}
-          aria-pressed={!active.isDemo}
-          disabled={!realAccounts.length}
-          onClick={() => {
-            const real = realAccounts[0];
-            if (real && real.accountId !== active.accountId) selectAccount(real.accountId);
-          }}
-        >
-          Real
-        </button>
-      </div>
-
       <button
         type="button"
         className="tc-acc-trigger"
@@ -117,7 +91,13 @@ export function AccountSwitcher({
         <span className="tc-acc-balance" data-testid="tc-account-balance">
           {walletLabel}
         </span>
-        <svg className="tc-acc-chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+        <svg
+          className={cn("tc-acc-chevron", open && "is-open")}
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          aria-hidden
+        >
           <path
             d="M2 4L6 8L10 4"
             stroke="currentColor"
@@ -153,13 +133,9 @@ export function AccountSwitcher({
           </div>
 
           <div className="tc-acc-group">
-            <button
-              type="button"
-              className="tc-acc-group-head"
-              aria-expanded
-            >
+            <div className="tc-acc-group-head">
               <span>Deriv account</span>
-            </button>
+            </div>
             <ul className="tc-acc-list">
               {visible.length ? (
                 visible.map((account) => {
@@ -177,11 +153,13 @@ export function AccountSwitcher({
                         </span>
                         <span className="tc-acc-row-body">
                           <span className="tc-acc-row-title">
-                            {account.isDemo ? "Demo" : "Real"}
+                            {account.isDemo ? "Demo" : account.currency}
                           </span>
                           <span className="tc-acc-row-id">{account.loginid}</span>
                         </span>
-                        {selected ? <span className="tc-acc-selected">Active</span> : null}
+                        {selected ? (
+                          <span className="tc-acc-row-balance">{walletLabel}</span>
+                        ) : null}
                       </button>
                     </li>
                   );
@@ -191,6 +169,15 @@ export function AccountSwitcher({
               )}
             </ul>
           </div>
+
+          <a
+            className="tc-acc-hub"
+            href={TRADERS_HUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Looking for CFD accounts? Go to Trader&apos;s Hub
+          </a>
 
           {onLogout ? (
             <div className="tc-acc-footer">
