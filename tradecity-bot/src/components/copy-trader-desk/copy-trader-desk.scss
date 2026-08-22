@@ -22,20 +22,27 @@
     min-height: var(--tab-content-height);
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 1.2rem 2.4rem 6.4rem;
+    box-sizing: border-box;
     background: var(--ct-page);
     color: var(--ct-text);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
     @include mobile-or-tablet-screen {
         min-height: var(--tab-content-height-mobile);
-        padding: 1rem 0.75rem 6.4rem;
     }
 }
 
 .copy-trader-desk__inner {
+    display: grid;
+    gap: 1.25rem;
     width: 100%;
     margin-inline: auto;
+    box-sizing: border-box;
+    padding: 1.2rem 2.4rem 6.4rem;
+
+    @include mobile-or-tablet-screen {
+        padding: 1rem 0.75rem 6.4rem;
+    }
 }
 
 .copy-trader-desk__eyebrow {
@@ -54,7 +61,7 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
 
     h2 {
         margin: 0 0 0.4rem;
@@ -107,7 +114,7 @@
 }
 
 .copy-trader-desk__error {
-    margin: 0 0 1rem;
+    margin: 0;
     padding: 0.75rem 1rem;
     border: 1px solid var(--ct-red);
     border-radius: 0.5rem;
@@ -118,7 +125,7 @@
 
 .copy-trader-desk__card {
     padding: 1.5rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0;
     background: var(--ct-surface);
     border: 1px solid var(--ct-border);
     border-radius: 0.875rem;
@@ -384,6 +391,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.4rem;
     align-items: start;
+    width: 100%;
+    margin-inline: auto;
+    box-sizing: border-box;
 
     @include mobile-or-tablet-screen {
         grid-template-columns: 1fr;
