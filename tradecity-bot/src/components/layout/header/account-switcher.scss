@@ -36,12 +36,16 @@
     height: 100%;
     justify-content: center;
     gap: 0.2rem;
-    padding: 0.4rem 1.2rem 0.4rem 0.4rem;
+    padding: 0.35rem 1.1rem 0.35rem 0.35rem;
     width: max-content;
     border-radius: 999px;
+    border: 1px solid rgb(15 23 42 / 10%);
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
 
     &:hover {
-        background: transparent !important;
+        background: #fff !important;
+        border-color: rgb(15 23 42 / 18%);
     }
 
     &__preloader {
@@ -153,7 +157,7 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        margin-inline-start: 1rem;
+        margin-inline-start: 0.7rem;
     }
 
     &__account-type-header {
@@ -245,7 +249,8 @@
 
     @include desktop-screen {
         &:hover:not(.show, &--is-disabled) {
-            background: var(--state-hover);
+            background: #fff;
+            border-color: rgb(15 23 42 / 18%);
 
             .symbols {
                 background: transparent;
@@ -278,7 +283,8 @@
         cursor: pointer !important;
 
         &:hover {
-            background: var(--state-hover) !important;
+            background: #fff !important;
+            border-color: rgb(15 23 42 / 20%);
         }
     }
 

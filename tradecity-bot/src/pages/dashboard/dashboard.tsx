@@ -1,13 +1,12 @@
 import React from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
-import Text from '@/components/shared_ui/text';
 import { useStore } from '@/hooks/useStore';
-import { localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 import OnboardTourHandler from '../tutorials/dbot-tours/onboarding-tour';
 import Announcements from './announcements';
 import Cards from './cards';
+import HeroHeadline from './hero-headline';
 import InfoPanel from './info-panel';
 
 type TMobileIconGuide = {
@@ -29,7 +28,12 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                 })}
             >
                 <div className='tab__dashboard__content'>
-                    <div className='tab__dashboard__hero'>
+                    <div className='tab__dashboard__hero dashboard-hero'>
+                        <div className='dashboard-hero__sky' aria-hidden='true'>
+                            <span className='dashboard-hero__moon' />
+                            <span className='dashboard-hero__stars' />
+                            <span className='dashboard-hero__haze' />
+                        </div>
                         {client.is_logged_in && (
                             <Announcements
                                 is_mobile={!isDesktop}
@@ -37,39 +41,19 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                                 handleTabChange={handleTabChange}
                             />
                         )}
+                        <div className='dashboard-hero__copy'>
+                            <HeroHeadline />
+                            <p className='dashboard-hero__quote'>
+                                <span aria-hidden='true'>🌟 </span>
+                                One good trade can change your day.
+                            </p>
+                        </div>
                         <div className='quick-panel'>
-                            <div
-                                className={classNames('tab__dashboard__header', {
-                                    'tab__dashboard__header--listed': isDesktop && has_dashboard_strategies,
-                                })}
-                            >
-                                {!has_dashboard_strategies && (
-                                    <Text
-                                        className='title'
-                                        as='h2'
-                                        color='prominent'
-                                        size={isDesktop ? 'sm' : 's'}
-                                        lineHeight='xxl'
-                                        weight='bold'
-                                    >
-                                        {localize('Load or build your bot')}
-                                    </Text>
-                                )}
-                                <Text
-                                    as='p'
-                                    color='prominent'
-                                    lineHeight='s'
-                                    size={isDesktop ? 's' : 'xxs'}
-                                    className={classNames('subtitle', {
-                                        'subtitle__has-list': has_dashboard_strategies,
-                                    })}
-                                >
-                                    {localize(
-                                        'Import a bot from your computer or Google Drive, build it from scratch, or start with a quick strategy.'
-                                    )}
-                                </Text>
-                            </div>
-                            <Cards has_dashboard_strategies={has_dashboard_strategies} is_mobile={!isDesktop} />
+                            <Cards
+                                has_dashboard_strategies={has_dashboard_strategies}
+                                is_mobile={!isDesktop}
+                                handleTabChange={handleTabChange}
+                            />
                         </div>
                     </div>
                 </div>

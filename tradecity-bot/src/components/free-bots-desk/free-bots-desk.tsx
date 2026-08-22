@@ -1,7 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { FREE_BOT_STRATEGIES, type FreeBotStrategy } from '@/constants/free-bots';
-import { readFreeBotsTier, writeFreeBotsTier, type FreeBotsTier } from '@/utils/free-bots-tier';
+import {
+    readFreeBotsTier,
+    tradingBotsTierLabel,
+    TRADING_BOTS_TIER_EVENT,
+    writeFreeBotsTier,
+    type FreeBotsTier,
+} from '@/utils/free-bots-tier';
 import { LabelPairedSearchSmRegularIcon } from '@deriv/quill-icons/LabelPaired';
 import './free-bots-desk.scss';
 
@@ -37,6 +43,16 @@ const FreeBotsDesk = ({ onLoadInBuilder, initialTier = 'free' }: TFreeBotsDeskPr
     const [query, setQuery] = useState('');
     const [tier, setTier] = useState<Tier>(() => readFreeBotsTier() || initialTier);
     const [fresh, setFresh] = useState<Freshness>('all');
+
+    useEffect(() => {
+        const sync = (event?: Event) => {
+            const fromEvent = (event as CustomEvent<FreeBotsTier> | undefined)?.detail;
+            const next = fromEvent === 'free' || fromEvent === 'premium' ? fromEvent : readFreeBotsTier();
+            if (next) setTier(next);
+        };
+        window.addEventListener(TRADING_BOTS_TIER_EVENT, sync);
+        return () => window.removeEventListener(TRADING_BOTS_TIER_EVENT, sync);
+    }, []);
 
     const strategies = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -76,7 +92,7 @@ const FreeBotsDesk = ({ onLoadInBuilder, initialTier = 'free' }: TFreeBotsDeskPr
                                         writeFreeBotsTier(id);
                                     }}
                                 >
-                                    {id === 'free' ? 'Free' : 'Premium'}
+                                    {tradingBotsTierLabel(id)}
                                 </button>
                             ))}
                         </div>

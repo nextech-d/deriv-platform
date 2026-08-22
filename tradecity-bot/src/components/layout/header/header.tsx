@@ -165,7 +165,7 @@ const AppHeader = observer(() => {
                                 </div>
                             )}
                             <Button
-                                primary
+                                secondary
                                 disabled={client?.is_logging_out || !authData?.currency}
                                 onClick={handleTransfer}
                             >

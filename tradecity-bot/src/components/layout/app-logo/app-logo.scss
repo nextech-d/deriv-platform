@@ -3,17 +3,17 @@
         display: flex;
         align-items: center;
         height: 100%;
-        padding-inline-start: 2.4rem;
-        padding-inline-end: 1.8rem;
-        border-inline-end: 1px solid color-mix(in srgb, var(--text-general) 12%, var(--general-section-1));
+        padding-inline-start: 2.2rem;
+        padding-inline-end: 2rem;
+        border-inline-end: 1px solid rgb(15 23 42 / 8%);
         text-decoration: none;
     }
 
     &__name {
         font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
-        font-size: 1.8rem;
+        font-size: 2.1rem;
         font-weight: 700;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.05em;
         line-height: 1;
         color: var(--text-general);
         white-space: nowrap;

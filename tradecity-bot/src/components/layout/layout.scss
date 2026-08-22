@@ -17,7 +17,7 @@
         inset-inline: 0;
         z-index: 15;
         width: 100%;
-        background: var(--general-main-1);
+        background: #fff;
         height: 5.6rem;
     }
 
@@ -32,9 +32,10 @@
             min-height: var(--tc-header-h) !important;
             align-items: flex-start !important;
             overflow: visible;
-            border-bottom: 1px solid color-mix(in srgb, var(--text-general) 10%, var(--general-section-1));
-            box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
-            background: var(--general-main-1);
+            border-bottom: none;
+            box-shadow: 0 1px 0 rgb(15 23 42 / 6%), 0 16px 28px rgb(15 23 42 / 4%);
+            background:
+                linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
         }
 
         .main-body {
