@@ -210,9 +210,7 @@ class DBot {
                 window.addEventListener('dragover', DBot.handleDragOver);
                 window.addEventListener('drop', e => DBot.handleDropOver(e, handleFileChange));
                 // disable overflow
-                if (el_scratch_div.parentNode) {
-                    el_scratch_div.parentNode.style.overflow = 'hidden';
-                }
+                el_scratch_div.style.overflow = 'hidden';
                 resolve();
             } catch (error) {
                 reject(error);

@@ -198,9 +198,6 @@ export default class LoadModalStore {
     onEntered = (): void => {
         if (this.recent_strategies.length === 0 || this.tab_name !== tabs_title.TAB_RECENT) return;
         this.setOpenButtonDisabled(true);
-        const { blockly_store } = this.root_store;
-        const { setLoading } = blockly_store;
-        setLoading(true);
         this.loadStrategyOnModalRecentPreview(this.selected_strategy_id);
         this.updateXmlValuesOnStrategySelection();
         this.setOpenButtonDisabled(false);
@@ -494,9 +491,6 @@ export default class LoadModalStore {
         this.setOpenButtonDisabled(true);
         if (this.recent_strategies.length === 0 || this.tab_name !== tabs_title.TAB_RECENT) return;
 
-        const { blockly_store } = this.root_store;
-        const { setLoading } = blockly_store;
-
         const inject_options = { ...inject_workspace_options, theme: window?.Blockly?.Themes?.zelos_renderer };
 
         this.setLoadedLocalFile(null);
@@ -509,12 +503,16 @@ export default class LoadModalStore {
             if (!this.recent_workspace) this.recent_workspace = window.Blockly.inject(ref_preview, inject_options);
             (this.recent_workspace as any).RTL = isDbotRTL();
 
-            const convertedDom = window.Blockly?.utils?.xml?.textToDom(this.selected_strategy?.xml);
-            const mainWorkspace = window.Blockly?.getMainWorkspace();
-
-            window.Blockly?.Xml?.clearWorkspaceAndLoadFromXml(convertedDom, mainWorkspace);
+            const xml = this.selected_strategy?.xml;
+            if (xml && this.recent_workspace) {
+                try {
+                    const convertedDom = window.Blockly.utils.xml.textToDom(xml);
+                    window.Blockly.Xml.clearWorkspaceAndLoadFromXml(convertedDom, this.recent_workspace);
+                } catch (error) {
+                    console.error('[LoadModal] Preview load failed', error);
+                }
+            }
         }
-        setLoading(false);
         this.setOpenButtonDisabled(false);
     };
 

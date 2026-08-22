@@ -91,25 +91,30 @@ export default class ToolbarStore implements IToolbarStore {
     };
 
     onSortClick = () => {
+        const workspace = window.Blockly?.derivWorkspace;
+        if (!workspace) return;
         const {
             workspaces: {
                 indentWorkspace: { x, y },
             },
         } = config();
-        window.Blockly.derivWorkspace.cleanUp(x, y);
+        workspace.cleanUp(x, y);
     };
 
     onUndoClick = (is_redo: boolean): void => {
+        const workspace = window.Blockly?.derivWorkspace;
+        if (!workspace) return;
         window.Blockly.Events.setGroup('undo_clicked');
-        window.Blockly.derivWorkspace.undo(is_redo);
-        window.Blockly.svgResize(window.Blockly.derivWorkspace); // Called for CommentDelete event.
+        workspace.undo(is_redo);
+        window.Blockly.svgResize(workspace);
         this.setHasRedoStack();
         this.setHasUndoStack();
         window.Blockly.Events.setGroup(false);
     };
 
     onZoomInOutClick = (is_zoom_in: boolean): void => {
-        const workspace = window.Blockly.derivWorkspace;
+        const workspace = window.Blockly?.derivWorkspace;
+        if (!workspace) return;
         const metrics = workspace.getMetrics();
         const addition = is_zoom_in ? 1 : -1;
 

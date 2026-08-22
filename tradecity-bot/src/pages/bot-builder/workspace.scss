@@ -3,8 +3,9 @@
 
 #scratch_div {
     position: relative;
-    width: calc(100vw - 3.2rem);
-    height: var(--bot-content-height);
+    z-index: 0;
+    width: 100%;
+    height: 100%;
     top: 0;
 
     @include mobile-or-tablet-screen {
@@ -27,8 +28,9 @@
 }
 
 .injectionDiv {
-    height: calc(100vh - 16.4rem);
+    height: 100%;
     position: relative;
+    z-index: 0;
     touch-action: none;
     overflow: hidden;
 }
