@@ -207,6 +207,22 @@
         // Header
         --header-background-mt5: #{constants.$color-blue-8};
         --header-background-others: #{constants.$color-green-7};
+
+        // Hero surface — the dashboard hero palette, shared by the whole app
+        --tc-ink: #132033;
+        --tc-muted: #5c6b82;
+        --tc-accent: #2563eb;
+        --tc-card: #fff;
+        --tc-card-border: rgb(19 32 51 / 8%);
+        --tc-frame: rgb(19 32 51 / 6%);
+        --tc-sky-cut: #dce8f6;
+        --tc-sky:
+            radial-gradient(120% 80% at 50% 120%, #f3f7fc 0%, transparent 55%),
+            linear-gradient(180deg, #eef5fc 0%, #e4eef8 48%, #dce8f6 100%);
+        --tc-haze: linear-gradient(180deg, transparent, rgb(220 232 246 / 88%));
+        --tc-card-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 70%),
+            0 10px 24px rgb(19 32 51 / 6%);
     }
 
     .theme--dark {
@@ -348,5 +364,21 @@
         // Header
         --header-background-mt5: #{constants.$color-blue-8};
         --header-background-others: #{constants.$color-green-7};
+
+        // Hero surface — the dashboard hero palette, shared by the whole app
+        --tc-ink: #f4f7ff;
+        --tc-muted: #9aa8c3;
+        --tc-accent: #4da3ff;
+        --tc-card: rgb(10 16 32 / 72%);
+        --tc-card-border: rgb(255 255 255 / 10%);
+        --tc-frame: rgb(255 255 255 / 8%);
+        --tc-sky-cut: #0b1428;
+        --tc-sky:
+            radial-gradient(120% 80% at 50% 120%, #0a1224 0%, transparent 55%),
+            linear-gradient(180deg, #0b1428 0%, #070b16 48%, #05070f 100%);
+        --tc-haze: linear-gradient(180deg, transparent, rgb(4 7 14 / 82%));
+        --tc-card-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 6%),
+            0 16px 32px rgb(0 0 0 / 22%);
     }
 }

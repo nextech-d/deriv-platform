@@ -196,7 +196,7 @@
             align-items: stretch;
             height: var(--tab-content-height);
             flex-grow: 1;
-            background: var(--general-section-1);
+            background: transparent;
             overflow: auto;
             position: relative;
 
@@ -483,13 +483,13 @@
 }
 
 .dashboard-hero {
-    --hero-ink: #132033;
-    --hero-muted: #5c6b82;
-    --hero-accent: #2563eb;
-    --hero-card: #ffffff;
-    --hero-card-border: rgb(19 32 51 / 8%);
-    --hero-sky-cut: #dce8f6;
-    --hero-frame: rgb(19 32 51 / 6%);
+    --hero-ink: var(--tc-ink);
+    --hero-muted: var(--tc-muted);
+    --hero-accent: var(--tc-accent);
+    --hero-card: var(--tc-card);
+    --hero-card-border: var(--tc-card-border);
+    --hero-sky-cut: var(--tc-sky-cut);
+    --hero-frame: var(--tc-frame);
 
     color: var(--hero-ink);
 
@@ -498,9 +498,7 @@
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        background:
-            radial-gradient(120% 80% at 50% 120%, #f3f7fc 0%, transparent 55%),
-            linear-gradient(180deg, #eef5fc 0%, #e4eef8 48%, #dce8f6 100%);
+        background: var(--tc-sky);
     }
 
     &__moon {
@@ -553,7 +551,7 @@
         position: absolute;
         inset: auto 0 0;
         height: 28%;
-        background: linear-gradient(180deg, transparent, rgb(220 232 246 / 88%));
+        background: var(--tc-haze);
     }
 
     &__copy {
@@ -649,9 +647,7 @@
         border: 1px solid var(--hero-card-border);
         border-radius: 1.1rem;
         background: var(--hero-card);
-        box-shadow:
-            inset 0 1px 0 rgb(255 255 255 / 70%),
-            0 10px 24px rgb(19 32 51 / 6%);
+        box-shadow: var(--tc-card-shadow);
         color: inherit;
         text-align: left;
         cursor: pointer;
@@ -741,25 +737,7 @@
 }
 
 .theme--dark {
-    .tab__dashboard__content {
-        background: var(--general-section-1);
-    }
-
     .dashboard-hero {
-        --hero-ink: #f4f7ff;
-        --hero-muted: #9aa8c3;
-        --hero-accent: #4da3ff;
-        --hero-card: rgb(10 16 32 / 72%);
-        --hero-card-border: rgb(255 255 255 / 10%);
-        --hero-sky-cut: #0b1428;
-        --hero-frame: rgb(255 255 255 / 8%);
-
-        &__sky {
-            background:
-                radial-gradient(120% 80% at 50% 120%, #0a1224 0%, transparent 55%),
-                linear-gradient(180deg, #0b1428 0%, #070b16 48%, #05070f 100%);
-        }
-
         &__moon {
             background: radial-gradient(circle at 34% 32%, #f8fbff 0%, #d7e3f4 38%, #8ea4c4 100%);
             box-shadow:
@@ -769,16 +747,6 @@
 
         &__stars {
             opacity: 0.82;
-        }
-
-        &__haze {
-            background: linear-gradient(180deg, transparent, rgb(4 7 14 / 82%));
-        }
-
-        &__window {
-            box-shadow:
-                inset 0 1px 0 rgb(255 255 255 / 6%),
-                0 16px 32px rgb(0 0 0 / 22%);
         }
     }
 }
