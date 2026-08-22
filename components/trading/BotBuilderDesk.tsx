@@ -2,12 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  applyRunSpeedToSnapshot,
-  readRunSpeed,
-  writeRunSpeed,
-  type RunSpeed,
-} from "@/lib/bot/run-speed";
-import {
   AlignLeft,
   CandlestickChart,
   ChevronDown,
@@ -294,11 +288,6 @@ export function BotBuilderDesk({
   const [flyoutLearnOpen, setFlyoutLearnOpen] = useState(false);
   const [loadDragging, setLoadDragging] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [runSpeed, setRunSpeed] = useState<RunSpeed>(() => readRunSpeed());
-
-  useEffect(() => {
-    writeRunSpeed(runSpeed);
-  }, [runSpeed]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -715,12 +704,11 @@ export function BotBuilderDesk({
       setFlash({ tone: "ok", text: "Bot stopped" });
       return;
     }
-    const tuned = applyRunSpeedToSnapshot(snapshot, runSpeed);
-    onRun?.(snapshotToBotConfig(tuned), tuned);
-    onSymbolChangeRef.current?.(tuned.symbol);
-    log(`Run · ${tuned.tradeType} · ${tuned.symbol} · ${runSpeed}`);
+    onRun?.(snapshotToBotConfig(snapshot), snapshot);
+    onSymbolChangeRef.current?.(snapshot.symbol);
+    log(`Run · ${snapshot.tradeType} · ${snapshot.symbol}`);
     setSummaryTab("journal");
-    const text = `Bot running · ${tuned.purchase} ${tuned.tradeType} · ${tuned.market}`;
+    const text = `Bot running · ${snapshot.purchase} ${snapshot.tradeType} · ${snapshot.market}`;
     setNotice(text);
     setFlash({ tone: "run", text });
   }
@@ -1117,24 +1105,6 @@ export function BotBuilderDesk({
               <span className="bot-builder-run-state" data-testid="tc-builder-run-state">
                 {running ? "Bot is running" : "Bot is not running"}
               </span>
-              <div className="bot-builder-run-speed" role="group" aria-label="Run speed">
-                <button
-                  type="button"
-                  className={cn("bot-builder-speed-btn", runSpeed === "fast" && "is-on")}
-                  aria-pressed={runSpeed === "fast"}
-                  onClick={() => setRunSpeed("fast")}
-                >
-                  Fast
-                </button>
-                <button
-                  type="button"
-                  className={cn("bot-builder-speed-btn", runSpeed === "slow" && "is-on")}
-                  aria-pressed={runSpeed === "slow"}
-                  onClick={() => setRunSpeed("slow")}
-                >
-                  Slow
-                </button>
-              </div>
               <span className="bot-builder-status-chip">{snapshot.sourceLabel}</span>
               <span className="bot-builder-wallet" data-testid="tc-builder-wallet" title="Selected wallet">
                 {walletLabel}

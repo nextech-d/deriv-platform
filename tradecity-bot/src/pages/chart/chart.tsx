@@ -4,17 +4,13 @@ import { observer } from 'mobx-react-lite';
 /* [AI] - Analytics removed - rudderstack event tracking removed */
 /* [/AI] */
 import ChunkLoader from '@/components/loader/chunk-loader';
-import { DEFAULT_CHART_SYMBOL } from '@/constants/chart-symbols';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
 import { useSmartChartAdaptor } from '@/hooks/useSmartChartAdaptor';
 import { useStore } from '@/hooks/useStore';
-import { normalizeSmartChartType } from '@/utils/normalize-smartchart-type';
 import { ChartTitle, SmartChart, TGranularity, TStateChangeListener } from '@deriv-com/smartcharts-champion';
 import { useDevice } from '@deriv-com/ui';
 import ToolbarWidgets from './toolbar-widgets';
 import '@deriv-com/smartcharts-champion/dist/smartcharts.css';
-
-const FEED_CALL = { activeSymbols: false, tradingTimes: false } as const;
 
 const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) => {
     const barriers: [] = [];
@@ -35,8 +31,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     } = chart_store;
 
     // Use the custom hook for SmartChart Adaptor
-    const { chartData, getQuotes, subscribeQuotes, unsubscribeQuotes, adapterInitialized } =
-        useSmartChartAdaptor();
+    const { chartData, getQuotes, subscribeQuotes, unsubscribeQuotes } = useSmartChartAdaptor();
 
     const { isDesktop, isMobile } = useDevice();
     const { is_drawer_open } = run_panel;
@@ -67,20 +62,15 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         setIsSafari(isSafariBrowser());
 
         return () => {
-            chart_api.api?.forgetAll('ticks');
+            chart_api.api.forgetAll('ticks');
         };
     }, []);
 
     useEffect(() => {
-        if (!symbol) {
-            updateSymbol();
-            onSymbolChange(DEFAULT_CHART_SYMBOL);
-        }
-    }, [symbol, updateSymbol, onSymbolChange]);
+        if (!symbol) updateSymbol();
+    }, [symbol, updateSymbol]);
 
-    const is_connection_opened = adapterInitialized || !!chart_api?.api;
-    const resolvedSymbol = symbol || DEFAULT_CHART_SYMBOL;
-    const normalizedChartType = normalizeSmartChartType(chart_type);
+    const is_connection_opened = !!chart_api?.api;
 
     const handleStateChange: TStateChangeListener = (state, options) => {
         /* [AI] - Analytics removed - rudderstack event call removed */
@@ -91,24 +81,22 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         }
     };
 
-    if (!resolvedSymbol || chartData.activeSymbols.length === 0) {
+    if (!symbol || chartData.activeSymbols.length === 0) {
         return <ChunkLoader message='' />;
     }
 
     return (
-        <>
-            <div id='smartcharts_modal' className='ciq-modal' />
-            <div
-                className={classNames('dashboard__chart-wrapper', {
-                    'dashboard__chart-wrapper--expanded': is_drawer_open && isDesktop,
-                    'dashboard__chart-wrapper--modal': is_chart_modal_visible && isDesktop,
-                    'dashboard__chart-wrapper--safari': isSafari,
-                })}
-                dir='ltr'
-            >
+        <div
+            className={classNames('dashboard__chart-wrapper', {
+                'dashboard__chart-wrapper--expanded': is_drawer_open && isDesktop,
+                'dashboard__chart-wrapper--modal': is_chart_modal_visible && isDesktop,
+                'dashboard__chart-wrapper--safari': isSafari,
+            })}
+            dir='ltr'
+        >
             <SmartChart
-                id={`dbot-${resolvedSymbol}`}
-                key={`chart-${resolvedSymbol}`}
+                id={`dbot-${symbol}`}
+                key={`chart-${symbol}`}
                 barriers={barriers}
                 showLastDigitStats={show_digits_stats}
                 chartControlsWidgets={null}
@@ -122,7 +110,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
                         isDesktop={isDesktop}
                     />
                 )}
-                chartType={normalizedChartType}
+                chartType={chart_type}
                 isMobile={isMobile}
                 enabledNavigationWidget={isDesktop}
                 granularity={granularity as TGranularity}
@@ -130,9 +118,8 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
                 subscribeQuotes={subscribeQuotes}
                 unsubscribeQuotes={unsubscribeQuotes}
                 chartData={{ activeSymbols: chartData.activeSymbols, tradingTimes: chartData.tradingTimes }}
-                feedCall={FEED_CALL}
                 settings={settings}
-                symbol={resolvedSymbol}
+                symbol={symbol}
                 topWidgets={() => <ChartTitle onChange={onSymbolChange} />}
                 isConnectionOpened={is_connection_opened}
                 getMarketsOrder={getMarketsOrder}
@@ -140,8 +127,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
                 leftMargin={80}
                 drawingToolFloatingMenuPosition={isMobile ? { x: 100, y: 100 } : { x: 200, y: 200 }}
             />
-            </div>
-        </>
+        </div>
     );
 });
 

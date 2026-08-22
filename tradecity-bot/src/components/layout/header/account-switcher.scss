@@ -2,18 +2,6 @@
 @use 'components/shared/styles/mixins' as *;
 
 /** @define acc-info */
-.acc-mark-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    flex-shrink: 0;
-}
-
-.acc-mark-flag {
-    font-size: 1.35rem;
-    line-height: 1;
-}
-
 .acc-mark {
     display: inline-flex;
     align-items: center;
@@ -765,35 +753,12 @@
 
 // AccountInfoWrapper styles
 .account-info-wrapper {
-    display: inline-flex;
-    position: relative;
+    display: contents;
 
     &--disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
-}
-
-.acc-info__wrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-}
-
-.acc-info__trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-}
-
-.acc-info__balance--trigger {
-    color: var(--status-success, #2eb88a);
-    font-size: 1.35rem;
-    font-weight: 700;
-    line-height: 1.2;
-    white-space: nowrap;
-    pointer-events: none;
 }
 
 /** @define acc-dropdown */

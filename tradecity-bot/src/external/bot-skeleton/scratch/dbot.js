@@ -129,7 +129,6 @@ class DBot {
                 }
                 const el_scratch_div = document.getElementById('scratch_div');
                 if (!el_scratch_div) {
-                    reject(new Error('Bot Builder mount node #scratch_div was not found'));
                     return;
                 }
 

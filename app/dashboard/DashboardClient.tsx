@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { AppShell, type AppView } from "@/components/layout/AppShell";
 import {
   TerminalPanel,
@@ -15,6 +14,8 @@ import { TradeTicket } from "@/components/trading/TradeTicket";
 import { PortfolioList } from "@/components/trading/PortfolioList";
 import { CopyDeskView } from "@/components/trading/CopyDeskView";
 import { BotPanel } from "@/components/trading/BotPanel";
+import { BotBuilderDesk } from "@/components/trading/BotBuilderDesk";
+import { FreeBotsDesk } from "@/components/trading/FreeBotsDesk";
 import { AnalysisToolDesk } from "@/components/trading/AnalysisToolDesk";
 import { AiBotDesk } from "@/components/trading/MenuDesks";
 import { ProAiDesk } from "@/components/trading/ProAiDesk";
@@ -34,10 +35,10 @@ import {
   analysisBiasToSnapshot,
   autoTraderCardToSnapshot,
   courseStrategyToSnapshot,
+  freeBotToSnapshot,
   snapshotToBotConfig,
   type BotBuilderSnapshot,
 } from "@/lib/terminal/strategy-seed";
-import { loadFreeBotSnapshot } from "@/lib/terminal/free-bot-loader";
 import { clearBuilderHandoff, writeBuilderHandoff, writeFreeBotsTier } from "@/lib/terminal/desk-handoff";
 import { COURSE_STRATEGIES } from "@/lib/terminal/deriv-course";
 import { WalletPanel } from "@/components/trading/WalletPanel";
@@ -93,15 +94,6 @@ import {
   viewFromLocationHash,
   writeViewHash,
 } from "@/lib/navigation/workspace-boot";
-
-const BotBuilderDesk = dynamic(
-  () => import("@/components/trading/BotBuilderDesk").then((m) => m.BotBuilderDesk),
-  { ssr: false },
-);
-const FreeBotsDesk = dynamic(
-  () => import("@/components/trading/FreeBotsDesk").then((m) => m.FreeBotsDesk),
-  { ssr: false },
-);
 
 interface DashboardClientProps {
   accounts: DerivAccount[];
@@ -910,9 +902,8 @@ export function DashboardClient({
       case "free-bots":
         return (
           <FreeBotsDesk
-            onLoadInBuilder={async (strategy) => {
-              const snapshot = await loadFreeBotSnapshot(strategy);
-              applyBuilderSeed(snapshot);
+            onLoadInBuilder={(strategy) => {
+              applyBuilderSeed(freeBotToSnapshot(strategy));
             }}
           />
         );

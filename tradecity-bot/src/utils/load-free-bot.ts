@@ -20,66 +20,8 @@ const modifyFieldDropdownValues = (strategy_dom: HTMLElement, name: string, valu
     });
 };
 
-/** Load a free-bot catalog entry into the Blockly workspace (XML catalog first). */
+/** Load a free-bot catalog entry into the Blockly workspace (quick-strategy template + seed). */
 export async function loadFreeBotInBuilder(strategy: FreeBotStrategy): Promise<boolean> {
-    const packPath =
-        strategy.category === 'premium' ? '/bots/premium-bots.xml' : '/bots/standard-bots.xml';
-    const defaultTemplate =
-        strategy.category === 'premium'
-            ? '/bots/templates/premium-default.xml'
-            : '/bots/templates/standard-default.xml';
-
-    let xmlText: string | null = null;
-    try {
-        const perBot = await fetch(`/bots/${strategy.category}/${strategy.id}.xml`);
-        if (perBot.ok) {
-            xmlText = await perBot.text();
-        }
-    } catch {
-        // ignore
-    }
-
-    if (!xmlText) {
-        try {
-            const packResponse = await fetch(packPath);
-            if (packResponse.ok) {
-                const packXml = await packResponse.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(packXml, 'application/xml');
-                const botNode = doc.querySelector(`bot[id="${strategy.id}"]`);
-                const template =
-                    botNode?.getAttribute('template') ??
-                    doc.querySelector('defaults')?.getAttribute('template') ??
-                    defaultTemplate;
-                const templatePath = template.startsWith('/') ? template : `/bots/templates/${template}`;
-                const templateResponse = await fetch(templatePath);
-                if (templateResponse.ok) {
-                    xmlText = await templateResponse.text();
-                }
-            }
-        } catch {
-            // ignore
-        }
-    }
-
-    if (xmlText && window.Blockly?.derivWorkspace) {
-        try {
-            const strategy_dom = window.Blockly.utils.xml.textToDom(xmlText) as unknown as HTMLElement;
-            await load({
-                block_string: window.Blockly.Xml.domToText(strategy_dom),
-                file_name: `${strategy.category === 'premium' ? 'Premium' : 'Standard'} · ${strategy.name}`,
-                workspace: window.Blockly.derivWorkspace,
-                from: save_types.UNSAVED,
-                drop_event: null,
-                strategy_id: null,
-                showIncompatibleStrategyDialog: null,
-            });
-            return true;
-        } catch (error) {
-            console.warn('[FreeBots] XML catalog load failed, falling back to quick strategy', error);
-        }
-    }
-
     const seed = freeBotToSeed(strategy);
     const { contracts_for } = (ApiHelpers?.instance ?? {}) as {
         contracts_for?: {
