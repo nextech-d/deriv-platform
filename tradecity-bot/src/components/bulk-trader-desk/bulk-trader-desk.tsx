@@ -355,70 +355,76 @@ const BulkTraderDesk = ({
                     </div>
                 ) : null}
 
-                <div className='bulk-tick-bar'>
-                    <div className='bulk-tick'>
-                        <span>Current tick</span>
-                        <strong>{quote == null ? '--' : quote.toFixed(pipSize)}</strong>
+                <section className='bulk-card'>
+                    <div className='bulk-tick-bar'>
+                        <div className='bulk-tick'>
+                            <span>Current tick</span>
+                            <strong>{quote == null ? '--' : quote.toFixed(pipSize)}</strong>
+                        </div>
+                        <div className='bulk-tick-actions'>
+                            <button
+                                type='button'
+                                className='bulk-link-btn'
+                                aria-expanded={drawerOpen}
+                                onClick={() => openTradesDrawer('transactions')}
+                            >
+                                View trades
+                            </button>
+                            <button type='button' className='bulk-link-btn is-teal' onClick={() => setScannerOpen(true)}>
+                                Analysis
+                            </button>
+                        </div>
                     </div>
-                    <div className='bulk-tick-actions'>
-                        <button
-                            type='button'
-                            className='bulk-link-btn'
-                            aria-expanded={drawerOpen}
-                            onClick={() => openTradesDrawer('transactions')}
-                        >
-                            View trades
-                        </button>
-                        <button type='button' className='bulk-link-btn is-teal' onClick={() => setScannerOpen(true)}>
-                            Analysis
-                        </button>
-                    </div>
-                </div>
 
-                <label className='bulk-outline bulk-window-field'>
-                    <span>Number of ticks</span>
-                    <input
-                        type='number'
-                        min={10}
-                        max={5000}
-                        value={windowSize}
-                        onChange={event => setWindowSize(clampBulkWindow(Number(event.target.value)))}
-                        aria-label='Sample window'
-                    />
-                </label>
+                    <label className='bulk-outline bulk-window-field'>
+                        <span>Number of ticks</span>
+                        <input
+                            type='number'
+                            min={10}
+                            max={5000}
+                            value={windowSize}
+                            onChange={event => setWindowSize(clampBulkWindow(Number(event.target.value)))}
+                            aria-label='Sample window'
+                        />
+                    </label>
 
-                <div className='bulk-circles'>
-                    {Array.from({ length: 10 }, (_, value) => (
-                        <button
-                            key={value}
-                            type='button'
-                            className={classNames('bulk-circle', `is-${tones[value] ?? 'neutral'}`, {
-                                'is-on': digit === value,
-                                'is-now': lastDigit === value,
-                            })}
-                            onClick={() => setDigit(value)}
-                        >
-                            <strong>{value}</strong>
-                            <em>{(pcts[value] ?? 0).toFixed(1)}%</em>
-                        </button>
-                    ))}
-                </div>
-
-                {strip.length ? (
-                    <div className='bulk-digits' aria-label='Recent digits'>
-                        {strip.map((value, index) => (
-                            <span key={`${value}-${index}`} className={classNames({ 'is-now': index === strip.length - 1 })}>
-                                {value}
-                            </span>
+                    <div className='bulk-circles'>
+                        {Array.from({ length: 10 }, (_, value) => (
+                            <button
+                                key={value}
+                                type='button'
+                                className={classNames('bulk-circle', `is-${tones[value] ?? 'neutral'}`, {
+                                    'is-on': digit === value,
+                                    'is-now': lastDigit === value,
+                                })}
+                                onClick={() => setDigit(value)}
+                            >
+                                <strong>{value}</strong>
+                                <em>{(pcts[value] ?? 0).toFixed(1)}%</em>
+                            </button>
                         ))}
                     </div>
-                ) : (
-                    <p className='bulk-note'>
-                        {historyLoading ? 'Loading Deriv ticks…' : 'Waiting on ticks for this market.'}
-                    </p>
-                )}
 
-                <div className='bulk-config'>
+                    {strip.length ? (
+                        <div className='bulk-digits' aria-label='Recent digits'>
+                            {strip.map((value, index) => (
+                                <span
+                                    key={`${value}-${index}`}
+                                    className={classNames({ 'is-now': index === strip.length - 1 })}
+                                >
+                                    {value}
+                                </span>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className='bulk-note'>
+                            {historyLoading ? 'Loading Deriv ticks…' : 'Waiting on ticks for this market.'}
+                        </p>
+                    )}
+                </section>
+
+                <section className='bulk-card'>
+                    <div className='bulk-config'>
                     <div className='bulk-config-top'>
                         <label className='bulk-outline'>
                             <span>Market</span>
@@ -508,43 +514,45 @@ const BulkTraderDesk = ({
                     </div>
                 </div>
 
-                <div className='bulk-outcomes'>
-                    {[left, right].map((contract, index) => (
-                        <button
-                            key={contract}
-                            type='button'
-                            className={classNames('bulk-outcome', index === 0 ? 'is-teal' : 'is-ink')}
-                            style={{ flex: `${Math.max(rates[contract], 8)} 1 0` }}
-                            disabled={autoRunning || Boolean(busy)}
-                            onClick={() => buy(contract)}
-                        >
-                            <strong>
-                                {bulkLabel(contract)}
-                                {bulkContractNeedsDigit(contract) ? ` ${digit}` : ''}
-                            </strong>
-                            <b className='bulk-outcome-payout'>{payout.toFixed(2)}</b>
-                            <em>{rates[contract].toFixed(2)}%</em>
-                        </button>
-                    ))}
+                <div className='bulk-actions'>
+                    <div className='bulk-outcomes'>
+                        {[left, right].map((contract, index) => (
+                            <button
+                                key={contract}
+                                type='button'
+                                className={classNames('bulk-outcome', index === 0 ? 'is-teal' : 'is-ink')}
+                                disabled={autoRunning || Boolean(busy)}
+                                onClick={() => buy(contract)}
+                            >
+                                <strong>
+                                    {bulkLabel(contract)}
+                                    {bulkContractNeedsDigit(contract) ? ` ${digit}` : ''}
+                                </strong>
+                                <b className='bulk-outcome-payout'>{payout.toFixed(2)}</b>
+                                <em>{rates[contract].toFixed(2)}%</em>
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        type='button'
+                        className={classNames('bulk-auto', { 'is-on': autoRunning })}
+                        onClick={() => {
+                            if (autoRunning) {
+                                setAutoRunning(false);
+                                autoArmedRef.current = false;
+                                setMessage('Auto trader stopped.');
+                                return;
+                            }
+                            setAutoOpen(true);
+                        }}
+                    >
+                        {autoRunning ? 'Stop auto trading' : 'Auto trader'}
+                    </button>
+
+                    {message ? <p className='bulk-message'>{message}</p> : null}
                 </div>
-
-                <button
-                    type='button'
-                    className={classNames('bulk-auto', { 'is-on': autoRunning })}
-                    onClick={() => {
-                        if (autoRunning) {
-                            setAutoRunning(false);
-                            autoArmedRef.current = false;
-                            setMessage('Auto trader stopped.');
-                            return;
-                        }
-                        setAutoOpen(true);
-                    }}
-                >
-                    {autoRunning ? 'Stop auto trading' : 'Auto trader'}
-                </button>
-
-                {message ? <p className='bulk-message'>{message}</p> : null}
+                </section>
             </div>
 
             <TradesDrawer
