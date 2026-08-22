@@ -8,15 +8,17 @@
     width: 100%;
     min-width: 0;
     height: 100%;
-    min-height: var(--tab-content-height);
+    max-height: var(--tab-content-height);
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    box-sizing: border-box;
     background: var(--general-main-1);
     color: var(--text-general);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
     @include mobile-or-tablet-screen {
-        min-height: var(--tab-content-height-mobile);
+        max-height: var(--tab-content-height-mobile);
     }
 }
 
@@ -60,9 +62,10 @@
 .edging-toolbar h1 {
     grid-column: 2;
     margin: 0;
-    font-size: 1.05rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.6rem;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
     text-align: center;
 }
 
@@ -82,7 +85,8 @@
     border-radius: 6px;
     background: var(--general-section-1);
     color: var(--text-less-prominent);
-    font-size: 0.6875rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -96,7 +100,7 @@
     gap: 0.75rem;
     width: min(72rem, 100%);
     margin: 0 auto;
-    padding: 1.15rem 1.25rem 1.75rem;
+    padding: 1.15rem 1.25rem 6.4rem;
 }
 
 .edging-card {
@@ -108,13 +112,14 @@
 
 .edging-card h2 {
     margin: 0 0 0.75rem;
-    font-size: 0.9375rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.6rem;
     font-weight: 700;
 }
 
 .edging-card p {
     margin: 0;
-    font-size: 0.875rem;
+    font-size: 1.3rem;
     line-height: 1.55;
     color: var(--text-less-prominent);
 }
@@ -142,17 +147,19 @@
 
 .edging-kpi p {
     margin: 0;
-    font-size: 0.625rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
     color: var(--text-less-prominent);
 }
 
 .edging-kpi strong {
     display: block;
     margin-top: 0.2rem;
-    font-size: 1rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.5rem;
     color: var(--text-general);
 }
 
@@ -168,7 +175,7 @@
 
 .edging-notice p {
     margin: 0;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     color: var(--text-less-prominent);
 }
 
@@ -187,30 +194,31 @@
 .edging-fields .edging-tick,
 .edging-fields .edging-check-field {
     display: grid;
-    grid-template-rows: 1rem 2.35rem 1rem;
+    grid-template-rows: 1.4rem 2.6rem 1.4rem;
     gap: 0.3rem;
     min-width: 0;
 }
 
 .edging-fields span,
 .edging-tick span {
-    font-size: 0.6875rem;
-    font-weight: 650;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
     color: var(--text-less-prominent);
-    line-height: 1rem;
+    line-height: 1.3;
 }
 
 .edging-fields select,
 .edging-fields input[type='number'] {
     width: 100%;
-    height: 2.35rem;
-    min-height: 2.35rem;
+    height: 2.6rem;
+    min-height: 2.6rem;
     padding: 0 0.65rem;
     border: 1px solid var(--general-section-1);
     border-radius: 8px;
     background: var(--general-main-1);
     color: var(--text-general);
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     box-sizing: border-box;
 }
 
@@ -223,8 +231,8 @@
 .edging-fields em,
 .edging-tick em {
     font-style: normal;
-    font-size: 0.6875rem;
-    line-height: 1rem;
+    font-size: 1.2rem;
+    line-height: 1.3;
     color: var(--text-less-prominent);
     white-space: nowrap;
     overflow: hidden;
@@ -235,14 +243,14 @@
     display: flex;
     align-items: center;
     gap: 0.45rem;
-    height: 2.35rem;
-    min-height: 2.35rem;
+    height: 2.6rem;
+    min-height: 2.6rem;
     padding: 0 0.65rem;
     border: 1px solid var(--general-section-1);
     border-radius: 8px;
     background: var(--general-main-1);
     color: var(--text-general);
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     box-sizing: border-box;
 }
 
@@ -253,13 +261,13 @@
 .edging-tick strong {
     display: flex;
     align-items: center;
-    height: 2.35rem;
-    min-height: 2.35rem;
+    height: 2.6rem;
+    min-height: 2.6rem;
     padding: 0 0.65rem;
     border: 1px solid var(--general-section-1);
     border-radius: 8px;
     background: var(--general-main-1);
-    font-size: 1.05rem;
+    font-size: 1.5rem;
     line-height: 1;
     box-sizing: border-box;
 }
@@ -278,9 +286,16 @@
 }
 
 .edging-cta {
-    min-height: 2.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 10.5rem;
+    min-height: 2.6rem;
+    padding: 0 1.2rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.3rem;
     font-weight: 700;
     cursor: pointer;
 }
@@ -291,7 +306,6 @@
 }
 
 .edging-cta.is-ink {
-    width: 100%;
     border: none;
     background: var(--text-general);
     color: var(--general-main-1);
@@ -304,20 +318,33 @@
 }
 
 .edging-cta.is-reset {
-    width: 100%;
-    min-height: 3rem;
-    font-size: 0.875rem;
+    min-height: 2.6rem;
+    font-size: 1.3rem;
+}
+
+.edging-cta.is-start,
+.edging-cta.is-stop {
+    border: none;
+    background: #16a34a;
+    color: #fff;
+}
+
+.edging-cta.is-trades {
+    border: none;
+    background: #dc3545;
+    color: #fff;
 }
 
 .fast-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 0.75rem;
 }
 
 .fast-actions .edging-cta {
-    width: 100%;
-    min-height: 2.75rem;
+    width: auto;
+    min-height: 2.6rem;
 }
 
 .ultimate-scores {
@@ -336,17 +363,18 @@
 
 .ultimate-score p {
     margin: 0;
-    font-size: 0.6875rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
     color: var(--text-less-prominent);
 }
 
 .ultimate-score strong {
     display: block;
     margin-top: 0.15rem;
-    font-size: 1.45rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: var(--text-general);
 }
@@ -371,7 +399,7 @@
 
 .ultimate-meta {
     margin: 0 0 0.65rem;
-    font-size: 0.75rem;
+    font-size: 1.3rem;
     color: var(--text-less-prominent);
 }
 
@@ -382,13 +410,13 @@
 
 .ultimate-filter input {
     width: 100%;
-    height: 2.35rem;
+    height: 2.6rem;
     padding: 0 0.65rem;
     border: 1px solid var(--general-section-1);
     border-radius: 8px;
     background: var(--general-main-1);
     color: var(--text-general);
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
     box-sizing: border-box;
 }
 
@@ -399,13 +427,14 @@
 .ultimate-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
 }
 
 .ultimate-table th {
     padding: 0.55rem 0.65rem;
     text-align: left;
-    font-size: 0.625rem;
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -431,12 +460,12 @@
 .ultimate-table td strong {
     display: block;
     color: var(--text-general);
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
 }
 
 .ultimate-table td em {
     font-style: normal;
-    font-size: 0.6875rem;
+    font-size: 1.2rem;
     color: var(--text-less-prominent);
 }
 
@@ -446,7 +475,7 @@
 
 .ultimate-digits {
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    font-size: 0.75rem;
+    font-size: 1.2rem;
     color: var(--text-general);
 }
 
@@ -459,7 +488,7 @@
     border-radius: 6px;
     background: var(--general-section-1);
     color: var(--text-less-prominent);
-    font-size: 0.6875rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -475,7 +504,7 @@
     border-radius: 6px;
     background: var(--general-main-1);
     color: var(--text-general);
-    font-size: 0.6875rem;
+    font-size: 1.2rem;
     font-weight: 700;
     cursor: pointer;
 }

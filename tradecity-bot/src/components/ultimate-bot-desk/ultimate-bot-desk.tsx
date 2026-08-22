@@ -457,7 +457,7 @@ const UltimateBotDesk = ({
                         <div className='fast-actions'>
                             <button
                                 type='button'
-                                className={classNames('edging-cta', isRunning ? 'is-ghost' : 'is-ink')}
+                                className={classNames('edging-cta', isRunning ? 'is-stop' : 'is-start')}
                                 disabled={!canTrade && !isRunning}
                                 onClick={() => {
                                     if (isRunning || (running && limitStop)) {
@@ -475,7 +475,7 @@ const UltimateBotDesk = ({
                             </button>
                             <button
                                 type='button'
-                                className='edging-cta is-ghost is-reset'
+                                className='edging-cta is-trades'
                                 aria-expanded={drawerOpen}
                                 onClick={() => openTradesDrawer('transactions')}
                             >
