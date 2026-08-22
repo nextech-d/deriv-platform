@@ -16,13 +16,15 @@ import './account-switcher.scss';
 type TAccountTab = 'real' | 'demo';
 
 const AccountMark = ({ isVirtual }: { isVirtual: boolean }) => (
-    <span
-        className={classNames('acc-mark', isVirtual ? 'acc-mark--demo' : 'acc-mark--real')}
-        data-testid='dt_acc_mark'
-        data-mode={isVirtual ? 'demo' : 'real'}
-        aria-hidden='true'
-    >
-        {isVirtual ? 'D' : 'R'}
+    <span className='acc-mark-wrap' aria-hidden='true'>
+        <span className='acc-mark-flag'>🇺🇸</span>
+        <span
+            className={classNames('acc-mark', isVirtual ? 'acc-mark--demo' : 'acc-mark--real')}
+            data-testid='dt_acc_mark'
+            data-mode={isVirtual ? 'demo' : 'real'}
+        >
+            {isVirtual ? 'D' : 'R'}
+        </span>
     </span>
 );
 

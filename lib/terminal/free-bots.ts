@@ -259,6 +259,6 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
 ];
 
 export const FREE_BOT_CATEGORY_LABEL: Record<FreeBotCategory, string> = {
-  free: "Free",
+  free: "Standard",
   premium: "Premium",
 };

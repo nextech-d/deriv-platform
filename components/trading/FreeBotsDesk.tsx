@@ -11,7 +11,7 @@ import { readFreeBotsTier, writeFreeBotsTier, type FreeBotsTier } from "@/lib/te
 import { cn } from "@/lib/utils/cn";
 
 interface FreeBotsDeskProps {
-  onLoadInBuilder: (strategy: FreeBotStrategy) => void;
+  onLoadInBuilder: (strategy: FreeBotStrategy) => void | Promise<void>;
   initialTier?: FreeBotsTier;
 }
 
@@ -31,6 +31,8 @@ export function FreeBotsDesk({
   const [query, setQuery] = useState("");
   const [tier, setTier] = useState<Tier>(() => readFreeBotsTier() || initialTier);
   const [fresh, setFresh] = useState<Freshness>("all");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const strategies = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,7 +66,7 @@ export function FreeBotsDesk({
                   writeFreeBotsTier(id);
                 }}
               >
-                {id === "free" ? "Free" : "Premium"}
+                {id === "free" ? "Standard" : "Premium"}
               </button>
             ))}
           </div>
@@ -97,8 +99,10 @@ export function FreeBotsDesk({
       </header>
 
       <h1 className="free-bots-heading">
-        {tier === "free" ? "Free" : "Premium"} bots: {strategies.length}
+        {tier === "free" ? "Standard" : "Premium"} bots: {strategies.length}
       </h1>
+
+      {loadError ? <p className="free-bots-error">{loadError}</p> : null}
 
       {strategies.length ? (
         <div className="free-bots-grid">
@@ -127,9 +131,16 @@ export function FreeBotsDesk({
               <button
                 type="button"
                 className="free-bots-load"
-                onClick={() => onLoadInBuilder(bot)}
+                disabled={loadingId === bot.id}
+                onClick={() => {
+                  setLoadError(null);
+                  setLoadingId(bot.id);
+                  void Promise.resolve(onLoadInBuilder(bot))
+                    .catch(() => setLoadError(`Could not load ${bot.name}. Try again.`))
+                    .finally(() => setLoadingId(null));
+                }}
               >
-                Load Bot
+                {loadingId === bot.id ? "Loading…" : "Load Bot"}
               </button>
             </article>
           ))}

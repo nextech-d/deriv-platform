@@ -1,7 +1,7 @@
 export type RunSpeed = 'fast' | 'slow';
 
 export const RUN_SPEED_KEY = 'tc-run-speed';
-export const SLOW_RUN_DELAY_MS = 2000;
+export const SLOW_RUN_DELAY_MS = 350;
 
 export function readRunSpeed(): RunSpeed {
     if (typeof window === 'undefined') return 'fast';

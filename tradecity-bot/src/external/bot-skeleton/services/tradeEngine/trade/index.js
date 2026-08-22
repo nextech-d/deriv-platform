@@ -143,6 +143,22 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
         this.observeOpenContract();
         this.observeBalance();
         this.observeProposals();
+        this.observeRunSpeedBetweenCycles();
+    }
+
+    observeRunSpeedBetweenCycles() {
+        let previousScope = null;
+        this.store.subscribe(() => {
+            const { scope, proposalsReady } = this.store.getState();
+            const readyForNextPurchase =
+                previousScope === constants.DURING_PURCHASE &&
+                scope === constants.BEFORE_PURCHASE &&
+                proposalsReady;
+            if (readyForNextPurchase && this.tradeOptions) {
+                this.makeDirectPurchaseDecision();
+            }
+            previousScope = scope;
+        });
     }
 
     watch(watchName) {

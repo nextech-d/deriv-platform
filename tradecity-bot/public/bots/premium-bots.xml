@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bot-pack tier="premium" version="1">
+  <defaults template="/bots/templates/premium-default.xml" />
+  <bot id="premium-matrix" name="Matrix AI Lane" />
+  <bot id="premium-apex" name="Apex Switcher Pro" />
+</bot-pack>

@@ -13,7 +13,7 @@ import { BrandMark, BrandWord } from "@/components/navigation/BrandLockup";
 import { ThemeToggle } from "@/components/trading/ThemeToggle";
 import type { DerivAccount } from "@/lib/session/types";
 import { cn } from "@/lib/utils/cn";
-import { formatWalletBalance } from "@/lib/utils/format-wallet";
+import { AccountSwitcher } from "@/components/navigation/AccountSwitcher";
 
 const SPLIT_AFTER = new Set<PlatformNavId>(["free-bots", "copy-trading", "edging-2"]);
 const TICK_WIDTH = 18;
@@ -35,92 +35,24 @@ function NavbarAccountSwitch({
   accounts,
   activeAccountId,
   onAccountChange,
-  demoMode = false,
   balance,
+  onLogout,
 }: {
   accounts: DerivAccount[];
   activeAccountId?: string;
   onAccountChange: (id: string) => void;
   demoMode?: boolean;
   balance?: { amount: number; currency: string } | null;
+  onLogout?: () => void;
 }) {
-  const active = accounts.find((item) => item.accountId === activeAccountId) ?? accounts[0];
-  const demoAccount = accounts.find((item) => item.isDemo);
-  const realAccount = accounts.find((item) => !item.isDemo);
-  const guest = accounts.length === 0;
-  const demoOn = guest || Boolean(active?.isDemo);
-  const realLoginHref =
-    !realAccount && (guest || demoMode) ? AUTH_LOGIN_PATH : undefined;
-
-  const walletLabel = balance
-    ? formatWalletBalance(balance.amount, balance.currency)
-    : "…";
-
   return (
-    <div className="tc-account-cluster">
-      <div
-        className="tc-account-switch"
-        role="group"
-        aria-label="Account type"
-        data-testid="tc-account-switch"
-      >
-        <button
-          type="button"
-          className={cn("tc-account-switch-btn", demoOn && "is-on")}
-          aria-pressed={demoOn}
-          disabled={!guest && !demoAccount}
-          title={demoAccount || guest ? "Demo account" : "No demo account on this login"}
-          onClick={() => {
-            if (demoAccount && demoAccount.accountId !== active?.accountId) {
-              onAccountChange(demoAccount.accountId);
-            }
-          }}
-        >
-          Demo
-        </button>
-        {realAccount ? (
-          <button
-            type="button"
-            className={cn("tc-account-switch-btn", !demoOn && "is-on")}
-            aria-pressed={!demoOn}
-            title="Real account"
-            onClick={() => {
-              if (realAccount.accountId !== active?.accountId) {
-                onAccountChange(realAccount.accountId);
-              }
-            }}
-          >
-            Real
-          </button>
-        ) : realLoginHref ? (
-          <Link href={realLoginHref} className="tc-account-switch-btn" title="Log in to use a real account">
-            Real
-          </Link>
-        ) : (
-          <button
-            type="button"
-            className="tc-account-switch-btn"
-            disabled
-            title="No real account on this login"
-          >
-            Real
-          </button>
-        )}
-      </div>
-      <span
-        className="tc-account-balance"
-        data-testid="tc-account-balance"
-        aria-live="polite"
-        aria-atomic="true"
-        title={
-          active?.isDemo
-            ? "Demo wallet balance"
-            : "Real wallet balance from Deriv"
-        }
-      >
-        {walletLabel}
-      </span>
-    </div>
+    <AccountSwitcher
+      accounts={accounts}
+      activeAccountId={activeAccountId}
+      onAccountChange={onAccountChange}
+      balance={balance}
+      onLogout={onLogout}
+    />
   );
 }
 
@@ -180,14 +112,12 @@ export function ProductNavbar({
               onAccountChange={onAccountChange}
               demoMode={demoMode}
               balance={balance}
+              onLogout={onLogout}
             />
           ) : null}
           {account ? (
             <div className="tc-auth">
               <span className="tc-loginid">{account.loginid}</span>
-              <button type="button" className="tc-btn tc-btn-ghost" onClick={onLogout}>
-                Log out
-              </button>
             </div>
           ) : (
             <div className="tc-auth">

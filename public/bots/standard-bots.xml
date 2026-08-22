@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bot-pack tier="standard" version="1">
+  <defaults template="/bots/templates/standard-default.xml" />
+  <bot id="poverty-sanitizer-ai" name="poverty sanitizer Ai" />
+  <bot id="tradecity-speed-bot" name="tradecity speed bot" />
+  <bot id="under-8-strategy" name="Under 8 Strategy" />
+  <bot id="under-7-manual" name="Under 7 Manual" />
+  <bot id="switching-bot" name="Switching Bot" />
+  <bot id="over-1-strategy" name="Over 1 Strategy" />
+  <bot id="money8gg-speed" name="MONEY8GG SPEED BOT" />
+  <bot id="sv-matches" name="SV Matches BOT" />
+  <bot id="even-odd-combo" name="Even Odd { Percentage Pattern Combo}" />
+  <bot id="martingale-bot" name="Martingale Bot" />
+  <bot id="rise-fall-5tick" name="Test Rise Fall 5TICK" />
+  <bot id="candle-mine-3" name="Candle Mine Version 3.1" />
+  <bot id="speedbot-updated" name="SPEEDBOT updated" />
+  <bot id="snipper-havoc" name="SNIPPER HAVOC AI BOT" />
+  <bot id="sniper-killer-m4" name="SNIPER KILLER M4BOT" />
+  <bot id="over-destroyer" name="Over-Destroyer💀" />
+  <bot id="wealth-generator" name="WEALTH GENERATOR" />
+  <bot id="mkorean-sv7" name="Mkorean sv7 bot" />
+  <bot id="even-odd-reverse" name="Even Odd Reverse psychology" />
+  <bot id="poverty-x" name="poverty x" />
+  <bot id="underover-autoswitch" name="UnderoverAutoswitch poverty cleaner" />
+  <bot id="recovery-odd-tradecity" name="Recovery with Odd tradecity" />
+  <bot id="money-maker-ai" name="money maker ai" />
+  <bot id="poverty-x-ai" name="poverty x ai" />
+</bot-pack>

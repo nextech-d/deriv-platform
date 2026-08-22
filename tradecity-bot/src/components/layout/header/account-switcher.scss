@@ -2,6 +2,18 @@
 @use 'components/shared/styles/mixins' as *;
 
 /** @define acc-info */
+.acc-mark-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.acc-mark-flag {
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
 .acc-mark {
     display: inline-flex;
     align-items: center;
