@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AccountSwitcher from '../account-switcher';
 
 const mockCheckAndRegenerateWebSocket = jest.fn();
+const mockRegenerateWebSocket = jest.fn();
 const mockLogout = jest.fn();
 const mockSend = jest.fn(() => Promise.resolve({ topup_virtual: { amount: 10000, currency: 'USD' } }));
 
@@ -19,7 +20,10 @@ jest.mock('@/hooks/useApiBase', () => ({
 
 jest.mock('@/hooks/useStore', () => ({
     useStore: jest.fn(() => ({
-        client: { checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket },
+        client: {
+            checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket,
+            regenerateWebSocket: mockRegenerateWebSocket,
+        },
         run_panel: { is_running: false },
     })),
 }));
@@ -100,7 +104,10 @@ describe('AccountSwitcher', () => {
         useApiBase.mockReturnValue({ accountList: mockAccountList, activeLoginid: 'CR123' });
         const { useStore } = require('@/hooks/useStore');
         useStore.mockReturnValue({
-            client: { checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket },
+            client: {
+                checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket,
+                regenerateWebSocket: mockRegenerateWebSocket,
+            },
             run_panel: { is_running: false },
         });
         require('@/external/bot-skeleton/services/api/api-base').api_base.is_running = false;
@@ -111,18 +118,16 @@ describe('AccountSwitcher', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('shows only the account letter in the header', () => {
+    it('shows the US flag and balance in the header trigger', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
-        expect(screen.getByTestId('dt_acc_mark')).toHaveAttribute('data-mode', 'real');
-        expect(screen.getByTestId('dt_acc_mark')).toHaveTextContent('R');
-        expect(screen.queryByTestId('dt_balance')).not.toBeInTheDocument();
-        expect(screen.queryByText('Real account')).not.toBeInTheDocument();
+        expect(screen.getByTestId('dt_acc_balance')).toHaveTextContent('100.00 USD');
+        expect(screen.getByTestId('dt_acc_info').textContent).toContain('🇺🇸');
+        expect(screen.queryByTestId('dt_acc_mark')).not.toBeInTheDocument();
     });
 
-    it('shows a branded D when the active account is demo', () => {
+    it('shows demo balance in the header when the active account is demo', () => {
         render(<AccountSwitcher activeAccount={mockDemoAccount} />);
-        expect(screen.getByTestId('dt_acc_mark')).toHaveAttribute('data-mode', 'demo');
-        expect(screen.getByTestId('dt_acc_mark')).toHaveTextContent('D');
+        expect(screen.getByTestId('dt_acc_balance')).toHaveTextContent('9992.15 USD');
     });
 
     it('opens dropdown on click', () => {
@@ -157,7 +162,10 @@ describe('AccountSwitcher', () => {
     it('opens dropdown while the bot runs but blocks switching', () => {
         const { useStore } = require('@/hooks/useStore');
         useStore.mockReturnValue({
-            client: { checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket },
+            client: {
+                checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket,
+                regenerateWebSocket: mockRegenerateWebSocket,
+            },
             run_panel: { is_running: true },
         });
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
@@ -167,6 +175,7 @@ describe('AccountSwitcher', () => {
 
         fireEvent.click(screen.getByRole('tab', { name: 'Demo' }));
         fireEvent.click(screen.getByRole('option', { name: /VRTC456/ }));
+        expect(mockRegenerateWebSocket).not.toHaveBeenCalled();
         expect(mockCheckAndRegenerateWebSocket).not.toHaveBeenCalled();
     });
 
@@ -197,21 +206,24 @@ describe('AccountSwitcher', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('sets localStorage and calls checkAndRegenerateWebSocket on account select', () => {
+    it('sets localStorage and regenerates the socket on account select', () => {
         const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         fireEvent.click(screen.getByRole('tab', { name: 'Demo' }));
         fireEvent.click(screen.getByRole('option', { name: /VRTC456/ }));
         expect(setItemSpy).toHaveBeenCalledWith('active_loginid', 'VRTC456');
-        expect(mockCheckAndRegenerateWebSocket).toHaveBeenCalledTimes(1);
+        expect(setItemSpy).toHaveBeenCalledWith('account_type', 'demo');
+        expect(mockRegenerateWebSocket).toHaveBeenCalledTimes(1);
+        expect(mockCheckAndRegenerateWebSocket).not.toHaveBeenCalled();
         setItemSpy.mockRestore();
     });
 
-    it('does not call checkAndRegenerateWebSocket when clicking the already-active account', () => {
+    it('does not regenerate the socket when clicking the already-active account', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         fireEvent.click(screen.getByRole('option', { name: /CR123/ }));
+        expect(mockRegenerateWebSocket).not.toHaveBeenCalled();
         expect(mockCheckAndRegenerateWebSocket).not.toHaveBeenCalled();
     });
 
@@ -219,6 +231,7 @@ describe('AccountSwitcher', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         expect(screen.getByTestId('dt_balance')).toHaveTextContent('100.00 USD');
+        expect(screen.getAllByTestId('dt_acc_mark').length).toBeGreaterThan(0);
     });
 
     it('tops up the demo balance from Reset balance', async () => {

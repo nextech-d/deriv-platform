@@ -16,13 +16,15 @@ import './account-switcher.scss';
 type TAccountTab = 'real' | 'demo';
 
 const AccountMark = ({ isVirtual }: { isVirtual: boolean }) => (
-    <span
-        className={classNames('acc-mark', isVirtual ? 'acc-mark--demo' : 'acc-mark--real')}
-        data-testid='dt_acc_mark'
-        data-mode={isVirtual ? 'demo' : 'real'}
-        aria-hidden='true'
-    >
-        {isVirtual ? 'D' : 'R'}
+    <span className='acc-mark-wrap' aria-hidden='true'>
+        <span className='acc-mark-flag'>🇺🇸</span>
+        <span
+            className={classNames('acc-mark', isVirtual ? 'acc-mark--demo' : 'acc-mark--real')}
+            data-testid='dt_acc_mark'
+            data-mode={isVirtual ? 'demo' : 'real'}
+        >
+            {isVirtual ? 'D' : 'R'}
+        </span>
     </span>
 );
 
@@ -88,7 +90,19 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
         (loginid: string) => {
             if (is_bot_running) return;
             localStorage.setItem('active_loginid', loginid);
-            client?.checkAndRegenerateWebSocket();
+            localStorage.setItem('account_type', isDemoAccount(loginid) ? 'demo' : 'real');
+            try {
+                const accountsList = JSON.parse(localStorage.getItem('accountsList') || '{}') as Record<string, string>;
+                const token = accountsList[loginid];
+                if (token) localStorage.setItem('authToken', token);
+            } catch {
+                // OAuth sessions keep the access token in sessionStorage
+            }
+            if (typeof client?.regenerateWebSocket === 'function') {
+                client.regenerateWebSocket();
+            } else {
+                client?.checkAndRegenerateWebSocket();
+            }
             setIsOpen(false);
         },
         [client, is_bot_running]
@@ -119,15 +133,19 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const formattedAccounts = useMemo(() => {
         if (!accountList) return [];
         return accountList
-            .map(account => ({
-                loginid: account.loginid,
-                currency: account.currency,
-                balance: addComma(Number(account.balance ?? 0).toFixed(getDecimalPlaces(account.currency))),
-                isVirtual: isDemoAccount(account.loginid),
-                isActive: account.loginid === activeLoginid,
-            }))
+            .map(account => {
+                const liveBalance = client?.all_accounts_balance?.accounts?.[account.loginid]?.balance;
+                const amount = liveBalance ?? account.balance ?? 0;
+                return {
+                    loginid: account.loginid,
+                    currency: account.currency,
+                    balance: addComma(Number(amount).toFixed(getDecimalPlaces(account.currency))),
+                    isVirtual: isDemoAccount(account.loginid),
+                    isActive: account.loginid === activeLoginid,
+                };
+            })
             .sort((a, b) => (a.isActive ? -1 : b.isActive ? 1 : 0));
-    }, [accountList, activeLoginid]);
+    }, [accountList, activeLoginid, client?.all_accounts_balance]);
 
     const visibleAccounts = useMemo(
         () => formattedAccounts.filter(account => (tab === 'demo' ? account.isVirtual : !account.isVirtual)),
@@ -136,7 +154,10 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
 
     if (!activeAccount) return null;
 
-    const { isVirtual } = activeAccount;
+    const { isVirtual, currency, balance } = activeAccount;
+    const headerBalance = currency
+        ? `${balance} ${getCurrencyDisplayCode(currency)}`
+        : localize('No currency assigned');
 
     return (
         <div className='acc-info__wrapper' ref={wrapperRef}>
@@ -160,7 +181,14 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                         }
                     }}
                 >
-                    <AccountMark isVirtual={Boolean(isVirtual)} />
+                    <span className='acc-info__trigger'>
+                        <span className='acc-mark-flag' aria-hidden='true'>
+                            🇺🇸
+                        </span>
+                        <span className='acc-info__balance acc-info__balance--trigger' data-testid='dt_acc_balance'>
+                            {headerBalance}
+                        </span>
+                    </span>
                     <span
                         className={classNames('acc-info__select-arrow', {
                             'acc-info__select-arrow--invert': isOpen,
