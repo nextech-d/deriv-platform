@@ -16,8 +16,10 @@ jest.mock('../_lib/deriv', () => ({
     fetchOptionsAccounts: async () => [],
 }));
 
+let mockOwnAccounts = [];
+
 jest.mock('../_lib/session', () => ({
-    requireSession: async () => ({ record: mockRecord, ownAccounts: [], save: async () => {} }),
+    requireSession: async () => ({ record: mockRecord, ownAccounts: mockOwnAccounts, save: async () => {} }),
     publicView: value => value,
     handleFailure: (res, error) => res.status(500).json({ error: error.message }),
 }));
@@ -51,7 +53,7 @@ function makeRes() {
     };
 }
 
-async function post(parameters, mutateRecord) {
+async function post(parameters, mutateRecord, extraBody = {}) {
     mockRecord = {
         tokens: [{ id: 't1', cipher: 'CIPHER' }],
         accounts: [
@@ -64,13 +66,31 @@ async function post(parameters, mutateRecord) {
     };
     if (mutateRecord) mutateRecord(mockRecord);
     const res = makeRes();
-    await replay({ method: 'POST', body: { parameters, maxPrice: 1 } }, res);
+    await replay({ method: 'POST', body: { parameters, maxPrice: 1, ...extraBody } }, res);
     return res.captured;
 }
 
 describe('copy trading replay guards', () => {
     beforeEach(() => {
         mockBuys.length = 0;
+        mockOwnAccounts = [];
+    });
+
+    it('does not copy back onto the account that placed the trade', async () => {
+        const out = await post({ ...VALID }, undefined, { sourceLoginid: 'DOT1' });
+        expect(out.code).toBe(200);
+        expect(out.body.copied).toBe(0);
+        expect(out.body.skipped).toBe(1);
+        expect(mockBuys).toHaveLength(0);
+    });
+
+    it('does not copy onto the caller own demo accounts when source is omitted', async () => {
+        mockOwnAccounts = [{ loginid: 'DOT1', isDemo: true }];
+        const out = await post({ ...VALID });
+        expect(out.code).toBe(200);
+        expect(out.body.copied).toBe(0);
+        expect(out.body.skipped).toBe(1);
+        expect(mockBuys).toHaveLength(0);
     });
 
     it('buys only on enabled accounts matching the session mode', async () => {

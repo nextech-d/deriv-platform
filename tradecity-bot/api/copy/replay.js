@@ -64,7 +64,7 @@ module.exports = async function handler(req, res) {
     }
     if (!session) return;
 
-    const { record } = session;
+    const { record, ownAccounts } = session;
 
     try {
         if (req.method !== 'POST') {
@@ -92,11 +92,19 @@ module.exports = async function handler(req, res) {
             return;
         }
 
-        // The start gate asks for a PAT covering the caller's own login, so the
-        // account that placed the trade is normally in this list. Buying on it
-        // again would silently double every trade.
+        // Never buy again on the account that just placed the trade. If the
+        // caller omitted sourceLoginid, skip their own session accounts of this
+        // mode so a missing field cannot silently double the desk.
         const sourceLoginid = String(body.sourceLoginid || '');
-        const targets = eligible.filter(account => account.loginid !== sourceLoginid);
+        const skip = new Set();
+        if (sourceLoginid) {
+            skip.add(sourceLoginid);
+        } else {
+            for (const account of ownAccounts || []) {
+                if (account.isDemo === wantDemo) skip.add(account.loginid);
+            }
+        }
+        const targets = eligible.filter(account => !skip.has(account.loginid));
         const skipped = eligible.length - targets.length;
         if (!targets.length) {
             res.status(200).json({ results: [], copied: 0, total: 0, skipped });

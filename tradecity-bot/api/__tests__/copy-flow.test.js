@@ -95,10 +95,10 @@ describe('copy trading end to end', () => {
         expect(res.captured.code).toBe(401);
     });
 
-    it('opens blocked, naming the caller own demo login', async () => {
+    it('opens blocked until an extra-account PAT is added', async () => {
         const out = await callApi(sessionHandler);
         expect(out.code).toBe(200);
-        expect(out.body.blocker).toBe('Add a PAT containing DOT93804017 before starting.');
+        expect(out.body.blocker).toBe('Add a PAT for another demo account.');
         expect(out.body.accounts).toHaveLength(0);
         expect(out.body.mode).toBe('demo');
     });
@@ -133,10 +133,32 @@ describe('copy trading end to end', () => {
         expect(out.code).toBe(409);
     });
 
-    it('clears the gate once a demo account is enabled', async () => {
+    it('stays blocked when only the caller own demo account is enabled', async () => {
         const out = await callApi(accountsHandler, {
             method: 'PATCH',
             body: { accountId: 'acc-demo', enabled: true },
+        });
+        expect(out.code).toBe(200);
+        expect(out.body.blocker).toBe(
+            'Enable another demo account. Copy will not run on the account that places the trade.'
+        );
+    });
+
+    it('clears the gate once an extra demo account is enabled', async () => {
+        const record = storedRecord();
+        record.accounts.push({
+            accountId: 'acc-demo-2',
+            loginid: 'DOT77777',
+            currency: 'USD',
+            isDemo: true,
+            tokenId: record.tokens[0].id,
+            enabled: false,
+        });
+        mockKv.set('copy:CR55501', JSON.stringify(record));
+
+        const out = await callApi(accountsHandler, {
+            method: 'PATCH',
+            body: { accountId: 'acc-demo-2', enabled: true },
         });
         expect(out.code).toBe(200);
         expect(out.body.blocker).toBeNull();
@@ -160,29 +182,7 @@ describe('copy trading end to end', () => {
         expect(storedRecord().mode).toBe('demo');
     });
 
-    it('does not mirror a trade back onto the account that placed it', async () => {
-        const out = await callApi(replayHandler, {
-            method: 'POST',
-            body: { parameters: TRADE, maxPrice: 1, sourceLoginid: 'DOT93804017' },
-        });
-        expect(out.code).toBe(200);
-        expect(out.body.copied).toBe(0);
-        expect(out.body.skipped).toBe(1);
-        expect(mockBuys).toHaveLength(0);
-    });
-
-    it('mirrors onto a second demo account, still skipping the source', async () => {
-        const record = storedRecord();
-        record.accounts.push({
-            accountId: 'acc-demo-2',
-            loginid: 'DOT77777',
-            currency: 'USD',
-            isDemo: true,
-            tokenId: record.tokens[0].id,
-            enabled: true,
-        });
-        mockKv.set('copy:CR55501', JSON.stringify(record));
-
+    it('mirrors onto the extra account and skips the desk that placed the trade', async () => {
         const out = await callApi(replayHandler, {
             method: 'POST',
             body: { parameters: TRADE, maxPrice: 1, sourceLoginid: 'DOT93804017' },
@@ -190,6 +190,7 @@ describe('copy trading end to end', () => {
 
         expect(out.code).toBe(200);
         expect(out.body.copied).toBe(1);
+        expect(out.body.skipped).toBe(1);
         expect(mockBuys.map(buy => buy.accountId)).toEqual(['acc-demo-2']);
         expect(mockBuys[0].token).toBe(PAT);
         expect(mockBuys[0].parameters).toMatchObject({

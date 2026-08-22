@@ -93,7 +93,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                     <Heading running={false} />
                     <div className='copy-trader-desk__card copy-trader-desk__empty'>
                         <h3>Sign in first</h3>
-                        <p>Log in to add PATs and copy trades.</p>
+                        <p>Log in to add extra-account PATs and copy trades.</p>
                     </div>
                 </div>
             </div>
@@ -110,7 +110,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                 <section className='copy-trader-desk__card copy-trader-desk__pat'>
                     <div className='copy-trader-desk__pat-copy'>
                         <h3>Add a PAT</h3>
-                        <p>Trade-scoped PAT. We encrypt it.</p>
+                        <p>Trade-scoped PAT for another account. We encrypt it.</p>
                     </div>
                     <form
                         className='copy-trader-desk__pat-form'
@@ -131,7 +131,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                                 type={showToken ? 'text' : 'password'}
                                 autoComplete='off'
                                 spellCheck={false}
-                                placeholder='Paste a trade-scoped PAT'
+                                placeholder='Paste a trade-scoped PAT for another account'
                                 value={tokenInput}
                                 onChange={event => setTokenInput(event.target.value)}
                             />
@@ -215,13 +215,16 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                             ) : null}
                             {!state.blocker && copiesNothing ? (
                                 <p className='copy-trader-desk__blocker'>
-                                    <span aria-hidden='true'>●</span> Enable another {mode} account.
+                                    <span aria-hidden='true'>●</span> Enable another {mode} account. Copy
+                                    will not run on {source || 'this desk'}.
                                 </p>
                             ) : null}
                             <button
                                 type='button'
                                 className='copy-trader-desk__primary-btn copy-trader-desk__start-btn'
-                                disabled={busy || loading || (!running && Boolean(state.blocker))}
+                                disabled={
+                                    busy || loading || (!running && (Boolean(state.blocker) || copiesNothing))
+                                }
                                 onClick={() => run(() => (running ? copyApi.stop() : copyApi.start()))}
                             >
                                 {running ? `Stop ${modeLabel} copy` : `Start ${modeLabel} copy`}
@@ -238,6 +241,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                         accounts={accountsForMode(state.accounts, 'real')}
                         tally={tallies.real}
                         busy={busy || running}
+                        sourceLoginid={source}
                         onToggle={(accountId, enabled) => run(() => copyApi.setEnabled(accountId, enabled))}
                     />
                     <AccountCard
@@ -247,6 +251,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                         accounts={accountsForMode(state.accounts, 'demo')}
                         tally={tallies.demo}
                         busy={busy || running}
+                        sourceLoginid={source}
                         onToggle={(accountId, enabled) => run(() => copyApi.setEnabled(accountId, enabled))}
                     />
                 </div>
@@ -260,7 +265,7 @@ const Heading = ({ running }: { running: boolean }) => (
         <div>
             <span className='copy-trader-desk__eyebrow'>Multi-account trading</span>
             <h2>Copy trading accounts</h2>
-            <p>Add a Deriv PAT. Tokens stay encrypted.</p>
+            <p>Add extra-account PATs. Copy will not run on the desk that placed the trade.</p>
         </div>
         <span className={classNames('copy-trader-desk__status', { running })}>
             <span aria-hidden='true'>●</span> {running ? 'Copy trading running' : 'Copy trading paused'}
@@ -275,10 +280,20 @@ interface AccountCardProps {
     accounts: CopyAccount[];
     tally: { enabled: number; total: number };
     busy: boolean;
+    sourceLoginid: string;
     onToggle: (accountId: string, enabled: boolean) => void;
 }
 
-const AccountCard = ({ variant, title, blurb, accounts, tally, busy, onToggle }: AccountCardProps) => (
+const AccountCard = ({
+    variant,
+    title,
+    blurb,
+    accounts,
+    tally,
+    busy,
+    sourceLoginid,
+    onToggle,
+}: AccountCardProps) => (
     <section className={classNames('copy-trader-desk__card copy-trader-desk__accounts', `is-${variant}`)}>
         <div className='copy-trader-desk__accounts-head'>
             <span className='copy-trader-desk__avatar' aria-hidden='true'>
@@ -304,7 +319,10 @@ const AccountCard = ({ variant, title, blurb, accounts, tally, busy, onToggle }:
                                 disabled={busy}
                                 onChange={event => onToggle(account.accountId, event.target.checked)}
                             />
-                            <span className='copy-trader-desk__loginid'>{account.loginid}</span>
+                            <span className='copy-trader-desk__loginid'>
+                                {account.loginid}
+                                {account.loginid === sourceLoginid ? ' · this desk' : ''}
+                            </span>
                         </label>
                         <span className='copy-trader-desk__currency'>{account.currency}</span>
                     </li>
@@ -316,7 +334,7 @@ const AccountCard = ({ variant, title, blurb, accounts, tally, busy, onToggle }:
                     ∿
                 </span>
                 <h4>No {variant} accounts</h4>
-                <p>Add a PAT above.</p>
+                <p>Add a PAT for another account above.</p>
             </div>
         )}
     </section>

@@ -13,26 +13,52 @@ function record(overrides = {}) {
 }
 
 describe('copy session start gate', () => {
-    it('asks for a PAT covering the demo login when none is stored', () => {
-        expect(startBlocker(record(), OWN)).toBe('Add a PAT containing DOT93804017 before starting.');
+    it('asks for an extra-account PAT when none is stored', () => {
+        expect(startBlocker(record(), OWN)).toBe('Add a PAT for another demo account.');
     });
 
-    it('names the real login when real mode is selected', () => {
-        expect(startBlocker(record({ mode: 'real' }), OWN)).toBe('Add a PAT containing CR55501 before starting.');
+    it('names the real mode when real is selected', () => {
+        expect(startBlocker(record({ mode: 'real' }), OWN)).toBe('Add a PAT for another real account.');
     });
 
-    it('asks for an enabled account once the PAT is stored', () => {
+    it('asks for an enabled account once a PAT is stored', () => {
         const state = record({
             accounts: [{ accountId: 'A1', loginid: 'DOT93804017', isDemo: true, enabled: false, tokenId: 't1' }],
         });
         expect(startBlocker(state, OWN)).toBe('Enable at least one demo account before starting.');
     });
 
-    it('clears once a matching account is enabled', () => {
+    it('stays blocked when the only enabled account is the caller own login', () => {
         const state = record({
             accounts: [{ accountId: 'A1', loginid: 'DOT93804017', isDemo: true, enabled: true, tokenId: 't1' }],
         });
+        expect(startBlocker(state, OWN)).toBe(
+            'Enable another demo account. Copy will not run on the account that places the trade.'
+        );
+    });
+
+    it('clears once an extra account is enabled', () => {
+        const state = record({
+            accounts: [
+                { accountId: 'A1', loginid: 'DOT93804017', isDemo: true, enabled: false, tokenId: 't1' },
+                { accountId: 'A3', loginid: 'DOT77777', isDemo: true, enabled: true, tokenId: 't2' },
+            ],
+        });
         expect(startBlocker(state, OWN)).toBeNull();
+    });
+
+    it('clears when two own accounts of the same mode are enabled', () => {
+        const twoOwn = [
+            ...OWN,
+            { accountId: 'A3', loginid: 'DOT77777', currency: 'USD', isDemo: true },
+        ];
+        const state = record({
+            accounts: [
+                { accountId: 'A1', loginid: 'DOT93804017', isDemo: true, enabled: true, tokenId: 't1' },
+                { accountId: 'A3', loginid: 'DOT77777', isDemo: true, enabled: true, tokenId: 't1' },
+            ],
+        });
+        expect(startBlocker(state, twoOwn)).toBeNull();
     });
 
     it('does not let an enabled real account unblock a demo session', () => {

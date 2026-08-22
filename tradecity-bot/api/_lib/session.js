@@ -65,14 +65,25 @@ async function requireSession(req, res) {
  */
 function startBlocker(record, ownAccounts) {
     const wantDemo = record.mode === 'demo';
+    const ofMode = (record.accounts || []).filter(account => account.isDemo === wantDemo);
 
-    const own = (ownAccounts || []).find(account => account.isDemo === wantDemo);
-    if (own && !record.accounts.some(account => account.loginid === own.loginid)) {
-        return `Add a PAT containing ${own.loginid} before starting.`;
+    if (!ofMode.length) {
+        return `Add a PAT for another ${record.mode} account.`;
     }
 
-    if (!record.accounts.some(account => account.isDemo === wantDemo && account.enabled)) {
+    const enabled = ofMode.filter(account => account.enabled);
+    if (!enabled.length) {
         return `Enable at least one ${record.mode} account before starting.`;
+    }
+
+    // Trades never copy onto the desk that placed them. One enabled account
+    // that is already the caller's own login of this mode would receive nothing.
+    const ownOfMode = new Set(
+        (ownAccounts || []).filter(account => account.isDemo === wantDemo).map(account => account.loginid)
+    );
+    const destinations = enabled.filter(account => !ownOfMode.has(account.loginid));
+    if (enabled.length < 2 && destinations.length === 0) {
+        return `Enable another ${record.mode} account. Copy will not run on the account that places the trade.`;
     }
 
     return null;
