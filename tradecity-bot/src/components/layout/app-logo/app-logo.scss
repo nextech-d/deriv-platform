@@ -1,13 +1,25 @@
 .app-header {
     &__logo {
-        padding-inline-start: 3.2rem;
-        padding-inline-end: 2rem;
-        height: 32px;
         display: flex;
         align-items: center;
+        height: 100%;
+        padding-inline-start: 2.4rem;
+        padding-inline-end: 1.6rem;
+        border-inline-end: 1px solid var(--general-section-1);
+        text-decoration: none;
+    }
 
-        &-text {
-            margin-left: 8px;
+    &__name {
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+        font-size: 1.8rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        color: var(--text-general);
+        white-space: nowrap;
+
+        span {
+            color: var(--brand-red-coral, #ff444f);
         }
     }
 }

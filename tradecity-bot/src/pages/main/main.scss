@@ -268,9 +268,9 @@
                 .dc-tabs__item:nth-child(3),
                 .dc-tabs__item:nth-child(8),
                 .dc-tabs__item:nth-child(10) {
-                    margin-inline-end: 0.6rem;
-                    padding-inline-end: 1rem;
-                    border-inline-end: 1px solid var(--general-section-1);
+                    margin-inline-end: 0.35rem;
+                    padding-inline-end: 0.65rem;
+                    border-inline-end: 1px solid color-mix(in srgb, var(--text-general) 18%, var(--general-section-1));
                 }
 
                 @include desktop-screen {
@@ -282,13 +282,6 @@
                         height: var(--tc-menu-h, 4.4rem);
                         background: var(--general-main-1);
                         border-bottom: none;
-                    }
-
-                    .dc-tabs__item:nth-child(3),
-                    .dc-tabs__item:nth-child(8),
-                    .dc-tabs__item:nth-child(10) {
-                        margin-inline-end: 0;
-                        padding-inline-end: 0.4rem;
                     }
                 }
             }
