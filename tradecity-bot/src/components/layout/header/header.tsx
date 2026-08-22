@@ -11,7 +11,7 @@ import { navigateToTransfer } from '@/utils/transfer-utils';
 import { Localize } from '@deriv-com/translations';
 import { Header, useDevice, Wrapper } from '@deriv-com/ui';
 import { AppLogo } from '../app-logo';
-import AccountSwitcher from './account-switcher';
+import AccountSwitcher, { DESIGN_PREVIEW_ACCOUNT } from './account-switcher';
 import MenuItems from './menu-items';
 import MobileMenu from './mobile-menu';
 import './header.scss';
@@ -142,8 +142,19 @@ const AppHeader = observer(() => {
         navigateToTransfer(transferCurrency);
     }, [authData?.currency]);
 
+    const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
     const renderAccountSection = useCallback(
         (position: 'left' | 'right' = 'right') => {
+            if (isLocalHost && !activeLoginid && position === 'right' && isDesktop) {
+                return (
+                    <div className='auth-actions'>
+                        <div className='account-info'>
+                            <AccountSwitcher activeAccount={DESIGN_PREVIEW_ACCOUNT} />
+                        </div>
+                    </div>
+                );
+            }
             // Show account switcher and logout when user is fully authenticated
             if (activeLoginid && !is_account_regenerating) {
                 if (position === 'left' && !isDesktop) {
@@ -220,6 +231,7 @@ const AppHeader = observer(() => {
             return null;
         },
         [
+            isLocalHost,
             isAuthorizing,
             isDesktop,
             activeLoginid,

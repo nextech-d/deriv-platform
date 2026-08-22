@@ -15,16 +15,27 @@ import './account-switcher.scss';
 
 type TAccountTab = 'real' | 'demo';
 
-const AccountMark = ({ isVirtual }: { isVirtual: boolean }) => (
-    <span className='acc-mark-wrap' aria-hidden='true'>
-        <span className='acc-mark-flag'>🇺🇸</span>
-        <span
-            className={classNames('acc-mark', isVirtual ? 'acc-mark--demo' : 'acc-mark--real')}
-            data-testid='dt_acc_mark'
-            data-mode={isVirtual ? 'demo' : 'real'}
-        >
-            {isVirtual ? 'D' : 'R'}
-        </span>
+/** Localhost-only sample so the trigger can be reviewed without Deriv login. */
+export const DESIGN_PREVIEW_ACCOUNT = {
+    loginid: 'DOT93804017',
+    currency: 'USD',
+    balance: '10,005.30',
+    isVirtual: true,
+    is_virtual: 1,
+    isActive: true,
+    currencyLabel: 'Demo',
+    icon: null,
+} as NonNullable<TAccountSwitcher['activeAccount']>;
+
+const TriggerMark = ({ isVirtual }: { isVirtual: boolean }) => (
+    <span className='acc-info__mark' data-testid='dt_acc_trigger_mark' aria-hidden='true'>
+        {isVirtual ? 'D' : 'R'}
+    </span>
+);
+
+const UsFlag = () => (
+    <span className='acc-mark-flag' aria-hidden='true'>
+        🇺🇸
     </span>
 );
 
@@ -131,6 +142,18 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     }, [is_bot_running, isResetting]);
 
     const formattedAccounts = useMemo(() => {
+        const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        if (isLocalHost && (!accountList || accountList.length === 0)) {
+            return [
+                {
+                    loginid: DESIGN_PREVIEW_ACCOUNT.loginid,
+                    currency: 'USD',
+                    balance: DESIGN_PREVIEW_ACCOUNT.balance,
+                    isVirtual: true,
+                    isActive: true,
+                },
+            ];
+        }
         if (!accountList) return [];
         return accountList
             .map(account => {
@@ -182,8 +205,9 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                     }}
                 >
                     <span className='acc-info__trigger'>
-                        <span className='acc-mark-flag' aria-hidden='true'>
-                            🇺🇸
+                        <span className='acc-mark-wrap'>
+                            <UsFlag />
+                            <TriggerMark isVirtual={isVirtual} />
                         </span>
                         <span className='acc-info__balance acc-info__balance--trigger' data-testid='dt_acc_balance'>
                             {headerBalance}
@@ -225,105 +249,83 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                         </button>
                     </div>
 
-                    <div className='acc-dropdown__group'>
-                        <button
-                            type='button'
-                            className='acc-dropdown__group-header'
-                            aria-expanded={isGroupOpen}
-                            onClick={() => setIsGroupOpen(prev => !prev)}
-                        >
-                            <Text size='xs' weight='bold'>
-                                <Localize i18n_default_text='Deriv account' />
-                            </Text>
-                            <Chevron
-                                className={classNames('acc-dropdown__group-chevron', {
-                                    'acc-dropdown__group-chevron--invert': isGroupOpen,
-                                })}
-                            />
-                        </button>
+                    {visibleAccounts.length > 0 && (
+                        <div className='acc-dropdown__group'>
+                            <button
+                                type='button'
+                                className='acc-dropdown__group-header'
+                                aria-expanded={isGroupOpen}
+                                onClick={() => setIsGroupOpen(prev => !prev)}
+                            >
+                                <Text size='xs' weight='bold'>
+                                    <Localize i18n_default_text='Deriv account' />
+                                </Text>
+                                <Chevron
+                                    className={classNames('acc-dropdown__group-chevron', {
+                                        'acc-dropdown__group-chevron--invert': isGroupOpen,
+                                    })}
+                                />
+                            </button>
 
-                        {isGroupOpen && (
-                            <div className='acc-dropdown__list' role='listbox'>
-                                {visibleAccounts.length === 0 && (
-                                    <p className='acc-dropdown__empty'>
-                                        {tab === 'demo' ? (
-                                            <Localize i18n_default_text='No demo account yet.' />
-                                        ) : (
-                                            <Localize i18n_default_text='No real account yet.' />
-                                        )}
-                                    </p>
-                                )}
-                                {visibleAccounts.map(account => (
-                                    <div
-                                        key={account.loginid}
-                                        role='option'
-                                        aria-selected={account.isActive}
-                                        aria-disabled={is_bot_running}
-                                        tabIndex={0}
-                                        className={classNames('acc-dropdown__account', {
-                                            'acc-dropdown__account--selected': account.isActive,
-                                            'acc-dropdown__account--virtual': account.isVirtual,
-                                            'acc-dropdown__account--locked': is_bot_running && !account.isActive,
-                                        })}
-                                        onClick={() => !account.isActive && handleAccountSelect(account.loginid)}
-                                        onKeyDown={e => {
-                                            if (!account.isActive && (e.key === 'Enter' || e.key === ' ')) {
-                                                e.preventDefault();
-                                                handleAccountSelect(account.loginid);
-                                            }
-                                        }}
-                                    >
-                                        <AccountMark isVirtual={account.isVirtual} />
-                                        <div className='acc-dropdown__copy'>
-                                            <Text
-                                                size='xs'
-                                                weight='bold'
-                                                className={classNames('acc-dropdown__account-type', {
-                                                    'acc-dropdown__account-type--virtual': account.isVirtual,
-                                                })}
-                                            >
-                                                {account.isVirtual ? (
-                                                    <Localize i18n_default_text='Demo' />
-                                                ) : (
-                                                    getCurrencyDisplayCode(account.currency)
-                                                )}
-                                            </Text>
-                                            <Text size='xxxs' className='acc-dropdown__loginid'>
-                                                {account.loginid}
-                                            </Text>
-                                        </div>
-                                        <div className='acc-dropdown__actions'>
-                                            <Text
-                                                size='xs'
-                                                weight='bold'
-                                                className='acc-dropdown__balance'
-                                                data-testid='dt_balance'
-                                            >
-                                                {account.currency ? (
-                                                    `${account.balance} ${getCurrencyDisplayCode(account.currency)}`
-                                                ) : (
-                                                    <Localize i18n_default_text='No currency assigned' />
-                                                )}
-                                            </Text>
+                            {isGroupOpen && (
+                                <div className='acc-dropdown__list' role='listbox'>
+                                    {visibleAccounts.map(account => (
+                                        <div
+                                            key={account.loginid}
+                                            role='option'
+                                            aria-selected={account.isActive}
+                                            aria-disabled={is_bot_running}
+                                            tabIndex={0}
+                                            className={classNames('acc-dropdown__account', {
+                                                'acc-dropdown__account--selected': account.isActive,
+                                                'acc-dropdown__account--virtual': account.isVirtual,
+                                                'acc-dropdown__account--locked': is_bot_running && !account.isActive,
+                                            })}
+                                            onClick={() => !account.isActive && handleAccountSelect(account.loginid)}
+                                            onKeyDown={e => {
+                                                if (!account.isActive && (e.key === 'Enter' || e.key === ' ')) {
+                                                    e.preventDefault();
+                                                    handleAccountSelect(account.loginid);
+                                                }
+                                            }}
+                                        >
+                                            <span className='acc-mark-wrap'>
+                                                <UsFlag />
+                                                <TriggerMark isVirtual={account.isVirtual} />
+                                            </span>
+                                            <div className='acc-dropdown__copy'>
+                                                <Text size='xs' weight='bold' className='acc-dropdown__account-type'>
+                                                    {account.isVirtual ? (
+                                                        <Localize i18n_default_text='Demo' />
+                                                    ) : (
+                                                        getCurrencyDisplayCode(account.currency)
+                                                    )}
+                                                </Text>
+                                                <Text size='xxxs' className='acc-dropdown__loginid'>
+                                                    {account.loginid}
+                                                </Text>
+                                            </div>
                                             {account.isVirtual && account.isActive && (
-                                                <button
-                                                    type='button'
-                                                    className='acc-dropdown__reset'
-                                                    disabled={isResetting || is_bot_running}
-                                                    onClick={e => {
-                                                        e.stopPropagation();
-                                                        handleResetBalance();
-                                                    }}
-                                                >
-                                                    <Localize i18n_default_text='Reset balance' />
-                                                </button>
+                                                <div className='acc-dropdown__actions'>
+                                                    <button
+                                                        type='button'
+                                                        className='acc-dropdown__reset'
+                                                        disabled={isResetting || is_bot_running}
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            handleResetBalance();
+                                                        }}
+                                                    >
+                                                        <Localize i18n_default_text='Reset balance' />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {is_bot_running && (
                         <p className='acc-dropdown__note'>

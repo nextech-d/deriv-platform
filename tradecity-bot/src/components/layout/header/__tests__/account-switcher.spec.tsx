@@ -118,9 +118,10 @@ describe('AccountSwitcher', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('shows the US flag and balance in the header trigger', () => {
+    it('shows the account mark and balance in the header trigger', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         expect(screen.getByTestId('dt_acc_balance')).toHaveTextContent('100.00 USD');
+        expect(screen.getByTestId('dt_acc_trigger_mark')).toBeInTheDocument();
         expect(screen.getByTestId('dt_acc_info').textContent).toContain('🇺🇸');
         expect(screen.queryByTestId('dt_acc_mark')).not.toBeInTheDocument();
     });
@@ -227,11 +228,11 @@ describe('AccountSwitcher', () => {
         expect(mockCheckAndRegenerateWebSocket).not.toHaveBeenCalled();
     });
 
-    it('shows the balance for each listed account', () => {
+    it('shows the account mark and loginid in the dropdown card', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
-        expect(screen.getByTestId('dt_balance')).toHaveTextContent('100.00 USD');
-        expect(screen.getAllByTestId('dt_acc_mark').length).toBeGreaterThan(0);
+        expect(screen.getByText('CR123')).toBeInTheDocument();
+        expect(screen.getAllByTestId('dt_acc_trigger_mark').length).toBeGreaterThan(0);
     });
 
     it('tops up the demo balance from Reset balance', async () => {
