@@ -17,11 +17,16 @@ class ErrorBoundary extends React.Component {
             info,
         });
     };
-    render = () => (this.state.hasError ? <ErrorComponent should_show_refresh={true} /> : this.props.children);
+    render = () => {
+        if (!this.state.hasError) return this.props.children;
+        if (this.props.fallback !== undefined) return this.props.fallback;
+        return <ErrorComponent should_show_refresh={true} />;
+    };
 }
 
 ErrorBoundary.propTypes = {
     root_store: PropTypes.object,
+    fallback: PropTypes.node,
     children: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.node), PropTypes.node]),
 };
 

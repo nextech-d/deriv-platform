@@ -5,6 +5,7 @@
  */
 
 import { ActiveSymbol } from '@deriv-com/smartcharts-champion';
+import { smartChartCandleQuote, smartChartTickQuote } from '@/utils/smartchart-quotes';
 import type {
     ActiveSymbols,
     AdapterConfig,
@@ -40,35 +41,27 @@ const transformations = {
             const { prices: tick_prices, times: tick_times } = history;
             if (tick_prices && tick_times) {
                 for (let i = 0; i < tick_prices.length; i++) {
-                    quotes.push({
-                        Date: String(tick_times[i]),
-                        Close: tick_prices[i],
-                        DT: new Date(tick_times[i] * 1000),
-                    });
+                    quotes.push(smartChartTickQuote(Number(tick_times[i]), tick_prices[i]));
                 }
             }
         }
         // Handle candles (granularity > 0)
         else if (granularity > 0 && candles) {
             candles.forEach((candle: any) => {
-                quotes.push({
-                    Date: String(candle.epoch),
-                    Open: candle.open,
-                    High: candle.high,
-                    Low: candle.low,
-                    Close: candle.close,
-                    DT: new Date(candle.epoch * 1000),
-                });
+                quotes.push(
+                    smartChartCandleQuote(Number(candle.epoch), candle.close, {
+                        open: candle.open,
+                        high: candle.high,
+                        low: candle.low,
+                        close: candle.close,
+                    })
+                );
             });
         }
         // Fallback for direct prices/times arrays
         else if (prices && times) {
             for (let i = 0; i < prices.length; i++) {
-                quotes.push({
-                    Date: String(times[i]),
-                    Close: prices[i],
-                    DT: new Date(times[i] * 1000),
-                });
+                quotes.push(smartChartTickQuote(Number(times[i]), prices[i]));
             }
         }
 
@@ -77,7 +70,7 @@ const transformations = {
             meta: {
                 symbol,
                 granularity,
-                delay_amount: response.pip_size || 0,
+                delay_amount: 0,
             },
         };
     },
@@ -86,33 +79,25 @@ const transformations = {
      * Transform streaming tick/candle message to TQuote
      */
     toTQuoteFromStream(message: any, granularity: TGranularity): TQuote {
-        if (granularity === 0 && message.tick) {
+        if (granularity === 0 && message?.tick) {
             const { tick } = message;
-            return {
-                Date: String(tick.epoch),
-                Close: tick.quote,
-                tick,
-                DT: new Date(tick.epoch * 1000),
-            };
-        } else if (granularity > 0 && message.ohlc) {
+            return smartChartTickQuote(Number(tick.epoch), tick.quote);
+        }
+        if (granularity > 0 && message?.ohlc) {
             const { ohlc } = message;
-            return {
-                Date: String(ohlc.epoch),
-                Open: ohlc.open,
-                High: ohlc.high,
-                Low: ohlc.low,
-                Close: ohlc.close,
-                ohlc,
-                DT: new Date(ohlc.epoch * 1000),
-            };
+            return smartChartCandleQuote(Number(ohlc.epoch), ohlc.close, {
+                open: ohlc.open,
+                high: ohlc.high,
+                low: ohlc.low,
+                close: ohlc.close,
+            });
         }
 
-        // Fallback for direct tick data
-        return {
-            Date: String(message.epoch || Date.now() / 1000),
-            Close: message.quote || message.price || 0,
-            DT: new Date((message.epoch || Date.now() / 1000) * 1000),
-        };
+        const epoch = message?.tick?.epoch ?? message?.ohlc?.epoch ?? message?.epoch ?? Date.now() / 1000;
+        const quote = message?.tick?.quote ?? message?.ohlc?.close ?? message?.quote ?? message?.price ?? 0;
+        return granularity === 0
+            ? smartChartTickQuote(Number(epoch), Number(quote))
+            : smartChartCandleQuote(Number(epoch), Number(quote));
     },
 
     /**
@@ -140,7 +125,7 @@ const transformations = {
                 pip: symbol.pip || symbol.pip_size || 0.01,
                 exchange_is_open: symbol.exchange_is_open || 0,
                 is_trading_suspended: symbol.is_trading_suspended || 0,
-                delay_amount: symbol.delay_amount,
+                delay_amount: symbol.delay_amount ?? 0,
             });
         }
 
@@ -294,10 +279,15 @@ export function buildSmartchartsChampionAdapter(
 
             try {
                 const subscriptionId = transport.subscribe(apiRequest, (response: any) => {
-                    // Process all streaming messages for this subscription
-                    // The transport layer already filters by subscription ID
                     try {
-                        const quote = response;
+                        if (response?.error) {
+                            logger.error('Stream error:', response.error);
+                            return;
+                        }
+                        if (response?.history || response?.msg_type === 'history') {
+                            return;
+                        }
+                        const quote = transformations.toTQuoteFromStream(response, request.granularity);
                         callback(quote);
                     } catch (error) {
                         logger.error('Error transforming stream message:', error);

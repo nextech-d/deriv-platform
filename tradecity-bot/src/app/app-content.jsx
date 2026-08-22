@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ToastContainer } from 'react-toastify';
 import AuthLoadingWrapper from '@/components/auth-loading-wrapper';
+import ErrorBoundary from '@/components/error-component/error-boundary';
 import useLiveChat from '@/components/chat/useLiveChat';
 import ChunkLoader from '@/components/loader/chunk-loader';
 import { getUrlBase } from '@/components/shared';
@@ -160,8 +161,6 @@ const AppContent = observer(() => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized, client.loginid]);
 
-    if (common?.error) return null;
-
     return is_loading ? (
         <ChunkLoader message={localize('Initializing Deriv Bot account...')} />
     ) : (
@@ -171,7 +170,9 @@ const AppContent = observer(() => {
                 <div className='bot-dashboard bot' data-testid='dt_bot_dashboard'>
                     <Audio />
                     <Main />
-                    <BotBuilder />
+                    <ErrorBoundary root_store={store} fallback={null}>
+                        <BotBuilder />
+                    </ErrorBoundary>
                     <BotStopped />
                     <TransactionDetailsModal />
                     <ToastContainer limit={3} draggable={false} />

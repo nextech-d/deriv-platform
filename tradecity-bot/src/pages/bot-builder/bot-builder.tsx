@@ -125,9 +125,8 @@ const BotBuilder = observer(() => {
                     'bot-builder--tour-active': active_tour,
                 })}
             >
-                <div id='scratch_div' ref={el_ref}>
-                    <WorkspaceWrapper />
-                </div>
+                <WorkspaceWrapper />
+                <div id='scratch_div' ref={el_ref} />
             </div>
             {active_tab === BOT_BUILDER && <BotBuilderTourHandler is_mobile={!isDesktop} />}
             {/* removed this outside from toolbar becuase it needs to loaded seperately without dependency */}

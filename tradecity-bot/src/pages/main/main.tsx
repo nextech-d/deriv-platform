@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ErrorBoundary from '@/components/error-component/error-boundary';
 import ChunkLoader from '@/components/loader/chunk-loader';
 import { generateOAuthURL } from '@/components/shared';
 import DesktopWrapper from '@/components/shared_ui/desktop-wrapper';
@@ -97,7 +98,8 @@ const TabMark = ({ kind, label }: { kind: string; label: React.ReactNode }) => {
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
-    const { dashboard, load_modal, run_panel, quick_strategy, summary_card, blockly_store } = useStore();
+    const store = useStore();
+    const { dashboard, load_modal, run_panel, quick_strategy, summary_card, blockly_store } = store;
     const { is_loading } = blockly_store;
     const {
         active_tab,
@@ -461,9 +463,14 @@ const AppWrapper = observer(() => {
                 return <DTraderPanel />;
             case 'chart':
                 return (
-                    <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
-                        <ChartWrapper show_digits_stats={true} />
-                    </Suspense>
+                    <ErrorBoundary
+                        root_store={store}
+                        fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                    >
+                        <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
+                            <ChartWrapper show_digits_stats={true} />
+                        </Suspense>
+                    </ErrorBoundary>
                 );
             case 'tutorial':
                 return (
