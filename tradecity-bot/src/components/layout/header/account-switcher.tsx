@@ -17,6 +17,59 @@ import './account-switcher.scss';
 
 type TAccountTab = 'real' | 'demo';
 
+type TSwitchAccount = {
+    loginid: string;
+    currency: string;
+    balance: string;
+    isVirtual: boolean;
+    isActive: boolean;
+};
+
+const isVirtualLoginid = (loginid: string) => /^(VR|DEM|DOT)/i.test(loginid);
+
+const readLocalAccounts = (): TSwitchAccount[] => {
+    const rows: TSwitchAccount[] = [];
+    const push = (loginid: string, currency = 'USD', balance = 0, isVirtual?: boolean) => {
+        if (!loginid || rows.some(row => row.loginid === loginid)) return;
+        rows.push({
+            loginid,
+            currency,
+            balance: addComma(Number(balance).toFixed(getDecimalPlaces(currency))),
+            isVirtual: isVirtual ?? isVirtualLoginid(loginid),
+            isActive: false,
+        });
+    };
+
+    try {
+        const details = JSON.parse(localStorage.getItem('client_account_details') || '[]');
+        if (Array.isArray(details)) {
+            details.forEach((account: { loginid?: string; currency?: string; balance?: number; is_virtual?: number }) => {
+                if (account.loginid) {
+                    push(account.loginid, account.currency, account.balance, account.is_virtual === 1);
+                }
+            });
+        }
+    } catch {
+        // ignore bad cache
+    }
+
+    try {
+        const clientAccounts = JSON.parse(localStorage.getItem('clientAccounts') || '{}') as Record<
+            string,
+            { currency?: string; balance?: number }
+        >;
+        Object.entries(clientAccounts).forEach(([loginid, account]) => {
+            if (loginid && account && typeof account === 'object') {
+                push(loginid, account.currency, account.balance);
+            }
+        });
+    } catch {
+        // ignore bad cache
+    }
+
+    return rows;
+};
+
 /** Localhost-only sample so the trigger can be reviewed without Deriv login. */
 export const DESIGN_PREVIEW_ACCOUNT = {
     loginid: 'DOT93804017',
@@ -68,6 +121,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const [storedAccounts, setStoredAccounts] = useState<DerivAccount[]>(
         () => DerivWSAccountsService.getStoredAccounts() ?? []
     );
+    const [socketAccounts, setSocketAccounts] = useState<TSwitchAccount[]>([]);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const { accountList, activeLoginid } = useApiBase();
     const { client, run_panel } = useStore() ?? {};
@@ -106,24 +160,51 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
         if (!isOpen) return;
 
         const stored = DerivWSAccountsService.getStoredAccounts() ?? [];
-        setStoredAccounts(stored);
-
-        const token = OAuthTokenExchangeService.getAccessToken();
-        if (!token) return;
+        if (stored.length) setStoredAccounts(stored);
 
         let cancelled = false;
-        DerivWSAccountsService.fetchAccountsList(token)
-            .then(accounts => {
-                if (!cancelled && accounts?.length) setStoredAccounts(accounts);
-            })
-            .catch(() => {
-                if (!cancelled) setStoredAccounts(DerivWSAccountsService.getStoredAccounts() ?? stored);
-            });
+
+        const token = OAuthTokenExchangeService.getAccessToken();
+        if (token) {
+            DerivWSAccountsService.fetchAccountsList(token)
+                .then(accounts => {
+                    if (cancelled || !accounts?.length) return;
+                    setStoredAccounts(prev => {
+                        const next = new Map(prev.map(account => [account.account_id, account]));
+                        accounts.forEach(account => next.set(account.account_id, account));
+                        return Array.from(next.values());
+                    });
+                })
+                .catch(() => undefined);
+        }
+
+        const send = api_base?.api?.send as
+            | ((req: Record<string, unknown>) => Promise<unknown> | void)
+            | undefined;
+        if (send) {
+            Promise.resolve(send({ balance: 1, account: 'all' }))
+                .then(response => {
+                    if (cancelled) return;
+                    const accounts = (response as { balance?: { accounts?: Record<string, { balance?: number; currency?: string; demo_account?: number }> } })
+                        ?.balance?.accounts;
+                    if (!accounts) return;
+                    setSocketAccounts(
+                        Object.entries(accounts).map(([loginid, account]) => ({
+                            loginid,
+                            currency: account.currency || 'USD',
+                            balance: addComma(Number(account.balance ?? 0).toFixed(getDecimalPlaces(account.currency))),
+                            isVirtual: account.demo_account === 1 || isVirtualLoginid(loginid),
+                            isActive: loginid === activeLoginid,
+                        }))
+                    );
+                })
+                .catch(() => undefined);
+        }
 
         return () => {
             cancelled = true;
         };
-    }, [isOpen]);
+    }, [isOpen, activeLoginid]);
 
     const handleAccountSelect = useCallback(
         (loginid: string) => {
@@ -170,50 +251,51 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     }, [is_bot_running, isResetting]);
 
     const formattedAccounts = useMemo(() => {
-        const byLoginid = new Map<
-            string,
-            {
-                loginid: string;
-                currency: string;
-                balance: string;
-                isVirtual: boolean;
-                isActive: boolean;
-            }
-        >();
+        const byLoginid = new Map<string, TSwitchAccount>();
+
+        const upsert = (account: TSwitchAccount) => {
+            if (!account.loginid) return;
+            const current = byLoginid.get(account.loginid);
+            byLoginid.set(account.loginid, {
+                ...current,
+                ...account,
+                isVirtual: isVirtualLoginid(account.loginid),
+                isActive: account.loginid === activeLoginid,
+            });
+        };
+
+        readLocalAccounts().forEach(upsert);
+        socketAccounts.forEach(upsert);
 
         storedAccounts
             .filter(account => !account.status || account.status === 'active')
             .forEach(account => {
+                const loginid = account.account_id;
                 const amount = Number(account.balance) || 0;
-                byLoginid.set(account.account_id, {
-                    loginid: account.account_id,
+                upsert({
+                    loginid,
                     currency: account.currency,
                     balance: addComma(amount.toFixed(getDecimalPlaces(account.currency))),
-                    isVirtual: account.account_type === 'demo' || isDemoAccount(account.account_id),
-                    isActive: account.account_id === activeLoginid,
+                    isVirtual: isVirtualLoginid(loginid),
+                    isActive: loginid === activeLoginid,
                 });
             });
 
         accountList?.forEach(account => {
             const liveBalance = client?.all_accounts_balance?.accounts?.[account.loginid]?.balance;
             const amount = liveBalance ?? account.balance ?? 0;
-            const stored = byLoginid.get(account.loginid);
-            const isVirtual =
-                account.is_virtual === 1 ||
-                stored?.isVirtual === true ||
-                (account.is_virtual !== 0 && isDemoAccount(account.loginid));
-            byLoginid.set(account.loginid, {
+            upsert({
                 loginid: account.loginid,
-                currency: account.currency || stored?.currency || 'USD',
-                balance: addComma(Number(amount).toFixed(getDecimalPlaces(account.currency || stored?.currency))),
-                isVirtual,
+                currency: account.currency,
+                balance: addComma(Number(amount).toFixed(getDecimalPlaces(account.currency))),
+                isVirtual: isVirtualLoginid(account.loginid),
                 isActive: account.loginid === activeLoginid,
             });
         });
 
         const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
         if (isLocalHost && byLoginid.size === 0) {
-            byLoginid.set(DESIGN_PREVIEW_ACCOUNT.loginid, {
+            upsert({
                 loginid: DESIGN_PREVIEW_ACCOUNT.loginid,
                 currency: 'USD',
                 balance: DESIGN_PREVIEW_ACCOUNT.balance,
@@ -223,7 +305,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
         }
 
         return Array.from(byLoginid.values()).sort((a, b) => (a.isActive ? -1 : b.isActive ? 1 : 0));
-    }, [accountList, activeLoginid, client?.all_accounts_balance, storedAccounts]);
+    }, [accountList, activeLoginid, client?.all_accounts_balance, socketAccounts, storedAccounts]);
 
     const visibleAccounts = useMemo(
         () => formattedAccounts.filter(account => (tab === 'demo' ? account.isVirtual : !account.isVirtual)),
