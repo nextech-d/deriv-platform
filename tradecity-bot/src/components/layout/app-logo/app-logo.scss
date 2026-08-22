@@ -2,11 +2,13 @@
     &__logo {
         display: flex;
         align-items: center;
+        width: var(--tc-brand-w, 12.4rem);
         height: 100%;
-        padding-inline-start: 2.2rem;
-        padding-inline-end: 2rem;
-        border-inline-end: 1px solid rgb(15 23 42 / 8%);
+        padding-inline-start: 2rem;
+        padding-inline-end: 0;
+        border-inline-end: none;
         text-decoration: none;
+        box-sizing: border-box;
     }
 
     &__name {
@@ -15,7 +17,7 @@
         font-weight: 700;
         letter-spacing: -0.05em;
         line-height: 1;
-        color: var(--text-general);
+        color: var(--text-prominent);
         white-space: nowrap;
 
         span {

@@ -4,7 +4,6 @@ import { observer } from 'mobx-react-lite';
 import { useStore } from '@/hooks/useStore';
 import { useDevice } from '@deriv-com/ui';
 import OnboardTourHandler from '../tutorials/dbot-tours/onboarding-tour';
-import Announcements from './announcements';
 import Cards from './cards';
 import HeroHeadline from './hero-headline';
 import InfoPanel from './info-panel';
@@ -14,11 +13,9 @@ type TMobileIconGuide = {
 };
 
 const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
-    const { load_modal, dashboard, client } = useStore();
-    const { dashboard_strategies } = load_modal;
+    const { dashboard } = useStore();
     const { active_tab, active_tour } = dashboard;
-    const has_dashboard_strategies = !!dashboard_strategies?.length;
-    const { isDesktop, isTablet } = useDevice();
+    const { isDesktop } = useDevice();
 
     return (
         <React.Fragment>
@@ -34,13 +31,6 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                             <span className='dashboard-hero__stars' />
                             <span className='dashboard-hero__haze' />
                         </div>
-                        {client.is_logged_in && (
-                            <Announcements
-                                is_mobile={!isDesktop}
-                                is_tablet={isTablet}
-                                handleTabChange={handleTabChange}
-                            />
-                        )}
                         <div className='dashboard-hero__copy'>
                             <HeroHeadline />
                             <p className='dashboard-hero__quote'>
@@ -49,11 +39,7 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                             </p>
                         </div>
                         <div className='quick-panel'>
-                            <Cards
-                                has_dashboard_strategies={has_dashboard_strategies}
-                                is_mobile={!isDesktop}
-                                handleTabChange={handleTabChange}
-                            />
+                            <Cards is_mobile={!isDesktop} handleTabChange={handleTabChange} />
                         </div>
                     </div>
                 </div>

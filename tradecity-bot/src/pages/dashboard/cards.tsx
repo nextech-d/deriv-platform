@@ -1,5 +1,4 @@
 import React from 'react';
-import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import GoogleDrive from '@/components/load-modal/google-drive';
 import Dialog from '@/components/shared_ui/dialog';
@@ -9,15 +8,13 @@ import { useStore } from '@/hooks/useStore';
 import { writeFreeBotsTier } from '@/utils/free-bots-tier';
 import { localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
-import DashboardBotList from './bot-list/dashboard-bot-list';
 
 type TCardProps = {
-    has_dashboard_strategies: boolean;
     is_mobile: boolean;
     handleTabChange: (active_number: number) => void;
 };
 
-type HeroAccent = 'load' | 'speed' | 'premium' | 'standard' | 'analysis';
+type HeroAccent = 'load' | 'charts' | 'premium' | 'standard' | 'analysis';
 
 type HeroWindow = {
     id: string;
@@ -34,12 +31,11 @@ const WindowIcon = ({ path, stroke }: { path: string; stroke?: boolean }) => (
     </svg>
 );
 
-const Cards = observer(({ is_mobile, has_dashboard_strategies, handleTabChange }: TCardProps) => {
-    const { dashboard, load_modal, quick_strategy } = useStore();
+const Cards = observer(({ is_mobile, handleTabChange }: TCardProps) => {
+    const { dashboard, load_modal } = useStore();
     const { toggleLoadModal, setActiveTabIndex } = load_modal;
     const { isDesktop } = useDevice();
     const { onCloseDialog, dialog_options, is_dialog_open, setActiveTab, setPreviewOnPopup } = dashboard;
-    const { setFormVisibility } = quick_strategy;
 
     const openFileLoader = () => {
         toggleLoadModal();
@@ -58,21 +54,18 @@ const Cards = observer(({ is_mobile, has_dashboard_strategies, handleTabChange }
             title: 'Load bot',
             summary: 'Import an XML strategy from your device.',
             accent: 'load',
-            icon: <WindowIcon path='M4 7.5A2.5 2.5 0 016.5 5H9l1.2 1.6H17.5A2.5 2.5 0 0120 9.1V17a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 17z' />,
+            icon: (
+                <WindowIcon path='M4 7.5A2.5 2.5 0 016.5 5H9l1.2 1.6H17.5A2.5 2.5 0 0120 9.1V17a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 17z' />
+            ),
             onOpen: openFileLoader,
         },
         {
-            id: 'speed-bot',
-            title: 'Speed bot',
-            summary: 'Build a guided strategy quickly.',
-            accent: 'speed',
-            icon: (
-                <WindowIcon path='M12.6 3.2L5 13.1h5.1l-1.2 7.7 8.8-11.2h-5.2z' />
-            ),
-            onOpen: () => {
-                setActiveTab(DBOT_TABS.BOT_BUILDER);
-                setFormVisibility(true);
-            },
+            id: 'charts',
+            title: 'Charts',
+            summary: 'Read price action before you trade.',
+            accent: 'charts',
+            icon: <WindowIcon stroke path='M4 18h16M6 14l3.4-4.2 2.8 2.4 5.8-6.6' />,
+            onOpen: () => handleTabChange(DBOT_TABS.CHART),
         },
         {
             id: 'premium-bots',
@@ -85,7 +78,7 @@ const Cards = observer(({ is_mobile, has_dashboard_strategies, handleTabChange }
         {
             id: 'standard',
             title: 'Standard',
-            summary: 'Browse free strategies to load and edit.',
+            summary: 'Browse standard strategies to load and edit.',
             accent: 'standard',
             icon: (
                 <WindowIcon
@@ -106,11 +99,7 @@ const Cards = observer(({ is_mobile, has_dashboard_strategies, handleTabChange }
     ];
 
     return (
-        <div
-            className={classNames('tab__dashboard__table', {
-                'tab__dashboard__table--minimized': has_dashboard_strategies && is_mobile,
-            })}
-        >
+        <div className='tab__dashboard__table'>
             <div className='dashboard-hero__windows' id='tab__dashboard__table__tiles'>
                 {windows.map(windowItem => (
                     <button
@@ -157,7 +146,6 @@ const Cards = observer(({ is_mobile, has_dashboard_strategies, handleTabChange }
                     </div>
                 </MobileFullPageModal>
             )}
-            <DashboardBotList />
         </div>
     );
 });

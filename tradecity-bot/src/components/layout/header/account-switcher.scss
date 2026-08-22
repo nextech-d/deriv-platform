@@ -39,13 +39,13 @@
     padding: 0.35rem 1.1rem 0.35rem 0.35rem;
     width: max-content;
     border-radius: 999px;
-    border: 1px solid rgb(15 23 42 / 10%);
-    background: #fff;
-    box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+    border: 1px solid var(--general-section-1);
+    background: var(--general-main-1);
+    box-shadow: none;
 
     &:hover {
-        background: #fff !important;
-        border-color: rgb(15 23 42 / 18%);
+        background: var(--general-hover) !important;
+        border-color: var(--general-section-2);
     }
 
     &__preloader {
@@ -249,8 +249,8 @@
 
     @include desktop-screen {
         &:hover:not(.show, &--is-disabled) {
-            background: #fff;
-            border-color: rgb(15 23 42 / 18%);
+            background: var(--general-hover);
+            border-color: var(--general-section-2);
 
             .symbols {
                 background: transparent;
@@ -283,8 +283,8 @@
         cursor: pointer !important;
 
         &:hover {
-            background: #fff !important;
-            border-color: rgb(15 23 42 / 20%);
+            background: var(--general-hover) !important;
+            border-color: var(--general-section-2);
         }
     }
 

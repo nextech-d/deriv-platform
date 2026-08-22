@@ -4,6 +4,7 @@
 
 .layout {
     --tc-brand-h: 5.6rem;
+    --tc-brand-w: 12.4rem;
     --tc-menu-h: 4.4rem;
     --tc-header-h: calc(var(--tc-brand-h) + var(--tc-menu-h));
 
@@ -17,7 +18,8 @@
         inset-inline: 0;
         z-index: 15;
         width: 100%;
-        background: #fff;
+        padding-inline: 0;
+        background: var(--general-main-1);
         height: 5.6rem;
     }
 
@@ -33,9 +35,8 @@
             align-items: flex-start !important;
             overflow: visible;
             border-bottom: none;
-            box-shadow: 0 1px 0 rgb(15 23 42 / 6%), 0 16px 28px rgb(15 23 42 / 4%);
-            background:
-                linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 1px 0 var(--general-section-1);
+            background: var(--general-main-1);
         }
 
         .main-body {
