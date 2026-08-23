@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import AccountSwitcher from '../account-switcher';
+import AccountSwitcher, { DESIGN_PREVIEW_ACCOUNT } from '../account-switcher';
 
 const mockCheckAndRegenerateWebSocket = jest.fn();
 const mockRegenerateWebSocket = jest.fn();
@@ -239,6 +239,18 @@ describe('AccountSwitcher', () => {
         fireEvent.click(screen.getByRole('option', { name: /CR123/ }));
         expect(mockRegenerateWebSocket).not.toHaveBeenCalled();
         expect(mockCheckAndRegenerateWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('does not regenerate the socket for the localhost preview account', () => {
+        const { useApiBase } = require('@/hooks/useApiBase');
+        useApiBase.mockReturnValue({ accountList: [], activeLoginid: 'CR999' });
+        render(<AccountSwitcher activeAccount={DESIGN_PREVIEW_ACCOUNT} />);
+        fireEvent.click(screen.getByTestId('dt_acc_info'));
+        fireEvent.click(screen.getByRole('tab', { name: 'Demo' }));
+        fireEvent.click(screen.getByText('DOT93804017'));
+        expect(mockRegenerateWebSocket).not.toHaveBeenCalled();
+        expect(mockCheckAndRegenerateWebSocket).not.toHaveBeenCalled();
+        expect(localStorage.getItem('active_loginid')).not.toBe('DOT93804017');
     });
 
     it('shows the account mark and loginid in the dropdown card', () => {

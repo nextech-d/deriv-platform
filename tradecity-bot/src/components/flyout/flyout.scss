@@ -23,6 +23,8 @@
     height: calc(100vh - 232px);
     max-height: calc(100vh - 232px);
     z-index: 11;
+    pointer-events: auto;
+    isolation: isolate;
     border-radius: $BORDER_RADIUS;
     font-size: 2em;
     margin-inline-start: $default-margin;

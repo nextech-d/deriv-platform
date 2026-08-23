@@ -117,35 +117,56 @@ const AppContent = observer(() => {
         });
     };
 
+    const finishLoading = () => {
+        setIsLoading(false);
+    };
+
     const changeActiveSymbolLoadingState = () => {
-        init();
+        try {
+            init();
+        } catch (error) {
+            console.error('[App] Engine init failed, continuing', error);
+            finishLoading();
+            return;
+        }
 
         const retrieveActiveSymbols = () => {
             const { active_symbols } = ApiHelpers.instance;
+            if (!active_symbols?.retrieveActiveSymbols) {
+                finishLoading();
+                return;
+            }
 
-            active_symbols.retrieveActiveSymbols(true).then(() => {
-                setIsLoading(false);
+            const symbols = Promise.resolve(active_symbols.retrieveActiveSymbols(true)).catch(error => {
+                console.error('[App] Active symbols failed, continuing without them', error);
             });
+            const cap = new Promise(resolve => {
+                window.setTimeout(resolve, 4000);
+            });
+            Promise.race([symbols, cap]).finally(finishLoading);
         };
 
         if (ApiHelpers?.instance?.active_symbols) {
             retrieveActiveSymbols();
         } else {
-            // This is a workaround to fix the issue where the active symbols are not loaded immediately
-            // when the API is initialized. Should be replaced with RxJS pubsub
-            const intervalId = setInterval(() => {
-                if (ApiHelpers?.instance?.active_symbols) {
-                    clearInterval(intervalId);
-                    retrieveActiveSymbols();
-                }
-            }, 1000);
+            finishLoading();
         }
     };
 
+    // Hard cap: header-only splash if WS/symbols hang (localhost often times out).
+    React.useEffect(() => {
+        const safety = window.setTimeout(finishLoading, 2500);
+        return () => window.clearTimeout(safety);
+    }, []);
+
     React.useEffect(() => {
         if (is_api_initialized) {
-            init();
-            setIsLoading(true);
+            try {
+                init();
+            } catch (error) {
+                console.error('[App] Engine init failed, continuing', error);
+                finishLoading();
+            }
             if (!client.is_logged_in) {
                 changeActiveSymbolLoadingState();
             }

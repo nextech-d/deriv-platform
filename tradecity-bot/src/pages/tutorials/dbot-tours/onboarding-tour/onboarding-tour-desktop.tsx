@@ -18,8 +18,14 @@ const OnboardingTourDesktop = observer(() => {
         }
     }, [is_close_tour, is_finished, setActiveTour, setIsCloseTour]);
 
-    // Check if tour should be shown with setTimeout to prevent showing on every reload
+    // Check if tour should be shown with setTimeout to prevent showing on every reload.
+    // Localhost has no Deriv login — the modal only covers the account switcher.
     React.useEffect(() => {
+        const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        if (isLocalHost) {
+            if (is_tour_dialog_visible) setTourDialogVisibility(false);
+            return undefined;
+        }
         if (active_tab === 0) {
             const timeoutId = setTimeout(() => {
                 const token = getSetting('onboard_tour_token');

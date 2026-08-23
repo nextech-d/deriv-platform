@@ -838,7 +838,7 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    z-index: 3;
+    z-index: 40;
     width: 36rem;
     max-width: calc(100vw - 3.2rem);
     background-color: #ffffff;
@@ -846,6 +846,13 @@
     border-radius: 4px;
     box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
     overflow: hidden;
+
+    &--portal {
+        position: fixed;
+        top: auto;
+        right: auto;
+        z-index: 10000;
+    }
 
     &__tabs {
         display: grid;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { buildSmartchartsChampionAdapter } from '@/adapters/smartcharts-champion';
 import { createServices } from '@/adapters/smartcharts-champion/services';
 import { createTransport } from '@/adapters/smartcharts-champion/transport';
-import { FALLBACK_CHART_SYMBOLS } from '@/constants/chart-symbols';
+import { FALLBACK_CHART_SYMBOLS, FALLBACK_TRADING_TIMES } from '@/constants/chart-symbols';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
 import { quoteEpoch } from '@/utils/smartchart-quotes';
 import type { SmartchartsChampionAdapter } from '@/types/smartchart.types';
@@ -85,9 +85,25 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
         void chart_api.init();
     }, []);
 
-    // Initialize adapter - runs once when chart_api.api is available
+    // Initialize adapter once the chart websocket exists. chart_api.init() is
+    // async, so a one-shot effect would miss it and leave the chart frozen.
     useEffect(() => {
-        if (!adapterInitialized && chart_api.api) {
+        if (adapterInitialized) return undefined;
+
+        let cancelled = false;
+        let attempts = 0;
+
+        const tryInit = () => {
+            if (cancelled || !isMountedRef.current || adapterInitialized) return;
+
+            if (!chart_api.api) {
+                attempts += 1;
+                if (attempts < 25) {
+                    retryTimeoutRef.current = setTimeout(tryInit, 200);
+                }
+                return;
+            }
+
             try {
                 const transport = createTransport();
                 const services = createServices();
@@ -107,7 +123,13 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     setIsLoading(false);
                 }
             }
-        }
+        };
+
+        tryInit();
+
+        return () => {
+            cancelled = true;
+        };
     }, [adapterInitialized]);
 
     // Load chart data when adapter is initialized
@@ -142,7 +164,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     setChartData({
                         activeSymbols:
                             data.activeSymbols.length > 0 ? data.activeSymbols : FALLBACK_CHART_SYMBOLS,
-                        tradingTimes: data.tradingTimes,
+                        tradingTimes: { ...FALLBACK_TRADING_TIMES, ...data.tradingTimes },
                     });
                     setError(null);
                 }
@@ -168,7 +190,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     // Set fallback data to prevent undefined
                     setChartData({
                         activeSymbols: FALLBACK_CHART_SYMBOLS,
-                        tradingTimes: {} as TradingTimesMap,
+                        tradingTimes: FALLBACK_TRADING_TIMES as TradingTimesMap,
                     });
                 }
             } finally {

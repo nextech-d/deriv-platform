@@ -13,8 +13,14 @@ const BotBuilderTourDesktop = observer(() => {
     const { dashboard, load_modal } = useStore();
     const { active_tab, active_tour, setActiveTour, setTourDialogVisibility, is_tour_dialog_visible } = dashboard;
     const { is_load_modal_open } = load_modal;
-    // Check if tour should be shown with setTimeout to prevent showing on every reload
+    // Check if tour should be shown with setTimeout to prevent showing on every reload.
+    // Localhost has no Deriv login — the modal only covers the account switcher.
     React.useEffect(() => {
+        const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        if (isLocalHost) {
+            if (is_tour_dialog_visible) setTourDialogVisibility(false);
+            return undefined;
+        }
         if (active_tab === 1) {
             const timeoutId = setTimeout(() => {
                 const token = getSetting('bot_builder_token');

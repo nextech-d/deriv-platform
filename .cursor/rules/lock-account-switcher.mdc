@@ -1,0 +1,28 @@
+---
+description: Account switcher is locked — never edit unless the user explicitly names these files
+alwaysApply: true
+---
+
+# Account switcher is locked
+
+Do **not** read-to-edit, patch, format, revert, or "fix" these files unless the user **explicitly names them** in that message. Adjacent work, Bot Builder, tours, charts, init splash, HMR, refactors, and "while I'm here" changes do **not** count.
+
+## Locked files
+
+- `tradecity-bot/src/components/layout/header/account-switcher.tsx`
+- `tradecity-bot/src/components/layout/header/account-switcher.scss`
+- `tradecity-bot/src/components/layout/header/header.tsx`
+- `tradecity-bot/src/components/layout/header/account-info-wrapper.tsx`
+- `tradecity-bot/src/components/layout/header/common/types.tsx`
+- `tradecity-bot/src/components/layout/header/__tests__/account-switcher.spec.tsx`
+- `tradecity-bot/src/components/layout/layout.scss`
+- `tradecity-bot/src/pages/tutorials/dbot-tours/onboarding-tour/onboarding-tour-desktop.tsx`
+- `tradecity-bot/src/pages/tutorials/dbot-tours/bot-builder-tour/bot-builder-tour-desktop.tsx`
+
+## Also locked
+
+- Do not add, remove, or restyle the header account switcher, Real/Demo tabs, Transfer button, or localhost preview account from any other file.
+- Do not auto-show the onboarding / Bot Builder tour on localhost (that overlay covers the switcher).
+- Do not `git checkout` / restore these paths unless the user asked.
+
+If a task seems to require a change here, **stop and ask**. Leave the files untouched.

@@ -136,20 +136,11 @@ const AppHeader = observer(() => {
 
     const renderAccountSection = useCallback(
         (position: 'left' | 'right' = 'right') => {
-            if (isLocalHost && !activeLoginid && position === 'right' && isDesktop) {
+            if (position === 'right' && isDesktop && (isLocalHost || activeLoginid)) {
                 return (
                     <div className='auth-actions'>
                         <div className='account-info'>
-                            <AccountSwitcher activeAccount={DESIGN_PREVIEW_ACCOUNT} />
-                        </div>
-                    </div>
-                );
-            }
-            if (activeLoginid && !is_account_regenerating && position === 'right') {
-                return (
-                    <div className='auth-actions'>
-                        <div className='account-info'>
-                            <AccountSwitcher activeAccount={activeAccount} />
+                            <AccountSwitcher activeAccount={activeAccount ?? DESIGN_PREVIEW_ACCOUNT} />
                         </div>
                     </div>
                 );

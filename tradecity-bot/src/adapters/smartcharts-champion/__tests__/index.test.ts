@@ -3,6 +3,7 @@
  * Tests the main adapter implementation including transformations and core functionality
  */
 
+import { FALLBACK_TRADING_TIMES } from '@/constants/chart-symbols';
 import { buildSmartchartsChampionAdapter } from '../index';
 import type { TGetQuotesRequest, TServices, TTransport } from '../types';
 
@@ -330,7 +331,7 @@ describe('SmartCharts Champion Adapter', () => {
             const result = await adapter.getChartData();
 
             expect(result.activeSymbols).toEqual([]);
-            expect(result.tradingTimes).toEqual({});
+            expect(result.tradingTimes).toEqual(FALLBACK_TRADING_TIMES);
         });
     });
 

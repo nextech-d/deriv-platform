@@ -128,9 +128,11 @@ class DBot {
                     if (is_mobile) {
                         workspaceScale = 0.6;
                     } else {
-                        const scratch_div_width = document.getElementById('scratch_div')?.offsetWidth;
-                        const zoom_scale = scratch_div_width / window_width / 1.5;
-                        workspaceScale = zoom_scale;
+                        const scratch_div_width = document.getElementById('scratch_div')?.offsetWidth || 0;
+                        // Inject often runs before Bot Builder is laid out. A 0-width
+                        // scratch_div used to set startScale to 0 and hide every block.
+                        const zoom_scale = scratch_div_width > 0 ? scratch_div_width / window_width / 1.5 : 0.7;
+                        workspaceScale = Math.min(0.8, Math.max(0.55, zoom_scale));
                     }
                 }
                 const el_scratch_div = document.getElementById('scratch_div');

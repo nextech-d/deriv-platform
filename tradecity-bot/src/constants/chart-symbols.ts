@@ -50,3 +50,16 @@ export const FALLBACK_CHART_SYMBOLS: ActiveSymbol[] = [
 ];
 
 export const DEFAULT_CHART_SYMBOL = 'R_10';
+
+/** Synthetics trade 24/7 — keep the chart live when trading_times is empty. */
+export const FALLBACK_TRADING_TIMES = FALLBACK_CHART_SYMBOLS.reduce(
+    (times, symbol) => {
+        times[symbol.symbol] = {
+            isOpen: true,
+            openTime: '00:00:00',
+            closeTime: '23:59:59',
+        };
+        return times;
+    },
+    {} as Record<string, { isOpen: boolean; openTime: string; closeTime: string }>
+);

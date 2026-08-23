@@ -7,7 +7,7 @@
     height: 0;
 
     &__container {
-        height: var(--tab-content-height) !important;
+        height: calc(100vh - 10.4rem - 5.2rem) !important;
         top: 10.4rem !important;
         width: 36.6rem !important;
         right: 0;

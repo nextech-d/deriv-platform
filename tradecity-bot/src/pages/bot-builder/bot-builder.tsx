@@ -15,7 +15,7 @@ import QuickStrategy1 from './quick-strategy';
 import WorkspaceWrapper from './workspace-wrapper';
 
 const BotBuilder = observer(() => {
-    const { dashboard, app, run_panel, toolbar, quick_strategy, blockly_store } = useStore();
+    const { dashboard, app, run_panel, toolbar, quick_strategy, blockly_store, toolbox } = useStore();
     const { active_tab, active_tour, is_preview_on_popup } = dashboard;
     const { BOT_BUILDER } = DBOT_TABS;
     const { is_open } = quick_strategy;
@@ -39,8 +39,16 @@ const BotBuilder = observer(() => {
 
     React.useEffect(() => {
         if (active_tab !== BOT_BUILDER || is_preview_on_popup) return;
-        void app.ensureBlocklyWorkspace();
-    }, [active_tab, app, is_preview_on_popup]);
+        void (async () => {
+            await app.ensureBlocklyWorkspace();
+            toolbox.is_workspace_scroll_adjusted = false;
+            toolbox.adjustWorkspace();
+            window.setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                window.Blockly?.svgResize?.(window.Blockly.derivWorkspace);
+            }, 50);
+        })();
+    }, [active_tab, app, is_preview_on_popup, toolbox]);
 
     React.useEffect(() => {
         const workspace = window.Blockly?.derivWorkspace;

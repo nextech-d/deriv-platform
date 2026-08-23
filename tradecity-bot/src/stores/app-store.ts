@@ -56,6 +56,8 @@ export default class AppStore {
             await waitForDomElement('#scratch_div');
             await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
             blockly_store.setContainerSize();
+            window.Blockly?.svgResize?.(window.Blockly.derivWorkspace);
+            window.dispatchEvent(new Event('resize'));
             blockly_store.setWorkspaceReady(Boolean(window.Blockly?.derivWorkspace));
             return blockly_store.workspace_ready;
         } catch (error) {

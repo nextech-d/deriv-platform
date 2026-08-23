@@ -54,6 +54,7 @@ export default class ToolboxStore {
     is_workspace_scroll_adjusted = false;
 
     onMount = (toolbox_ref: React.RefObject<HTMLDivElement>) => {
+        this.is_workspace_scroll_adjusted = false;
         this.adjustWorkspace();
 
         this.toolbox_dom = window.Blockly.utils.xml.textToDom(toolbox_ref?.current);
@@ -144,8 +145,25 @@ export default class ToolboxStore {
 
             setTimeout(() => {
                 const workspace = window.Blockly.derivWorkspace;
+                if (!workspace) {
+                    this.is_workspace_scroll_adjusted = false;
+                    this.is_adjusting_workspace = false;
+                    return;
+                }
+
+                if (!workspace.scale || workspace.scale < 0.4) {
+                    workspace.setScale(0.7);
+                    window.Blockly.svgResize(workspace);
+                }
+
                 const toolbox_width = document.getElementById('gtm-toolbox')?.getBoundingClientRect().width || 0;
                 const block_canvas_rect = workspace.svgBlockCanvas_?.getBoundingClientRect(); // eslint-disable-line
+
+                if (!block_canvas_rect) {
+                    this.is_workspace_scroll_adjusted = false;
+                    this.is_adjusting_workspace = false;
+                    return;
+                }
 
                 if (workspace.RTL && block_canvas_rect) {
                     const is_mobile = this.core.ui.is_mobile;

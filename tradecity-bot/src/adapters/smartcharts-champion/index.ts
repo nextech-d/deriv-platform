@@ -5,6 +5,7 @@
  */
 
 import { ActiveSymbol } from '@deriv-com/smartcharts-champion';
+import { FALLBACK_TRADING_TIMES } from '@/constants/chart-symbols';
 import { smartChartCandleQuote, smartChartTickQuote } from '@/utils/smartchart-quotes';
 import type {
     ActiveSymbols,
@@ -336,14 +337,17 @@ export function buildSmartchartsChampionAdapter(
                 ]);
 
                 const activeSymbols = transformations.toActiveSymbols(activeSymbolsData);
-                const tradingTimes = transformations.toTradingTimesMap(tradingTimesData);
+                const tradingTimes = {
+                    ...FALLBACK_TRADING_TIMES,
+                    ...transformations.toTradingTimesMap(tradingTimesData),
+                };
 
                 return { activeSymbols, tradingTimes };
             } catch (error) {
                 logger.error('Error in getChartData:', error);
                 return {
                     activeSymbols: [] as ActiveSymbols,
-                    tradingTimes: {} as TradingTimesMap,
+                    tradingTimes: FALLBACK_TRADING_TIMES as TradingTimesMap,
                 };
             }
         },

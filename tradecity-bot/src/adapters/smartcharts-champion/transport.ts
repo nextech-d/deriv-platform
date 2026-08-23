@@ -47,23 +47,33 @@ export function createTransport(): TTransport {
             // Send initial subscription request
             const subscribeRequest = { ...request, subscribe: 1 };
 
+            const requestedSymbol = request.ticks_history || request.ticks;
+
             // Set up global message listener first (before sending request)
             const messageSubscription = chart_api.api.onMessage()?.subscribe(({ data }: { data: any }) => {
-                const subscriptionId = data?.subscription?.id;
-
-                // Check if this message belongs to our subscription
                 const storedSub = subscriptions.get(tempId);
-                if (storedSub && subscriptionId) {
-                    // Update the subscription with the real ID
+                if (!storedSub) return;
+
+                const subscriptionId = data?.subscription?.id;
+                if (subscriptionId) {
                     if (!storedSub.realSubscriptionId) {
                         storedSub.realSubscriptionId = subscriptionId;
                         subscriptions.set(tempId, storedSub);
                     }
-
-                    // Forward the message if it matches our subscription
                     if (subscriptionId === storedSub.realSubscriptionId) {
                         callback(data);
+                        return;
                     }
+                }
+
+                // Deriv tick/ohlc frames sometimes omit subscription.id. Match by symbol
+                // so the chart keeps moving instead of freezing on the first candle.
+                const msgSymbol =
+                    data?.tick?.symbol || data?.ohlc?.symbol || data?.echo_req?.ticks_history || data?.echo_req?.ticks;
+                const isQuote =
+                    Boolean(data?.tick || data?.ohlc) || data?.msg_type === 'tick' || data?.msg_type === 'ohlc';
+                if (isQuote && requestedSymbol && msgSymbol === requestedSymbol) {
+                    callback(data);
                 }
             });
 

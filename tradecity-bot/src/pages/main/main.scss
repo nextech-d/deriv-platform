@@ -430,7 +430,8 @@
 .dashboard {
     &__chart-wrapper {
         position: relative;
-        height: var(--tab-content-height);
+        height: calc(100vh - var(--tc-header-h, 10rem) - 8.4rem);
+        min-height: 32rem;
         width: 100%;
         transition: all 0.4s;
 
@@ -555,6 +556,8 @@
     z-index: -1;
     background: var(--general-main-1);
     height: var(--tab-content-height);
+    width: var(--bot-content-width);
+    overflow: hidden;
 
     .injectionDiv {
         .blocklyTrash {

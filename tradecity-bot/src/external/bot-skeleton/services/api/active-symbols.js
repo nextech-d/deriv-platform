@@ -54,13 +54,20 @@ export default class ActiveSymbols {
         if (api_base.has_active_symbols) {
             this.active_symbols = api_base?.active_symbols ?? [];
         } else {
-            // If promise doesn't exist, trigger the fetch
-            if (!api_base.active_symbols_promise) {
-                api_base.active_symbols_promise = api_base.getActiveSymbols();
+            try {
+                // If promise doesn't exist, trigger the fetch
+                if (!api_base.active_symbols_promise) {
+                    api_base.active_symbols_promise = api_base.getActiveSymbols();
+                }
+                // Wait for the promise and use its resolved value
+                const symbols = await api_base.active_symbols_promise;
+                this.active_symbols = symbols ?? api_base?.active_symbols ?? [];
+            } catch (error) {
+                console.error('Failed to fetch active symbols:', error);
+                api_base.active_symbols_promise = null;
+                this.active_symbols = [];
+                this.has_initialization_error = true;
             }
-            // Wait for the promise and use its resolved value
-            const symbols = await api_base.active_symbols_promise;
-            this.active_symbols = symbols ?? api_base?.active_symbols ?? [];
         }
 
         // If still no symbols after waiting, try one more time with a fresh fetch
