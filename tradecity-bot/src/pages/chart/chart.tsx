@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 /* [AI] - Analytics removed - rudderstack event tracking removed */
 /* [/AI] */
-import { DEFAULT_CHART_SYMBOL, FALLBACK_CHART_SYMBOLS, FALLBACK_TRADING_TIMES } from '@/constants/chart-symbols';
+import { DEFAULT_CHART_SYMBOL } from '@/constants/chart-symbols';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
 import { useSmartChartAdaptor } from '@/hooks/useSmartChartAdaptor';
 import { useStore } from '@/hooks/useStore';
@@ -77,6 +77,14 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         }
     }, [symbol, updateSymbol, onSymbolChange]);
 
+    useEffect(() => {
+        if (!adapterInitialized || !chartData.activeSymbols.length) return;
+        const current = symbol || DEFAULT_CHART_SYMBOL;
+        if (chartData.activeSymbols.some(item => item.symbol === current)) return;
+        const first = chartData.activeSymbols[0];
+        if (first) onSymbolChange(first.symbol);
+    }, [adapterInitialized, chartData.activeSymbols, symbol, onSymbolChange]);
+
     const is_connection_opened = adapterInitialized || !!chart_api?.api;
     const resolvedSymbol = symbol || DEFAULT_CHART_SYMBOL;
     const normalizedChartType = normalizeSmartChartType(chart_type);
@@ -91,15 +99,22 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         }
     };
 
-    const activeSymbols =
-        chartData.activeSymbols.length > 0 ? chartData.activeSymbols : FALLBACK_CHART_SYMBOLS;
-    const tradingTimes = {
-        ...FALLBACK_TRADING_TIMES,
-        ...chartData.tradingTimes,
-    };
+    const activeSymbols = chartData.activeSymbols;
+    const tradingTimes = chartData.tradingTimes;
+    const symbolReady = activeSymbols.some(item => item.symbol === resolvedSymbol);
 
-    if (!resolvedSymbol) {
-        return null;
+    if (!resolvedSymbol || !adapterInitialized || !symbolReady) {
+        return (
+            <div
+                className={classNames('dashboard__chart-wrapper', 'dashboard__chart-wrapper--pending', {
+                    'dashboard__chart-wrapper--expanded': is_drawer_open && isDesktop,
+                    'dashboard__chart-wrapper--modal': is_chart_modal_visible && isDesktop,
+                })}
+                dir='ltr'
+            >
+                <p>Loading live chart…</p>
+            </div>
+        );
     }
 
     return (

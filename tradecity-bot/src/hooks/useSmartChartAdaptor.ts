@@ -55,8 +55,8 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
         activeSymbols: ActiveSymbols;
         tradingTimes: TradingTimesMap;
     }>({
-        activeSymbols: FALLBACK_CHART_SYMBOLS,
-        tradingTimes: FALLBACK_TRADING_TIMES as TradingTimesMap,
+        activeSymbols: [] as ActiveSymbols,
+        tradingTimes: {} as TradingTimesMap,
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -164,7 +164,10 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                     setChartData({
                         activeSymbols:
                             data.activeSymbols.length > 0 ? data.activeSymbols : FALLBACK_CHART_SYMBOLS,
-                        tradingTimes: { ...FALLBACK_TRADING_TIMES, ...data.tradingTimes },
+                        tradingTimes:
+                            data.activeSymbols.length > 0
+                                ? data.tradingTimes
+                                : { ...FALLBACK_TRADING_TIMES, ...data.tradingTimes },
                     });
                     setError(null);
                 }
@@ -218,7 +221,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
     const getQuotes: TGetQuotes = useCallback(
         async params => {
             if (!adapter) {
-                throw new Error('Adapter not initialized');
+                return { history: { prices: [], times: [] } };
             }
 
             const result = await adapter.getQuotes({

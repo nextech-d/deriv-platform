@@ -195,18 +195,31 @@ describe('useSmartChartAdaptor', () => {
         });
 
         it('should set fallback data on error', async () => {
+            jest.useFakeTimers();
             mockAdapter.getChartData.mockRejectedValue(new Error('Network error'));
 
             const { result } = renderHook(() => useSmartChartAdaptor());
 
             await waitFor(() => {
-                expect(result.current.isLoading).toBe(false);
+                expect(result.current.adapterInitialized).toBe(true);
             });
 
-            expect(result.current.chartData).toEqual({
-                activeSymbols: FALLBACK_CHART_SYMBOLS,
-                tradingTimes: FALLBACK_TRADING_TIMES,
-            });
+            for (let i = 0; i < 10; i++) {
+                jest.advanceTimersByTime(200);
+                await Promise.resolve();
+            }
+
+            await waitFor(
+                () => {
+                    expect(result.current.chartData).toEqual({
+                        activeSymbols: FALLBACK_CHART_SYMBOLS,
+                        tradingTimes: FALLBACK_TRADING_TIMES,
+                    });
+                },
+                { timeout: 5000 }
+            );
+
+            jest.useRealTimers();
         });
     });
 
@@ -294,7 +307,7 @@ describe('useSmartChartAdaptor', () => {
             });
         });
 
-        it('should throw error if adapter not initialized', async () => {
+        it('should return empty history if adapter not initialized', async () => {
             chart_api.api = null;
 
             const { result } = renderHook(() => useSmartChartAdaptor());
@@ -305,7 +318,7 @@ describe('useSmartChartAdaptor', () => {
                     granularity: 0,
                     count: 100,
                 })
-            ).rejects.toThrow('Adapter not initialized');
+            ).resolves.toEqual({ history: { prices: [], times: [] } });
         });
     });
 

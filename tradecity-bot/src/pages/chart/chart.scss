@@ -121,6 +121,21 @@
     }
 }
 
+.dashboard__chart-wrapper--pending {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24rem;
+    height: 100%;
+    background: var(--tc-card, var(--general-main-1));
+
+    p {
+        margin: 0;
+        color: var(--tc-muted, var(--text-less-prominent));
+        font-size: 1.3rem;
+    }
+}
+
 // Safari-specific fixes
 .dashboard__chart-wrapper--safari {
     .smartcharts-mobile {
