@@ -46,7 +46,7 @@ const MODES: Array<{ id: AnalysisMode; label: string }> = [
 type DigitRank = 'hot' | 'warm' | 'cool' | 'cold' | null;
 
 const EMPTY_COUNTS = Array.from({ length: 10 }, () => 0);
-const MARK_COLORS = ['#ff444f', '#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#eab308'];
+const MARK_COLORS = ['#fb7185', '#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#eab308'];
 
 const sentenceCase = (value: string): string => {
     const trimmed = value.trim();
@@ -464,7 +464,7 @@ const AnalysisToolDesk = ({
                     <article className='analysis-tool-card'>
                         <header className='analysis-tool-card-top'>
                             <h2>
-                                <i className='analysis-tool-mark' style={{ background: '#000' }} aria-hidden />
+                                <i className='analysis-tool-mark' aria-hidden />
                                 Digit pad
                             </h2>
                             <div className='analysis-tool-card-marks'>

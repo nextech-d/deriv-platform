@@ -1,9 +1,9 @@
 @use 'components/shared/styles/mixins' as *;
 
-/* Analysis tool — catalog strip, centered wide cards. */
+/* Analysis tool — catalog + work cards as dashboard windows. Scan behaviour is unchanged. */
 .analysis-tool {
-    --at-red: var(--brand-red-coral, #ff444f);
-    --at-ink: #000;
+    --at-accent: #0ea5e9;
+    --at-ink: var(--tc-ink);
 
     display: flex;
     flex-direction: column;
@@ -20,6 +20,13 @@
     color: var(--tc-ink);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
+    @include desktop-screen {
+        margin: -1.6rem;
+        width: calc(100% + 3.2rem);
+        max-height: calc(var(--tab-content-height) + 3.2rem);
+        height: calc(100% + 3.2rem);
+    }
+
     @include mobile-or-tablet-screen {
         max-height: var(--tab-content-height-mobile);
     }
@@ -28,15 +35,21 @@
 .analysis-tool-toolbar {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 1.2rem;
-    min-height: 4.8rem;
-    padding: 0.6rem 1.2rem;
+    min-height: 5.2rem;
+    margin: 0;
+    padding: 0.7rem 2.4rem;
+    border: none;
+    border-radius: 0;
     border-bottom: 1px solid var(--tc-card-border);
     background: var(--tc-card);
+    box-shadow:
+        0 1px 0 color-mix(in srgb, var(--at-accent) 35%, transparent),
+        0 10px 24px rgb(19 32 51 / 5%);
     flex-shrink: 0;
 }
 
@@ -59,26 +72,26 @@
 .analysis-tool-rule {
     width: 1px;
     height: 1.35rem;
-    background: var(--general-section-1);
+    background: var(--tc-card-border);
 }
 
 .analysis-tool-segment {
     display: flex;
     overflow: hidden;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: var(--tc-card);
 }
 
 .analysis-tool-seg {
-    min-height: 2.6rem;
+    min-height: 2.15rem;
     padding: 0 0.9rem;
     border: none;
-    border-right: 1px solid var(--general-section-1);
-    background: var(--general-main-1);
-    color: var(--text-less-prominent);
+    border-right: 1px solid var(--tc-card-border);
+    background: var(--tc-card);
+    color: var(--tc-muted);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
     cursor: pointer;
 }
@@ -89,12 +102,12 @@
 
 .analysis-tool-seg:hover {
     color: var(--at-ink);
-    background: var(--general-hover);
+    background: color-mix(in srgb, var(--tc-ink) 5%, var(--tc-card));
 }
 
 .analysis-tool-seg.is-on {
     color: #fff;
-    background: var(--at-red);
+    background: var(--at-accent);
 }
 
 .analysis-tool-chip,
@@ -104,8 +117,8 @@
     min-height: 1.7rem;
     padding: 0.12rem 0.4rem;
     border-radius: 4px;
-    background: var(--general-section-1);
-    color: var(--text-less-prominent);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
+    color: var(--tc-muted);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
@@ -117,10 +130,10 @@
     min-height: 1.7rem;
     padding: 0 0.5rem;
     border-radius: 6px;
-    background: color-mix(in srgb, var(--at-red) 10%, var(--general-main-1));
-    color: var(--at-red);
+    background: color-mix(in srgb, var(--at-accent) 12%, var(--tc-card));
+    color: var(--at-accent);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
@@ -128,9 +141,10 @@
     min-height: 2.6rem;
     padding: 0 0.85rem;
     border: none;
-    border-radius: 8px;
-    background: #000;
+    border-radius: 0.85rem;
+    background: var(--at-accent);
     color: #fff;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--at-accent) 28%, transparent);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.3rem;
     font-weight: 700;
@@ -143,7 +157,7 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     font-size: 1.2rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-legend span {
@@ -157,14 +171,14 @@
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 2px;
-    background: var(--general-section-1);
+    background: color-mix(in srgb, var(--tc-ink) 10%, var(--tc-card));
 }
 
 .analysis-tool-legend .is-hot::before,
 .analysis-tool-digit span.is-hot,
 .analysis-tool-freq-row span.is-hot,
 .analysis-tool-pill.is-hot {
-    background: var(--at-red);
+    background: var(--at-accent);
     color: #fff;
 }
 
@@ -185,8 +199,8 @@
 .analysis-tool-legend .is-cold::before,
 .analysis-tool-digit span.is-cold,
 .analysis-tool-freq-row span.is-cold {
-    background: var(--general-section-1);
-    color: var(--text-less-prominent);
+    background: color-mix(in srgb, var(--tc-ink) 10%, var(--tc-card));
+    color: var(--tc-muted);
 }
 
 .analysis-tool-grid,
@@ -196,7 +210,12 @@
     align-items: stretch;
     width: 100%;
     margin-inline: auto;
-    padding: 1.2rem 2.4rem 6.4rem;
+    padding: 6rem 9.6rem 6.4rem;
+    box-sizing: border-box;
+
+    @include mobile-or-tablet-screen {
+        padding: 3.4rem 4.8rem 6.4rem;
+    }
 }
 
 .analysis-tool-grid {
@@ -220,26 +239,39 @@
 }
 
 .analysis-tool-card {
+    --window-accent: var(--at-accent);
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
     min-width: 0;
     min-height: 0;
-    padding: 1.8rem 2rem 1.6rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
-    box-shadow: 0 1px 2px var(--shadow-drop);
+    padding: 1.8rem 2rem 2rem;
+    border: 1px solid var(--tc-card-border);
+    border-radius: 1.1rem;
+    background: var(--tc-card);
+    box-shadow: var(--tc-card-shadow);
+    overflow: hidden;
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: auto 12% 0;
+        height: 0.4rem;
+        border-radius: 999px 999px 0 0;
+        background: var(--window-accent);
+        box-shadow: 0 0 18px var(--window-accent);
+        pointer-events: none;
+    }
 }
 
 .analysis-tool-card.is-on,
 .analysis-tool-card.is-strong {
-    border-color: color-mix(in srgb, var(--at-red) 42%, var(--general-section-1));
+    border-color: color-mix(in srgb, var(--window-accent) 42%, var(--tc-card-border));
 }
 
 .analysis-tool-card:hover {
-    border-color: color-mix(in srgb, var(--at-red) 42%, var(--general-section-1));
-    box-shadow: 0 4px 12px var(--shadow-drop);
+    border-color: color-mix(in srgb, var(--window-accent) 42%, var(--tc-card-border));
 }
 
 .analysis-tool-card-top {
@@ -258,7 +290,7 @@
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.6rem;
     font-weight: 700;
-    letter-spacing: 0;
+    letter-spacing: -0.02em;
     line-height: 1.25;
     color: var(--at-ink);
 }
@@ -279,6 +311,7 @@
     width: 0.7rem;
     height: 0.7rem;
     border-radius: 2px;
+    background: var(--at-accent);
 }
 
 .analysis-tool-card-marks {
@@ -292,7 +325,7 @@
     margin: 0;
     font-size: 1.3rem;
     line-height: 1.4;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-digits {
@@ -322,21 +355,21 @@
     width: 2.8rem;
     height: 2.8rem;
     border-radius: 999px;
-    background: var(--general-section-2);
-    color: var(--text-general);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
+    color: var(--tc-ink);
     font-size: 1.3rem;
     font-weight: 700;
 }
 
 .analysis-tool-digit:hover span:not([class*='is-']) {
-    background: var(--general-section-1);
+    background: color-mix(in srgb, var(--tc-ink) 10%, var(--tc-card));
 }
 
 .analysis-tool-digit small {
     font-size: 1.2rem;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-load {
@@ -345,9 +378,10 @@
     margin-top: auto;
     padding: 0 0.85rem;
     border: none;
-    border-radius: 8px;
-    background: #000;
+    border-radius: 0.85rem;
+    background: var(--at-accent);
     color: #fff;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--at-accent) 28%, transparent);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.4rem;
     font-weight: 700;
@@ -364,11 +398,11 @@
     overflow: hidden;
     height: 0.4rem;
     border-radius: 999px;
-    background: var(--general-section-1);
+    background: color-mix(in srgb, var(--tc-ink) 8%, var(--tc-card));
 }
 
 .analysis-tool-bar .is-even {
-    background: var(--at-red);
+    background: var(--at-accent);
 }
 
 .analysis-tool-bar .is-odd {
@@ -378,7 +412,7 @@
 .analysis-tool-strip-note {
     margin: 0;
     font-size: 1.2rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-strip {
@@ -390,7 +424,7 @@
 .analysis-tool-strip em {
     font-style: normal;
     font-size: 1.3rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-strip span {
@@ -405,13 +439,13 @@
 }
 
 .analysis-tool-strip .is-even {
-    color: var(--at-red);
-    background: color-mix(in srgb, var(--at-red) 12%, #fff);
+    color: var(--at-accent);
+    background: color-mix(in srgb, var(--at-accent) 12%, var(--tc-card));
 }
 
 .analysis-tool-strip .is-odd {
-    color: var(--text-general);
-    background: var(--general-section-2);
+    color: var(--tc-ink);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
 }
 
 .analysis-tool-stats {
@@ -423,9 +457,9 @@
 .analysis-tool-stat,
 .analysis-tool-field {
     padding: 0.75rem 0.85rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-section-2);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: color-mix(in srgb, var(--tc-ink) 3%, var(--tc-card));
 }
 
 .analysis-tool-stat p,
@@ -433,7 +467,7 @@
     margin: 0;
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-stat strong {
@@ -447,7 +481,7 @@
     display: block;
     margin-top: 0.15rem;
     font-size: 1.2rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-field {
@@ -459,10 +493,10 @@
 .analysis-tool-field select {
     min-height: 2.6rem;
     padding: 0 0.55rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
-    color: var(--text-general);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: var(--tc-card);
+    color: var(--tc-ink);
     font-size: 1.3rem;
 }
 
@@ -487,7 +521,7 @@
     width: 1.45rem;
     height: 1.45rem;
     border-radius: 999px;
-    background: var(--general-section-2);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
     font-weight: 700;
 }
 
@@ -496,18 +530,18 @@
     height: 0.4rem;
     overflow: hidden;
     border-radius: 999px;
-    background: var(--general-section-1);
+    background: color-mix(in srgb, var(--tc-ink) 8%, var(--tc-card));
 }
 
 .analysis-tool-freq-row b {
     display: block;
     height: 100%;
-    background: var(--at-red);
+    background: var(--at-accent);
 }
 
 .analysis-tool-freq-row small {
     text-align: right;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-pad {
@@ -523,10 +557,10 @@
     justify-content: center;
     gap: 0.15rem;
     min-height: 4.4rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
-    color: var(--text-general);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: var(--tc-card);
+    color: var(--tc-ink);
     cursor: pointer;
 }
 
@@ -536,21 +570,21 @@
 
 .analysis-tool-key span {
     font-size: 1.2rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .analysis-tool-key:hover {
-    background: var(--general-hover);
+    background: color-mix(in srgb, var(--tc-ink) 5%, var(--tc-card));
 }
 
 .analysis-tool-key.is-last {
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--at-red) 35%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--at-accent) 35%, transparent);
 }
 
 .analysis-tool-key.is-pick {
     color: #fff;
-    border-color: var(--at-red);
-    background: var(--at-red);
+    border-color: var(--at-accent);
+    background: var(--at-accent);
 }
 
 .analysis-tool-key.is-pick span {
