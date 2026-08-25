@@ -8,6 +8,7 @@ import { useStore } from '@/hooks/useStore';
 import { localize } from '@deriv-com/translations';
 import { STRATEGIES } from '../config';
 import { TFormValues } from '../types';
+import FormTabs from './form-tabs';
 import QSStepper from './qs-stepper';
 import StrategyTabContent from './strategy-tab-content';
 import StrategyTemplatePicker from './strategy-template-picker';
@@ -27,9 +28,16 @@ const MobileFormWrapper = observer(
         const { quick_strategy } = useStore();
         const { selected_strategy } = quick_strategy;
         const selected_startegy_label = STRATEGIES()[selected_strategy as keyof typeof STRATEGIES].label;
+        const description = STRATEGIES()[selected_strategy as keyof typeof STRATEGIES]?.description;
+        const strategy_description = description?.length ? description : undefined;
+        const [active_tab, setActiveTab] = React.useState('TRADE_PARAMETERS');
         const is_verified_or_completed_step =
             current_step === QsSteps.StrategyVerified || current_step === QsSteps.StrategyCompleted;
         const is_selected_strategy_step = current_step === QsSteps.StrategySelect;
+
+        React.useEffect(() => {
+            setActiveTab('TRADE_PARAMETERS');
+        }, [selected_strategy, is_selected_strategy_step]);
 
         React.useEffect(() => {
             validateForm();
@@ -86,7 +94,12 @@ const MobileFormWrapper = observer(
                                             </Text>
                                         </div>
                                     </div>
-                                    <StrategyTabContent formfields={children} active_tab={'TRADE_PARAMETERS'} />
+                                    <FormTabs
+                                        active_tab={active_tab}
+                                        onChange={setActiveTab}
+                                        description={strategy_description}
+                                    />
+                                    <StrategyTabContent formfields={children} active_tab={active_tab} />
                                 </>
                             )}
                         </ThemedScrollbars>

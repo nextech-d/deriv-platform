@@ -10,7 +10,8 @@ import { localize } from '@deriv-com/translations';
 /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
 /* [/AI] */
 import { STRATEGIES } from '../config';
-import { TFormData, TFormValues } from '../types';
+import { TDescriptionItem, TFormData, TFormValues } from '../types';
+import FormTabs from './form-tabs';
 import QSStepper from './qs-stepper';
 import StrategyTabContent from './strategy-tab-content';
 import StrategyTemplatePicker from './strategy-template-picker';
@@ -30,29 +31,38 @@ const QuickSelectionPanel = ({
     selected_trade_type,
     selected_startegy_label,
     children,
-}: Pick<TDesktopFormWrapper, 'selected_trade_type' | 'children'> & { selected_startegy_label: string }) => (
-    <>
-        <div className='qs__selected-options'>
-            <div className='qs__selected-options__item'>
-                <Text size='xs' lineHeight='s'>
-                    {localize('Trade type')}
-                </Text>
-                <Text size='xs' weight='bold' lineHeight='s'>
-                    {selected_trade_type}
-                </Text>
+    description,
+}: Pick<TDesktopFormWrapper, 'selected_trade_type' | 'children'> & {
+    selected_startegy_label: string;
+    description?: TDescriptionItem[];
+}) => {
+    const [active_tab, setActiveTab] = React.useState('TRADE_PARAMETERS');
+
+    return (
+        <>
+            <div className='qs__selected-options'>
+                <div className='qs__selected-options__item'>
+                    <Text size='xs' lineHeight='s'>
+                        {localize('Trade type')}
+                    </Text>
+                    <Text size='xs' weight='bold' lineHeight='s'>
+                        {selected_trade_type}
+                    </Text>
+                </div>
+                <div className='qs__selected-options__item'>
+                    <Text size='xs' lineHeight='s'>
+                        {localize('Strategy')}
+                    </Text>
+                    <Text className='qs__selected-options__item__description' weight='bold' lineHeight='s'>
+                        {selected_startegy_label}
+                    </Text>
+                </div>
             </div>
-            <div className='qs__selected-options__item'>
-                <Text size='xs' lineHeight='s'>
-                    {localize('Strategy')}
-                </Text>
-                <Text className='qs__selected-options__item__description' weight='bold' lineHeight='s'>
-                    {selected_startegy_label}
-                </Text>
-            </div>
-        </div>
-        <StrategyTabContent formfields={children} active_tab={'TRADE_PARAMETERS'} />
-    </>
-);
+            <FormTabs active_tab={active_tab} onChange={setActiveTab} description={description} />
+            <StrategyTabContent formfields={children} active_tab={active_tab} />
+        </>
+    );
+};
 
 const FormWrapper = observer(
     ({
@@ -70,6 +80,10 @@ const FormWrapper = observer(
         const { handleSubmit } = useQsSubmitHandler();
 
         const selected_startegy_label = STRATEGIES()[selected_strategy as keyof typeof STRATEGIES].label;
+        const selected_strategy_description = STRATEGIES()[selected_strategy as keyof typeof STRATEGIES]?.description;
+        const strategy_description = selected_strategy_description?.length
+            ? selected_strategy_description
+            : undefined;
         const is_selected_strategy_step = current_step === QsSteps.StrategySelect;
 
         React.useEffect(() => {
@@ -119,6 +133,7 @@ const FormWrapper = observer(
                         <QuickSelectionPanel
                             selected_trade_type={selected_trade_type}
                             selected_startegy_label={selected_startegy_label}
+                            description={strategy_description}
                         >
                             {children}
                         </QuickSelectionPanel>
@@ -128,6 +143,7 @@ const FormWrapper = observer(
                         <QuickSelectionPanel
                             selected_trade_type={selected_trade_type}
                             selected_startegy_label={selected_startegy_label}
+                            description={strategy_description}
                         >
                             {children}
                         </QuickSelectionPanel>
@@ -139,6 +155,7 @@ const FormWrapper = observer(
             current_step,
             selected_trade_type,
             selected_startegy_label,
+            strategy_description,
             children,
             setCurrentStep,
             setSelectedTradeType,
