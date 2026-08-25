@@ -174,6 +174,24 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
     return (
         <div className={classNames('animation__wrapper', className)}>
             <div className='animation__run-row'>
+            <div className='animation__speed' role='group' aria-label={localize('Run speed')}>
+                <button
+                    type='button'
+                    className={classNames({ 'is-on': run_speed === 'fast' })}
+                    aria-pressed={run_speed === 'fast'}
+                    onClick={() => setRunSpeed?.('fast')}
+                >
+                    <Localize i18n_default_text='Fast' />
+                </button>
+                <button
+                    type='button'
+                    className={classNames({ 'is-on': run_speed === 'slow' })}
+                    aria-pressed={run_speed === 'slow'}
+                    onClick={() => setRunSpeed?.('slow')}
+                >
+                    <Localize i18n_default_text='Slow' />
+                </button>
+            </div>
             {should_show_tooltip ? (
                 <div className='run__button_wrapper'>
                     <Tooltip
@@ -240,24 +258,6 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
                     ))}
                 </div>
             </div>
-            </div>
-            <div className='animation__speed' role='group' aria-label={localize('Run speed')}>
-                <button
-                    type='button'
-                    className={classNames({ 'is-on': run_speed === 'fast' })}
-                    aria-pressed={run_speed === 'fast'}
-                    onClick={() => setRunSpeed?.('fast')}
-                >
-                    <Localize i18n_default_text='Fast' />
-                </button>
-                <button
-                    type='button'
-                    className={classNames({ 'is-on': run_speed === 'slow' })}
-                    aria-pressed={run_speed === 'slow'}
-                    onClick={() => setRunSpeed?.('slow')}
-                >
-                    <Localize i18n_default_text='Slow' />
-                </button>
             </div>
         </div>
     );

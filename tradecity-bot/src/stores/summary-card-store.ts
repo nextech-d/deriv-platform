@@ -159,9 +159,10 @@ export default class SummaryCardStore {
         const indicative = getIndicativePrice(contract as ProposalOpenContract);
         this.profit = profit;
 
-        if (this.contract_id !== contract.id) {
+        const incoming_id = contract.contract_id;
+        if (incoming_id != null && this.contract_id !== incoming_id) {
             this.clear(false);
-            this.contract_id = contract.id;
+            this.contract_id = incoming_id;
             this.indicative = indicative;
         }
 
