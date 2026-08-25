@@ -12,6 +12,12 @@
     @include mobile-or-tablet-screen {
         width: 100%;
     }
+
+    /* Saved strategies still bake Deriv navy; remap headers to Charts blue. */
+    .blocklyPath[fill='#064e72'],
+    .blocklyPath[fill='#064E72'] {
+        fill: #0ea5e9 !important;
+    }
 }
 
 .blocklyText.blocklyTextRootBlockHeader {

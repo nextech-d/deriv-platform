@@ -1,8 +1,8 @@
 @use 'components/shared/styles/mixins' as *;
 
 .entry-scanner-fab {
-    --es-red: #ff444f;
-    --es-red-deep: #c41e27;
+    --es-red: #0ea5e9;
+    --es-red-deep: #0284c7;
     --es-live: #2dd4bf;
 
     position: fixed;
@@ -24,14 +24,14 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 28%, #ff8a90, var(--es-red) 52%, var(--es-red-deep));
+    background: radial-gradient(circle at 30% 28%, #7dd3fc, var(--es-red) 52%, var(--es-red-deep));
     color: #fff;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.35rem;
     font-weight: 800;
     letter-spacing: 0.04em;
     cursor: grab;
-    box-shadow: 0 0 0 1px rgb(255 68 79 / 35%), 0 0 22px rgb(255 68 79 / 45%);
+    box-shadow: 0 0 0 1px rgb(14 165 233 / 35%), 0 0 22px rgb(14 165 233 / 45%);
     touch-action: none;
     user-select: none;
 
@@ -45,7 +45,7 @@
     }
 
     &.is-open {
-        box-shadow: 0 0 0 1px rgb(255 68 79 / 45%), 0 0 28px rgb(255 68 79 / 6%);
+        box-shadow: 0 0 0 1px rgb(14 165 233 / 45%), 0 0 28px rgb(14 165 233 / 60%);
     }
 }
 
@@ -73,7 +73,7 @@
         height: 6px;
         margin: -3px;
         border-radius: 50%;
-        background: #ffd0d3;
+        background: #bae6fd;
         animation: entry-scanner-orbit 3.2s linear infinite;
     }
 
@@ -113,7 +113,7 @@
 }
 
 .entry-scanner {
-    --es-red: #ff444f;
+    --es-red: #0ea5e9;
     --es-teal: #2dd4bf;
     --es-navy: #141820;
     --es-ink: #0c0e12;
@@ -379,8 +379,8 @@
     cursor: pointer;
 
     &--solid {
-        border: 1px solid #ff444f;
-        background: #ff444f;
+        border: 1px solid #0ea5e9;
+        background: #0ea5e9;
         color: #fff;
     }
 
@@ -487,7 +487,7 @@
         }
 
         &.on {
-            background: #ff444f;
+            background: #0ea5e9;
 
             i {
                 left: 1.32rem;

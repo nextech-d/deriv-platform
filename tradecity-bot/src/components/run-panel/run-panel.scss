@@ -12,6 +12,20 @@
         background: var(--tc-card);
         color: var(--tc-ink);
         box-shadow: var(--tc-card-shadow);
+        overflow: hidden;
+        border-radius: 1.1rem 0 0 1.1rem;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: auto 18% 0 12%;
+            z-index: 6;
+            height: 0.4rem;
+            border-radius: 999px 999px 0 0;
+            background: #0ea5e9;
+            box-shadow: 0 0 18px #0ea5e9;
+            pointer-events: none;
+        }
 
         .dc-drawer__header {
             border-bottom-color: var(--tc-card-border);

@@ -71,6 +71,7 @@ const DTraderDesk = ({
             <div className='d-trader__chart'>{chart}</div>
 
             <aside className='d-trader__ticket' aria-label='Trade parameters'>
+                <div className='d-trader__ticket-body'>
                 <p className='d-trader__learn'>Learn about this trade type</p>
 
                 <div className='d-trader__type'>
@@ -206,6 +207,7 @@ const DTraderDesk = ({
                     </span>
                     {busy ? 'Buying…' : 'Buy'}
                 </button>
+                </div>
             </aside>
         </div>
     );

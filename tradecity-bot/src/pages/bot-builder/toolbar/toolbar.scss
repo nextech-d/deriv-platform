@@ -34,7 +34,12 @@
     }
 
     &__btn {
-        background-color: var(--button-primary-default) !important;
+        background-color: #0ea5e9 !important;
+        box-shadow: 0 0 18px color-mix(in srgb, #0ea5e9 28%, transparent);
+
+        &:hover:not([disabled]) {
+            background-color: #0284c7 !important;
+        }
 
         &--icon {
             display: flex;

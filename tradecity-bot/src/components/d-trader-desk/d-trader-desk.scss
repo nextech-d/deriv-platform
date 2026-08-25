@@ -1,22 +1,33 @@
 @use 'components/shared/styles/mixins' as *;
 
-/* D-Trader — manual accumulator trading: chart on the left, ticket on the right. */
+/* D-Trader — chart + ticket as dashboard windows. Trade behaviour is unchanged. */
 .d-trader {
-    --dt-teal: var(--purchase-main-1);
+    --dt-accent: #0ea5e9;
     --dt-ticket-width: 34rem;
 
     display: flex;
-    // The tab panel is a flex row, so claim the full width or this shrink-wraps to its content.
+    gap: 1.2rem;
     width: 100%;
     min-width: 0;
     height: 100%;
     min-height: var(--tab-content-height);
+    padding: 1.2rem;
+    box-sizing: border-box;
     background: transparent;
     color: var(--tc-ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+
+    @include desktop-screen {
+        margin: -1.6rem;
+        width: calc(100% + 3.2rem);
+        max-height: calc(var(--tab-content-height) + 3.2rem);
+        height: calc(100% + 3.2rem);
+    }
 
     @include mobile-or-tablet-screen {
         flex-direction: column;
         min-height: var(--tab-content-height-mobile);
+        padding: 1.2rem;
     }
 
     &__chart {
@@ -24,8 +35,11 @@
         flex: 1;
         min-width: 0;
         overflow: hidden;
+        border: 1px solid var(--tc-card-border);
+        border-radius: 1.1rem;
+        background: var(--tc-card);
+        box-shadow: var(--tc-card-shadow);
 
-        // The shared chart sizes itself to the whole tab, which would push the ticket off-screen.
         .dashboard__chart-wrapper {
             position: relative;
             width: 100% !important;
@@ -40,30 +54,49 @@
         }
     }
 
-    /* ------------------------------------------------------------- ticket */
-
     &__ticket {
         display: flex;
         flex-direction: column;
-        gap: 1.2rem;
         flex: none;
         width: var(--dt-ticket-width);
-        padding: 1.2rem 1.6rem 2rem;
-        overflow-y: auto;
-        border-inline-start: 1px solid var(--tc-card-border);
+        overflow: hidden;
+        position: relative;
+        border: 1px solid var(--tc-card-border);
+        border-radius: 1.1rem;
         background: var(--tc-card);
+        box-shadow: var(--tc-card-shadow);
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: auto 12% 0;
+            height: 0.4rem;
+            border-radius: 999px 999px 0 0;
+            background: var(--dt-accent);
+            box-shadow: 0 0 18px var(--dt-accent);
+            pointer-events: none;
+        }
 
         @include mobile-or-tablet-screen {
             width: 100%;
-            border-inline-start: none;
-            border-top: 1px solid var(--border-normal);
         }
+    }
+
+    &__ticket-body {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.2rem;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 1.6rem 1.6rem 2.4rem;
     }
 
     &__learn {
         margin: 0;
         font-size: 1.1rem;
-        color: var(--text-less-prominent);
+        color: var(--tc-muted);
     }
 
     &__type,
@@ -72,14 +105,16 @@
         align-items: center;
         gap: 1rem;
         padding: 1rem 1.2rem;
-        border: 1px solid var(--border-normal);
-        border-radius: 0.8rem;
-        background: var(--general-main-1);
+        border: 1px solid var(--tc-card-border);
+        border-radius: 0.85rem;
+        background: color-mix(in srgb, var(--tc-ink) 3%, var(--tc-card));
     }
 
     &__type strong {
-        font-size: 1.4rem;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        font-size: 1.5rem;
         font-weight: 700;
+        letter-spacing: -0.02em;
     }
 
     &__type-nav svg,
@@ -95,7 +130,7 @@
     }
 
     &__type-nav {
-        color: var(--text-less-prominent);
+        color: var(--tc-muted);
     }
 
     &__copy-label {
@@ -105,10 +140,8 @@
 
     &__copy-state {
         font-size: 1.2rem;
-        color: var(--text-less-prominent);
+        color: var(--tc-muted);
     }
-
-    /* -------------------------------------------------------------- switch */
 
     &__switch {
         position: relative;
@@ -117,7 +150,7 @@
         padding: 0;
         border: none;
         border-radius: 1rem;
-        background: var(--border-normal);
+        background: var(--tc-card-border);
         cursor: pointer;
         transition: background 0.15s;
 
@@ -128,20 +161,18 @@
             width: 1.6rem;
             height: 1.6rem;
             border-radius: 50%;
-            background: var(--general-main-1);
+            background: var(--tc-card);
             transition: transform 0.15s;
         }
 
         &.is-on {
-            background: var(--dt-teal);
+            background: var(--dt-accent);
 
             i {
                 transform: translateX(1.6rem);
             }
         }
     }
-
-    /* -------------------------------------------------------------- fields */
 
     &__field {
         display: flex;
@@ -154,9 +185,12 @@
             justify-content: center;
             gap: 0.5rem;
             margin: 0;
+            font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
             font-size: 1.2rem;
-            font-weight: 400;
-            color: var(--text-less-prominent);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--tc-muted);
         }
     }
 
@@ -175,9 +209,9 @@
         grid-template-columns: repeat(5, 1fr);
         gap: 0.4rem;
         padding: 0.4rem;
-        border: 1px solid var(--border-normal);
-        border-radius: 0.8rem;
-        background: var(--general-section-2, #e6e9e9);
+        border: 1px solid var(--tc-card-border);
+        border-radius: 0.85rem;
+        background: color-mix(in srgb, var(--tc-ink) 4%, var(--tc-card));
     }
 
     &__rate {
@@ -185,14 +219,15 @@
         border: 1px solid transparent;
         border-radius: 0.6rem;
         background: transparent;
-        color: var(--text-general);
-        font-family: inherit;
+        color: var(--tc-ink);
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
         font-size: 1.2rem;
         cursor: pointer;
 
         &.is-on {
-            border-color: var(--border-normal);
-            background: var(--general-main-1);
+            border-color: color-mix(in srgb, var(--dt-accent) 45%, var(--tc-card-border));
+            background: color-mix(in srgb, var(--dt-accent) 16%, var(--tc-card));
+            color: var(--dt-accent);
             font-weight: 700;
         }
     }
@@ -202,9 +237,9 @@
         align-items: center;
         gap: 0.8rem;
         padding: 0.6rem 1rem;
-        border: 1px solid var(--border-normal);
-        border-radius: 0.8rem;
-        background: var(--general-main-1);
+        border: 1px solid var(--tc-card-border);
+        border-radius: 0.85rem;
+        background: color-mix(in srgb, var(--tc-ink) 3%, var(--tc-card));
 
         input {
             flex: 1;
@@ -212,7 +247,7 @@
             min-width: 0;
             border: none;
             background: transparent;
-            color: var(--text-general);
+            color: var(--tc-ink);
             font-family: inherit;
             font-size: 1.4rem;
             text-align: center;
@@ -234,13 +269,13 @@
             border: none;
             border-radius: 50%;
             background: transparent;
-            color: var(--text-general);
+            color: var(--tc-ink);
             font-size: 1.8rem;
             line-height: 1;
             cursor: pointer;
 
             &:hover {
-                background: var(--general-section-1);
+                background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
             }
         }
 
@@ -251,7 +286,7 @@
 
     &__stake-currency {
         font-size: 1.2rem;
-        color: var(--text-less-prominent);
+        color: var(--tc-muted);
     }
 
     &__check {
@@ -259,20 +294,19 @@
         align-items: center;
         gap: 0.8rem;
         padding: 1rem 1.2rem;
-        border: 1px solid var(--border-normal);
-        border-radius: 0.8rem;
-        background: var(--general-main-1);
+        border: 1px solid var(--tc-card-border);
+        border-radius: 0.85rem;
+        background: color-mix(in srgb, var(--tc-ink) 3%, var(--tc-card));
         font-size: 1.3rem;
         cursor: pointer;
 
         input {
-            // The shared styles strip the native control, which leaves nothing to click.
             appearance: auto;
             flex: none;
             width: 1.6rem;
             height: 1.6rem;
             margin: 0;
-            accent-color: var(--dt-teal);
+            accent-color: var(--dt-accent);
             cursor: pointer;
         }
 
@@ -280,8 +314,6 @@
             flex: 1;
         }
     }
-
-    /* ------------------------------------------------------------ readouts */
 
     &__readouts {
         display: flex;
@@ -298,14 +330,14 @@
 
         dt {
             font-size: 1.2rem;
-            color: var(--text-less-prominent);
+            color: var(--tc-muted);
         }
 
         dd {
             margin: 0;
             font-size: 1.2rem;
-            color: var(--text-general);
-            border-bottom: 1px dashed var(--border-normal);
+            color: var(--tc-ink);
+            border-bottom: 1px dashed var(--tc-card-border);
         }
     }
 
@@ -315,8 +347,6 @@
         color: var(--status-danger, #ec3f3f);
     }
 
-    /* ----------------------------------------------------------------- buy */
-
     &__buy {
         display: flex;
         align-items: center;
@@ -325,13 +355,15 @@
         margin-top: auto;
         padding: 1.4rem;
         border: none;
-        border-radius: 0.8rem;
-        background: var(--dt-teal);
+        border-radius: 0.85rem;
+        background: var(--dt-accent);
         color: #fff;
-        font-family: inherit;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
         font-size: 1.5rem;
         font-weight: 700;
+        letter-spacing: -0.02em;
         cursor: pointer;
+        box-shadow: 0 0 18px color-mix(in srgb, var(--dt-accent) 28%, transparent);
         transition: filter 0.15s;
 
         &:hover:not(:disabled) {
@@ -341,6 +373,7 @@
         &:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            box-shadow: none;
         }
 
         svg {

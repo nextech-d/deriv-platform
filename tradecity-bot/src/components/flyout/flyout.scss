@@ -28,12 +28,24 @@
     isolation: isolate;
     border-radius: 1.1rem;
     border: 1px solid var(--tc-card-border);
+    overflow: hidden;
     font-size: 2em;
     margin-inline-start: $default-margin;
     margin-top: 20px;
     box-shadow: var(--tc-card-shadow);
     min-width: 400px;
     visibility: hidden;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: auto 12% 0;
+        height: 0.4rem;
+        border-radius: 999px 999px 0 0;
+        background: var(--bb-accent, #0ea5e9);
+        box-shadow: 0 0 18px var(--bb-accent, #0ea5e9);
+        pointer-events: none;
+    }
 
     &__loading {
         display: flex;

@@ -350,7 +350,7 @@
         .animation {
             &__button#db-animation {
                 &__run-button {
-                    background-color: var(--purchase-main-1);
+                    background-color: #0ea5e9;
                 }
 
                 &__stop-button {
@@ -359,7 +359,7 @@
             }
 
             &__container {
-                background-color: var(--general-main-1);
+                background-color: var(--tc-card);
             }
         }
     }
@@ -380,7 +380,7 @@
     .animation {
         &__button#db-animation {
             &__run-button {
-                background-color: var(--purchase-main-1);
+                background-color: #0ea5e9;
             }
 
             &__stop-button {
@@ -544,11 +544,11 @@
 
         .animation {
             &__button {
-                background-color: var(--purchase-main-1);
+                background-color: #0ea5e9;
             }
 
             &__container {
-                background-color: var(--general-main-1);
+                background-color: var(--tc-card);
             }
         }
     }
@@ -567,6 +567,7 @@
 
 .bot-builder {
     --bb-chrome: #fff;
+    --bb-accent: #0ea5e9;
     position: absolute;
     top: 6.6rem;
     inset-inline-start: 1.6rem;
@@ -574,11 +575,23 @@
     background: var(--tc-card);
     color: var(--tc-ink);
     border: 1px solid var(--tc-card-border);
-    border-radius: 1.2rem;
+    border-radius: 1.1rem;
     box-shadow: var(--tc-card-shadow);
     height: calc(100vh - var(--tc-header-h, 10rem) - 6.6rem - 3.6rem - 1.6rem);
     width: var(--bot-content-width);
     overflow: hidden;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: auto 12% 0;
+        z-index: 6;
+        height: 0.4rem;
+        border-radius: 999px 999px 0 0;
+        background: var(--bb-accent);
+        box-shadow: 0 0 18px var(--bb-accent);
+        pointer-events: none;
+    }
 
     .injectionDiv {
         .blocklyTrash {
