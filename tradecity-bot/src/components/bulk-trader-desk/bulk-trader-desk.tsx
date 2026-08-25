@@ -348,6 +348,12 @@ const BulkTraderDesk = ({
 
     return (
         <div className={classNames('bulk-trader', { 'has-drawer': drawerOpen })}>
+            <header className='bulk-trader__header'>
+                <h2>Bulk trader</h2>
+                <span className={classNames('bulk-trader__status', { 'is-live': isConnected })}>
+                    <span aria-hidden='true'>●</span> {isConnected ? 'Live' : 'Waiting'}
+                </span>
+            </header>
             <div className='bulk-body'>
                 {tradingLocked ? (
                     <div className='bulk-banner'>
@@ -361,19 +367,17 @@ const BulkTraderDesk = ({
                             <span>Current tick</span>
                             <strong>{quote == null ? '--' : quote.toFixed(pipSize)}</strong>
                         </div>
-                        <div className='bulk-tick-actions'>
-                            <button
-                                type='button'
-                                className='bulk-link-btn'
-                                aria-expanded={drawerOpen}
-                                onClick={() => openTradesDrawer('transactions')}
-                            >
-                                View trades
-                            </button>
-                            <button type='button' className='bulk-link-btn is-teal' onClick={() => setScannerOpen(true)}>
-                                Analysis
-                            </button>
-                        </div>
+                        <button
+                            type='button'
+                            className='bulk-link-btn'
+                            aria-expanded={drawerOpen}
+                            onClick={() => openTradesDrawer('transactions')}
+                        >
+                            View trades
+                        </button>
+                        <button type='button' className='bulk-link-btn is-teal' onClick={() => setScannerOpen(true)}>
+                            Analysis
+                        </button>
                     </div>
 
                     <label className='bulk-outline bulk-window-field'>
@@ -421,9 +425,7 @@ const BulkTraderDesk = ({
                             {historyLoading ? 'Loading Deriv ticks…' : 'Waiting on ticks for this market.'}
                         </p>
                     )}
-                </section>
 
-                <section className='bulk-card'>
                     <div className='bulk-config'>
                     <div className='bulk-config-top'>
                         <label className='bulk-outline'>

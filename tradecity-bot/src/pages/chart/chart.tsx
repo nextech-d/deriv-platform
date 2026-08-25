@@ -3,8 +3,7 @@ import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 /* [AI] - Analytics removed - rudderstack event tracking removed */
 /* [/AI] */
-import ChunkLoader from '@/components/loader/chunk-loader';
-import { DEFAULT_CHART_SYMBOL } from '@/constants/chart-symbols';
+import { DEFAULT_CHART_SYMBOL, FALLBACK_CHART_SYMBOLS, FALLBACK_TRADING_TIMES } from '@/constants/chart-symbols';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
 import { useSmartChartAdaptor } from '@/hooks/useSmartChartAdaptor';
 import { useStore } from '@/hooks/useStore';
@@ -92,8 +91,15 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         }
     };
 
-    if (!resolvedSymbol || chartData.activeSymbols.length === 0) {
-        return <ChunkLoader message='' />;
+    const activeSymbols =
+        chartData.activeSymbols.length > 0 ? chartData.activeSymbols : FALLBACK_CHART_SYMBOLS;
+    const tradingTimes = {
+        ...FALLBACK_TRADING_TIMES,
+        ...chartData.tradingTimes,
+    };
+
+    if (!resolvedSymbol) {
+        return null;
     }
 
     return (
@@ -130,7 +136,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
                 getQuotes={getQuotes}
                 subscribeQuotes={subscribeQuotes}
                 unsubscribeQuotes={unsubscribeQuotes}
-                chartData={{ activeSymbols: chartData.activeSymbols, tradingTimes: chartData.tradingTimes }}
+                chartData={{ activeSymbols, tradingTimes }}
                 feedCall={FEED_CALL}
                 settings={settings}
                 symbol={resolvedSymbol}

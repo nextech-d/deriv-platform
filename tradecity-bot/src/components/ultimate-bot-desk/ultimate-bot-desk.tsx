@@ -286,7 +286,7 @@ const UltimateBotDesk = ({
         <div className={classNames('ultimate-bot', { 'has-drawer': drawerOpen })}>
             <div className='ultimate-bot-main'>
                 <header className='edging-toolbar'>
-                    <h1>Ultimate Bot</h1>
+                    <h1>Ultimate bot</h1>
                     <div className='edging-toolbar-status'>
                         <span className={classNames('edging-chip', { 'is-live': isConnected || hasPulse })}>
                             {isConnected ? 'Live' : hasPulse ? 'Feed ready' : 'Waiting'}
@@ -298,6 +298,13 @@ const UltimateBotDesk = ({
                 </header>
 
                 <div className='edging-body'>
+                    {tradingLocked ? (
+                        <div className='edging-notice'>
+                            <p>Log in with Deriv to run Ultimate Bot. Market scan works without an account.</p>
+                        </div>
+                    ) : null}
+
+                    <div className='ultimate-bot__stage'>
                     <section className='edging-card edging-controls'>
                         <div className='ultimate-scores'>
                             <div className='ultimate-score is-won'>
@@ -471,7 +478,7 @@ const UltimateBotDesk = ({
                                     logJournal('Bot started.');
                                 }}
                             >
-                                {isRunning ? 'Stop Bot' : 'Start Bot'}
+                                {isRunning ? 'Stop bot' : 'Start bot'}
                             </button>
                             <button
                                 type='button'
@@ -492,13 +499,7 @@ const UltimateBotDesk = ({
                         ) : null}
                     </section>
 
-                    {tradingLocked ? (
-                        <div className='edging-notice'>
-                            <p>Log in with Deriv to run Ultimate Bot. Market scan works without an account.</p>
-                        </div>
-                    ) : null}
-
-                    <section className='edging-card'>
+                    <section className='edging-card ultimate-bot__markets'>
                         <h2>
                             Active Markets ({filtered.length}/{ULTIMATE_BOT_MARKETS.length})
                         </h2>
@@ -595,7 +596,7 @@ const UltimateBotDesk = ({
                         </div>
                         <button
                             type='button'
-                            className='edging-cta is-ghost is-reset'
+                            className='edging-cta is-reset'
                             onClick={() => {
                                 pendingRef.current = null;
                                 armedRef.current = null;
@@ -608,6 +609,7 @@ const UltimateBotDesk = ({
                             Reset
                         </button>
                     </section>
+                    </div>
                 </div>
             </div>
             <TradesDrawer

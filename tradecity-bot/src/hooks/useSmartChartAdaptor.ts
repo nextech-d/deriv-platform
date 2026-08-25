@@ -55,8 +55,8 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
         activeSymbols: ActiveSymbols;
         tradingTimes: TradingTimesMap;
     }>({
-        activeSymbols: [] as ActiveSymbols,
-        tradingTimes: {} as TradingTimesMap,
+        activeSymbols: FALLBACK_CHART_SYMBOLS,
+        tradingTimes: FALLBACK_TRADING_TIMES as TradingTimesMap,
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);

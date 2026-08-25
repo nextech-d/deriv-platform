@@ -34,6 +34,7 @@ jest.mock('@/external/bot-skeleton/services/api/chart-api', () => ({
 
 // Now import the hook and chart_api after mocks are set up
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
+import { FALLBACK_CHART_SYMBOLS, FALLBACK_TRADING_TIMES } from '@/constants/chart-symbols';
 import { useSmartChartAdaptor } from '../useSmartChartAdaptor';
 
 describe('useSmartChartAdaptor', () => {
@@ -187,8 +188,8 @@ describe('useSmartChartAdaptor', () => {
                 { timeout: 5000 }
             );
 
-            expect(result.current.chartData.activeSymbols).toEqual([]);
-            expect(result.current.chartData.tradingTimes).toEqual({});
+            expect(result.current.chartData.activeSymbols).toEqual(FALLBACK_CHART_SYMBOLS);
+            expect(result.current.chartData.tradingTimes).toEqual(FALLBACK_TRADING_TIMES);
 
             jest.useRealTimers();
         });
@@ -203,8 +204,8 @@ describe('useSmartChartAdaptor', () => {
             });
 
             expect(result.current.chartData).toEqual({
-                activeSymbols: [],
-                tradingTimes: {},
+                activeSymbols: FALLBACK_CHART_SYMBOLS,
+                tradingTimes: FALLBACK_TRADING_TIMES,
             });
         });
     });
