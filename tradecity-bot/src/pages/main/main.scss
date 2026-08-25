@@ -292,10 +292,12 @@
                         position: fixed;
                         top: var(--tc-brand-h, 5.6rem);
                         inset-inline: 0;
-                        z-index: 20;
+                        // Header is z-index 200 and 10rem tall; without this the menu row is painted under it.
+                        z-index: 210;
                         height: var(--tc-menu-h, 4.4rem);
                         background: var(--general-main-1);
                         border-bottom: 1px solid var(--general-section-1);
+                        pointer-events: auto;
                     }
                 }
             }
