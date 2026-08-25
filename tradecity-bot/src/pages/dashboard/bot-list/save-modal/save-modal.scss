@@ -108,6 +108,8 @@ div.radio-group {
         position: absolute;
         margin-top: 5px;
         width: 71px;
+        z-index: 2;
+        pointer-events: auto;
     }
 
     &__icon {

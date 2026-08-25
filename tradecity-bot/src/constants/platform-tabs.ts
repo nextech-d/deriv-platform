@@ -79,6 +79,8 @@ export const PLATFORM_TABS: PlatformTabDefinition[] = [
     { id: 'chart', hash: 'chart', domId: 'id-charts', label: 'Charts', kind: 'chart' },
     { id: 'ultimate_bot', hash: 'ultimate_bot', domId: 'id-ultimate-bot', label: 'Ultimate bot', kind: 'ultimate_bot' },
     { id: 'bulk_trader', hash: 'bulk_trader', domId: 'id-bulk-trader', label: 'Bulk trader', kind: 'bulk_trader' },
+    // Production: Tutorials tab is intentionally not shown.
+    // { id: 'tutorial', hash: 'tutorial', domId: 'id-tutorials', label: 'Tutorials', kind: 'tutorial' },
 ];
 
 export const TAB_HASHES = PLATFORM_TABS.map(tab => tab.hash);

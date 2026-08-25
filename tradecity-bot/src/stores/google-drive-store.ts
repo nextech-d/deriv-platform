@@ -169,8 +169,18 @@ export default class GoogleDriveStore {
     };
 
     async signIn() {
-        if (!this.client_id || !this.client) {
+        if (!this.is_configured) {
             ErrorLogger.warn('GoogleDrive', 'Google Drive is not configured');
+            botNotification(localize('Google Drive is not configured for this site.'), undefined, {
+                closeButton: true,
+            });
+            return;
+        }
+        if (!this.client) {
+            ErrorLogger.warn('GoogleDrive', 'Client not initialized yet');
+            botNotification(localize('Google Drive is still loading. Please try again in a moment.'), undefined, {
+                closeButton: true,
+            });
             return;
         }
         if (!this.is_authorised) {
@@ -329,14 +339,19 @@ export default class GoogleDriveStore {
     }
 
     onDriveConnect = async () => {
+        if (!this.is_configured) {
+            ErrorLogger.warn('GoogleDrive', 'Google Drive is not configured');
+            botNotification(localize('Google Drive is not configured for this site.'), undefined, {
+                closeButton: true,
+            });
+            return;
+        }
         // Prevent crash if user clicks before client initializes (3 second delay)
         if (!this.client) {
             ErrorLogger.warn('GoogleDrive', 'Client not initialized yet');
-            botNotification(
-                localize('Google Drive is still loading. Please try again in a moment.'),
-                undefined,
-                { closeButton: true }
-            );
+            botNotification(localize('Google Drive is still loading. Please try again in a moment.'), undefined, {
+                closeButton: true,
+            });
             return;
         }
 

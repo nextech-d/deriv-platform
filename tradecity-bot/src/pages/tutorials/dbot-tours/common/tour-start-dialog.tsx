@@ -34,12 +34,31 @@ const TourStartDialog = observer(() => {
     const [is_tour_open, setIsTourOpen] = React.useState(false);
 
     React.useEffect(() => {
-        if (is_tour_dialog_visible) {
-            setIsTourOpen(true);
-        } else {
+        if (!is_tour_dialog_visible) {
             setIsTourOpen(false);
+            return;
         }
-    }, [is_tour_dialog_visible]);
+
+        // Production auto-opens this on Bot Builder and covers the desk. Skip it.
+        if (active_tab === DBOT_TABS.BOT_BUILDER) {
+            if (!isDesktop) setShowMobileTourDialog(false);
+            setTourDialogVisibility(false);
+            setActiveTour('');
+            setTourSettings(new Date().getTime(), tour_token);
+            setIsTourOpen(false);
+            return;
+        }
+
+        setIsTourOpen(true);
+    }, [
+        active_tab,
+        isDesktop,
+        is_tour_dialog_visible,
+        setActiveTour,
+        setShowMobileTourDialog,
+        setTourDialogVisibility,
+        tour_token,
+    ]);
 
     const getTourContent = () => {
         return (
