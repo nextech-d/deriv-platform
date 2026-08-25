@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useAnalysisTicks } from '@/hooks/useAnalysisTicks';
+import { useStore } from '@/hooks/useStore';
 import { lastDigitFromQuote } from '@/utils/analysis-tool';
 import { loadAnalysisBiasInBuilder } from '@/utils/load-analysis-bias';
 import type { SignalHandoff } from '@/utils/signal-analysis';
@@ -16,6 +17,7 @@ type TSignalCenterPanelProps = {
  * tool does not refetch a thousand ticks of history.
  */
 const SignalCenterPanel = ({ onSeededToBuilder }: TSignalCenterPanelProps) => {
+    const { app } = useStore();
     const [market, setMarket] = useState('');
 
     const subscribed = useMemo(() => (market ? [market] : []), [market]);
@@ -33,7 +35,9 @@ const SignalCenterPanel = ({ onSeededToBuilder }: TSignalCenterPanelProps) => {
 
     const handleSendToBuilder = useCallback(
         async (handoff: SignalHandoff, toolLabel: string) => {
-            const loaded = await loadAnalysisBiasInBuilder({
+            onSeededToBuilder();
+            await app.ensureBlocklyWorkspace();
+            await loadAnalysisBiasInBuilder({
                 symbol: market,
                 mode: handoff.mode,
                 side: handoff.side,
@@ -41,9 +45,8 @@ const SignalCenterPanel = ({ onSeededToBuilder }: TSignalCenterPanelProps) => {
                 digitTarget: handoff.digitTarget,
                 label: `${toolLabel} · ${handoff.label}`,
             });
-            if (loaded) onSeededToBuilder();
         },
-        [market, onSeededToBuilder]
+        [app, market, onSeededToBuilder]
     );
 
     return (

@@ -596,8 +596,12 @@
     flex-wrap: wrap;
     gap: 0.45rem;
     margin-top: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .analysis-tool-actions .analysis-tool-load {
     margin-top: 0;
+    width: auto;
+    min-width: 10.5rem;
 }

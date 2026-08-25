@@ -42,6 +42,7 @@ import DTraderPanel from '../../components/d-trader-desk/d-trader-panel';
 import Edging2Panel from '../../components/edging-2-desk/edging-2-panel';
 import EdgingPanel from '../../components/edging-desk/edging-panel';
 import FastTraderPanel from '../../components/fast-trader-desk/fast-trader-panel';
+import ChartsDesk from '../../components/charts-desk/charts-desk';
 import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
 import MoneyManagementPanel from '../../components/money-management-desk/money-management-panel';
 import SignalCenterPanel from '../../components/signal-center-desk/signal-center-panel';
@@ -451,14 +452,16 @@ const AppWrapper = observer(() => {
                 return <DTraderPanel />;
             case 'chart':
                 return (
-                    <ErrorBoundary
-                        root_store={store}
-                        fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
-                    >
-                        <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
-                            <ChartWrapper show_digits_stats={true} />
-                        </Suspense>
-                    </ErrorBoundary>
+                    <ChartsDesk>
+                        <ErrorBoundary
+                            root_store={store}
+                            fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                        >
+                            <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
+                                <ChartWrapper show_digits_stats={true} />
+                            </Suspense>
+                        </ErrorBoundary>
+                    </ChartsDesk>
                 );
             case 'tutorial':
                 return (

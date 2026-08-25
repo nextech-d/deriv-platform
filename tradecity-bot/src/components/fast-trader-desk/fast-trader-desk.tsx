@@ -183,150 +183,42 @@ const FastTraderDesk = ({
 
     return (
         <div className='fast-trader-desk'>
-            <div className='fast-trader-desk__card'>
-                <header className='fast-trader-desk__header'>
-                    <h2>
-                        <span aria-hidden='true'>⚡</span> Fast Trader
-                    </h2>
-                    <button type='button' className='fast-trader-desk__reset-btn' onClick={resetSession}>
-                        Reset
-                    </button>
-                </header>
+            <header className='fast-trader-desk__header'>
+                <h2>Fast trader</h2>
+                <span className={classNames('fast-trader-desk__status', { 'is-live': isConnected })}>
+                    <span aria-hidden='true'>●</span> {isConnected ? 'Live' : 'Waiting'}
+                </span>
+            </header>
 
-                <div className='fast-trader-desk__digits-panel'>
-                    <div className='fast-trader-desk__digits-row' aria-label='Recent digits'>
-                        {strip.length ? (
-                            strip.map((value, index) => (
-                                <span
-                                    key={`${index}-${value}`}
-                                    className={classNames('fast-trader-desk__digit-box', {
-                                        'is-now': index === strip.length - 1,
+            <div className='fast-trader-desk__inner'>
+                <div className='fast-trader-desk__stage'>
+                    <div className='fast-trader-desk__console'>
+                        <div className='fast-trader-desk__type-tabs' role='tablist' aria-label='Trade type'>
+                            {FAST_TRADE_TYPES.map(item => (
+                                <button
+                                    key={item.id}
+                                    type='button'
+                                    role='tab'
+                                    aria-selected={activeType === item.id}
+                                    className={classNames('fast-trader-desk__type-tab', {
+                                        active: activeType === item.id,
                                     })}
+                                    onClick={() => setActiveType(item.id)}
                                 >
-                                    {value}
-                                </span>
-                            ))
-                        ) : (
-                            <p className='fast-trader-desk__waiting'>Waiting on ticks for this market.</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className='fast-trader-desk__type-tabs' role='tablist' aria-label='Trade type'>
-                    {FAST_TRADE_TYPES.map(item => (
-                        <button
-                            key={item.id}
-                            type='button'
-                            role='tab'
-                            aria-selected={activeType === item.id}
-                            className={classNames('fast-trader-desk__type-tab', { active: activeType === item.id })}
-                            onClick={() => setActiveType(item.id)}
-                        >
-                            {item.label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className='fast-trader-desk__controls'>
-                    <div className='fast-trader-desk__field'>
-                        <label htmlFor='fast-symbol'>Symbol</label>
-                        <select
-                            id='fast-symbol'
-                            value={symbol}
-                            onChange={event => onSymbolChange(event.target.value)}
-                        >
-                            {markets.map(item => (
-                                <option key={item.id} value={item.id}>
                                     {item.label}
-                                </option>
+                                </button>
                             ))}
-                        </select>
-                    </div>
-
-                    <div className='fast-trader-desk__row'>
-                        <div className='fast-trader-desk__field'>
-                            <label htmlFor='fast-stake'>Stake ({currency})</label>
-                            <input
-                                id='fast-stake'
-                                type='number'
-                                min={FAST_MIN_STAKE}
-                                step={0.05}
-                                value={stake}
-                                onChange={event => setStake(clampFastStake(Number(event.target.value)))}
-                            />
                         </div>
-                        <div className='fast-trader-desk__field'>
-                            <label htmlFor='fast-duration'>Duration (ticks)</label>
-                            <input
-                                id='fast-duration'
-                                type='number'
-                                min={1}
-                                max={10}
-                                value={duration}
-                                onChange={event => setDuration(clampFastDuration(Number(event.target.value)))}
-                            />
-                        </div>
-                    </div>
 
-                    {kind.needsDigit ? (
-                        <div className='fast-trader-desk__row'>
+                        <div className='fast-trader-desk__fields'>
                             <div className='fast-trader-desk__field'>
-                                <label htmlFor='fast-digit'>
-                                    {activeType === 'over' || activeType === 'under' ? 'Barrier' : 'Prediction'} (0-9)
-                                </label>
-                                <input
-                                    id='fast-digit'
-                                    type='number'
-                                    min={0}
-                                    max={9}
-                                    value={digit}
-                                    onChange={event => setDigit(clampFastDigit(Number(event.target.value)))}
-                                />
-                            </div>
-                            <div className='fast-trader-desk__field fast-trader-desk__field--ghost' aria-hidden='true' />
-                        </div>
-                    ) : null}
-
-                    <div className='fast-trader-desk__row'>
-                        <div className='fast-trader-desk__field fast-trader-desk__field--toggle'>
-                            <label htmlFor='fast-martingale'>Martingale</label>
-                            <button
-                                id='fast-martingale'
-                                type='button'
-                                role='switch'
-                                aria-checked={useMartingale}
-                                className={classNames('fast-trader-desk__toggle', { on: useMartingale })}
-                                onClick={() => setUseMartingale(value => !value)}
-                            >
-                                <span className='fast-trader-desk__toggle-thumb' />
-                            </button>
-                        </div>
-                        <div className='fast-trader-desk__field'>
-                            <label htmlFor='fast-mode'>Mode</label>
-                            <select
-                                id='fast-mode'
-                                value={mode}
-                                onChange={event => setMode(event.target.value as FastAutoMode)}
-                            >
-                                {FAST_AUTO_MODES.map(item => (
-                                    <option key={item.value} value={item.value}>
-                                        {item.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {mode === 'custom' ? (
-                        <div className='fast-trader-desk__row'>
-                            <div className='fast-trader-desk__field'>
-                                <label htmlFor='fast-custom-type'>Auto contract</label>
+                                <label htmlFor='fast-symbol'>Symbol</label>
                                 <select
-                                    id='fast-custom-type'
-                                    value={customType}
-                                    onChange={event => setCustomType(event.target.value as FastTradeType)}
+                                    id='fast-symbol'
+                                    value={symbol}
+                                    onChange={event => onSymbolChange(event.target.value)}
                                 >
-                                    {FAST_TRADE_TYPES.map(item => (
+                                    {markets.map(item => (
                                         <option key={item.id} value={item.id}>
                                             {item.label}
                                         </option>
@@ -334,77 +226,188 @@ const FastTraderDesk = ({
                                 </select>
                             </div>
                             <div className='fast-trader-desk__field'>
-                                <label htmlFor='fast-custom-digit'>Auto barrier (0-9)</label>
+                                <label htmlFor='fast-stake'>Stake ({currency})</label>
                                 <input
-                                    id='fast-custom-digit'
+                                    id='fast-stake'
                                     type='number'
-                                    min={0}
-                                    max={9}
-                                    disabled={!fastTradeKind(customType).needsDigit}
-                                    value={customDigit}
-                                    onChange={event => setCustomDigit(clampFastDigit(Number(event.target.value)))}
+                                    min={FAST_MIN_STAKE}
+                                    step={0.05}
+                                    value={stake}
+                                    onChange={event => setStake(clampFastStake(Number(event.target.value)))}
                                 />
                             </div>
+                            <div className='fast-trader-desk__field'>
+                                <label htmlFor='fast-duration'>Duration (ticks)</label>
+                                <input
+                                    id='fast-duration'
+                                    type='number'
+                                    min={1}
+                                    max={10}
+                                    value={duration}
+                                    onChange={event => setDuration(clampFastDuration(Number(event.target.value)))}
+                                />
+                            </div>
+                            {kind.needsDigit ? (
+                                <div className='fast-trader-desk__field'>
+                                    <label htmlFor='fast-digit'>
+                                        {activeType === 'over' || activeType === 'under'
+                                            ? 'Barrier'
+                                            : 'Prediction'}{' '}
+                                        (0-9)
+                                    </label>
+                                    <input
+                                        id='fast-digit'
+                                        type='number'
+                                        min={0}
+                                        max={9}
+                                        value={digit}
+                                        onChange={event => setDigit(clampFastDigit(Number(event.target.value)))}
+                                    />
+                                </div>
+                            ) : null}
+                            <div className='fast-trader-desk__field fast-trader-desk__field--toggle'>
+                                <label htmlFor='fast-martingale'>Martingale</label>
+                                <button
+                                    id='fast-martingale'
+                                    type='button'
+                                    role='switch'
+                                    aria-checked={useMartingale}
+                                    className={classNames('fast-trader-desk__toggle', { on: useMartingale })}
+                                    onClick={() => setUseMartingale(value => !value)}
+                                >
+                                    <span className='fast-trader-desk__toggle-thumb' />
+                                </button>
+                            </div>
+                            <div className='fast-trader-desk__field'>
+                                <label htmlFor='fast-mode'>Mode</label>
+                                <select
+                                    id='fast-mode'
+                                    value={mode}
+                                    onChange={event => setMode(event.target.value as FastAutoMode)}
+                                >
+                                    {FAST_AUTO_MODES.map(item => (
+                                        <option key={item.value} value={item.value}>
+                                            {item.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {mode === 'custom' ? (
+                                <>
+                                    <div className='fast-trader-desk__field'>
+                                        <label htmlFor='fast-custom-type'>Auto contract</label>
+                                        <select
+                                            id='fast-custom-type'
+                                            value={customType}
+                                            onChange={event => setCustomType(event.target.value as FastTradeType)}
+                                        >
+                                            {FAST_TRADE_TYPES.map(item => (
+                                                <option key={item.id} value={item.id}>
+                                                    {item.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className='fast-trader-desk__field'>
+                                        <label htmlFor='fast-custom-digit'>Auto barrier (0-9)</label>
+                                        <input
+                                            id='fast-custom-digit'
+                                            type='number'
+                                            min={0}
+                                            max={9}
+                                            disabled={!fastTradeKind(customType).needsDigit}
+                                            value={customDigit}
+                                            onChange={event =>
+                                                setCustomDigit(clampFastDigit(Number(event.target.value)))
+                                            }
+                                        />
+                                    </div>
+                                </>
+                            ) : null}
                         </div>
-                    ) : null}
-                </div>
 
-                <div className='fast-trader-desk__actions'>
-                    <button
-                        type='button'
-                        className='fast-trader-desk__btn fast-trader-desk__btn--trade'
-                        disabled={!canTrade || autoRunning}
-                        onClick={() => fire(activeType, digit)}
-                    >
-                        <span aria-hidden='true'>📈</span> Trade Now
-                    </button>
-                    <button
-                        type='button'
-                        className='fast-trader-desk__btn fast-trader-desk__btn--auto'
-                        disabled={!canTrade && !autoRunning}
-                        onClick={() => {
-                            if (autoRunning) {
-                                setAutoRunning(false);
-                                setMessage('Auto trading stopped.');
-                                return;
-                            }
-                            skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
-                            setAutoRunning(true);
-                            setMessage('Auto trading started.');
-                        }}
-                    >
-                        <span aria-hidden='true'>🔄</span> {autoRunning ? 'Stop Auto' : 'Start Auto'}
-                    </button>
-                </div>
+                        <div className='fast-trader-desk__actions'>
+                            <button
+                                type='button'
+                                className='fast-trader-desk__btn fast-trader-desk__btn--trade'
+                                disabled={!canTrade || autoRunning}
+                                onClick={() => fire(activeType, digit)}
+                            >
+                                Trade now
+                            </button>
+                            <button
+                                type='button'
+                                className={classNames('fast-trader-desk__btn fast-trader-desk__btn--auto', {
+                                    'is-stop': autoRunning,
+                                })}
+                                disabled={!canTrade && !autoRunning}
+                                onClick={() => {
+                                    if (autoRunning) {
+                                        setAutoRunning(false);
+                                        setMessage('Auto trading stopped.');
+                                        return;
+                                    }
+                                    skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
+                                    setAutoRunning(true);
+                                    setMessage('Auto trading started.');
+                                }}
+                            >
+                                {autoRunning ? 'Stop auto' : 'Start auto'}
+                            </button>
+                        </div>
 
-                {message ? <p className='fast-trader-desk__message'>{message}</p> : null}
+                        {message ? <p className='fast-trader-desk__message'>{message}</p> : null}
+                    </div>
 
-                <div className='fast-trader-desk__summary-bar'>
-                    <div>
-                        <span className='fast-trader-desk__stat-label'>Current tick</span>
-                        <span className='fast-trader-desk__stat-value'>
-                            {quote == null ? '—' : quote.toFixed(pipSize)}
-                        </span>
-                    </div>
-                    <div>
-                        <span className='fast-trader-desk__stat-label'>Trades</span>
-                        <span className='fast-trader-desk__stat-value'>{stats.trades}</span>
-                    </div>
-                    <div>
-                        <span className='fast-trader-desk__stat-label'>Win rate</span>
-                        <span className='fast-trader-desk__stat-value'>{winRate}%</span>
-                    </div>
-                    <div>
-                        <span className='fast-trader-desk__stat-label'>Profit</span>
-                        <span
-                            className={classNames(
-                                'fast-trader-desk__stat-value',
-                                stats.profit >= 0 ? 'is-up' : 'is-down'
+                    <div className='fast-trader-desk__results'>
+                        <h3>Recent digits</h3>
+                        <div className='fast-trader-desk__digits-row' aria-label='Recent digits'>
+                            {strip.length ? (
+                                strip.map((value, index) => (
+                                    <span
+                                        key={`${index}-${value}`}
+                                        className={classNames('fast-trader-desk__digit-box', {
+                                            'is-now': index === strip.length - 1,
+                                        })}
+                                    >
+                                        {value}
+                                    </span>
+                                ))
+                            ) : (
+                                <p className='fast-trader-desk__waiting'>Waiting on ticks for this market.</p>
                             )}
-                        >
-                            {stats.profit >= 0 ? '+' : ''}
-                            {stats.profit.toFixed(2)} {currency}
-                        </span>
+                        </div>
+
+                        <h3>Session</h3>
+                        <div className='fast-trader-desk__stats'>
+                            <div>
+                                <label>Current tick</label>
+                                <strong>{quote == null ? '—' : quote.toFixed(pipSize)}</strong>
+                            </div>
+                            <div>
+                                <label>Trades</label>
+                                <strong>{stats.trades}</strong>
+                            </div>
+                            <div>
+                                <label>Win rate</label>
+                                <strong>{winRate}%</strong>
+                            </div>
+                            <div>
+                                <label>Profit</label>
+                                <strong
+                                    className={classNames({
+                                        'is-up': stats.profit >= 0,
+                                        'is-down': stats.profit < 0,
+                                    })}
+                                >
+                                    {stats.profit >= 0 ? '+' : ''}
+                                    {stats.profit.toFixed(2)} {currency}
+                                </strong>
+                            </div>
+                        </div>
+                        <button type='button' className='fast-trader-desk__reset' onClick={resetSession}>
+                            Reset
+                        </button>
                     </div>
                 </div>
             </div>

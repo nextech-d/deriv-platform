@@ -146,189 +146,191 @@ const Edging2Desk = ({
 
     return (
         <div className='edging2-desk-page'>
+            <header className='edging2-desk__header'>
+                <h2>Edging 2</h2>
+                <span className={classNames('edging2-desk__status', { 'is-live': isConnected })}>
+                    <span aria-hidden='true'>●</span> {isConnected ? 'Live' : 'Waiting'}
+                </span>
+            </header>
+
             <div className='edging2-desk'>
-                <div className='edging2-desk__header'>
-                    <h2>
-                        <span aria-hidden='true'>📊</span> Edging 2
-                    </h2>
-                    <p>Digit frequency on the last ticks.</p>
-                </div>
+                <p className='edging2-desk__lead'>Digit frequency on the last ticks.</p>
 
-                <div className='edging2-desk__controls'>
-                    <div className='edging2-desk__field'>
-                        <label htmlFor='edging2-symbol'>Symbol</label>
-                        <select
-                            id='edging2-symbol'
-                            value={symbol}
-                            onChange={event => onSymbolChange(event.target.value)}
-                        >
-                            {markets.map(item => (
-                                <option key={item.id} value={item.id}>
-                                    {item.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className='edging2-desk__field'>
-                        <label htmlFor='edging2-stake'>Stake ({currency})</label>
-                        <input
-                            id='edging2-stake'
-                            type='number'
-                            min={MIN_STAKE}
-                            step={0.05}
-                            value={stake}
-                            onChange={event =>
-                                setStake(Math.max(MIN_STAKE, Number(event.target.value) || MIN_STAKE))
-                            }
-                        />
-                    </div>
-                    <div className='edging2-desk__field'>
-                        <label htmlFor='edging2-duration'>Duration (ticks)</label>
-                        <input
-                            id='edging2-duration'
-                            type='number'
-                            min={1}
-                            max={10}
-                            value={duration}
-                            onChange={event => setDuration(clampEdgingDuration(Number(event.target.value)))}
-                        />
-                    </div>
-                    <div className='edging2-desk__field'>
-                        <label>Current Tick</label>
-                        <span className='edging2-desk__tick-badge'>
-                            {quote == null ? '—' : quote.toFixed(pipSize)}
-                        </span>
-                    </div>
-                </div>
-
-                <div className='edging2-desk__section'>
-                    <h3>Last {freq.window || WINDOW} ticks</h3>
-                    <div className='edging2-desk__circles'>
-                        {Array.from({ length: 10 }, (_, digit) => {
-                            const pct = pcts[digit] ?? 0;
-                            return (
-                                <button
-                                    key={digit}
-                                    type='button'
-                                    aria-pressed={selectedDigit === digit}
-                                    className={classNames(
-                                        'edging2-desk__circle',
-                                        `edging2-desk__circle--${edging2Tone(pct)}`,
-                                        {
-                                            selected: selectedDigit === digit,
-                                            'is-now': lastDigit === digit,
-                                        }
-                                    )}
-                                    onClick={() => setSelectedDigit(digit)}
+                <div className='edging2-desk__stage'>
+                    <div className='edging2-desk__console'>
+                        <div className='edging2-desk__fields'>
+                            <div className='edging2-desk__field'>
+                                <label htmlFor='edging2-symbol'>Symbol</label>
+                                <select
+                                    id='edging2-symbol'
+                                    value={symbol}
+                                    onChange={event => onSymbolChange(event.target.value)}
                                 >
-                                    <span className='edging2-desk__circle-digit'>{digit}</span>
-                                    <span className='edging2-desk__circle-pct'>{pct}%</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+                                    {markets.map(item => (
+                                        <option key={item.id} value={item.id}>
+                                            {item.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className='edging2-desk__field'>
+                                <label htmlFor='edging2-stake'>Stake ({currency})</label>
+                                <input
+                                    id='edging2-stake'
+                                    type='number'
+                                    min={MIN_STAKE}
+                                    step={0.05}
+                                    value={stake}
+                                    onChange={event =>
+                                        setStake(Math.max(MIN_STAKE, Number(event.target.value) || MIN_STAKE))
+                                    }
+                                />
+                            </div>
+                            <div className='edging2-desk__field'>
+                                <label htmlFor='edging2-duration'>Duration (ticks)</label>
+                                <input
+                                    id='edging2-duration'
+                                    type='number'
+                                    min={1}
+                                    max={10}
+                                    value={duration}
+                                    onChange={event => setDuration(clampEdgingDuration(Number(event.target.value)))}
+                                />
+                            </div>
+                            <div className='edging2-desk__field'>
+                                <label>Current tick</label>
+                                <span className='edging2-desk__tick-badge'>
+                                    {quote == null ? '—' : quote.toFixed(pipSize)}
+                                </span>
+                            </div>
+                        </div>
 
-                <div className='edging2-desk__section edging2-desk__strategy'>
-                    <h3>
-                        <span aria-hidden='true'>🎯</span> Strategy
-                    </h3>
-                    <ul className='edging2-desk__legend'>
-                        <li>
-                            <strong>Click a digit</strong> to trade it
-                        </li>
-                        <li>
-                            <i className='edging2-desk__dot edging2-desk__dot--green' />
-                            <strong>Green (≥15%)</strong> — Matches
-                        </li>
-                        <li>
-                            <i className='edging2-desk__dot edging2-desk__dot--yellow' />
-                            <strong>Yellow (10–14%)</strong> — Average
-                        </li>
-                        <li>
-                            <i className='edging2-desk__dot edging2-desk__dot--red' />
-                            <strong>Red (&lt;10%)</strong> — Differs
-                        </li>
-                    </ul>
-                    <p className='edging2-desk__selected'>
-                        Selected: {selectedDigit ?? 'None'}
-                        {selectedPct != null ? ` (${selectedPct}%)` : ''}
-                        {suggest ? ` · bias ${suggest}` : ''}
-                    </p>
-                    <div className='edging2-desk__trade-btns'>
+                        <h3>Strategy</h3>
+                        <ul className='edging2-desk__legend'>
+                            <li>
+                                <strong>Click a digit</strong> to trade it
+                            </li>
+                            <li>
+                                <i className='edging2-desk__dot edging2-desk__dot--green' />
+                                <strong>Green (≥15%)</strong> — Matches
+                            </li>
+                            <li>
+                                <i className='edging2-desk__dot edging2-desk__dot--yellow' />
+                                <strong>Yellow (10–14%)</strong> — Average
+                            </li>
+                            <li>
+                                <i className='edging2-desk__dot edging2-desk__dot--red' />
+                                <strong>Red (&lt;10%)</strong> — Differs
+                            </li>
+                        </ul>
+                        <p className='edging2-desk__selected'>
+                            Selected: {selectedDigit ?? 'None'}
+                            {selectedPct != null ? ` (${selectedPct}%)` : ''}
+                            {suggest ? ` · bias ${suggest}` : ''}
+                        </p>
+                        <div className='edging2-desk__trade-btns'>
+                            <button
+                                type='button'
+                                className={classNames('edging2-desk__btn edging2-desk__btn--matches', {
+                                    'is-primary': suggest !== 'differs',
+                                    'is-lead': suggest === 'matches',
+                                })}
+                                disabled={!canTrade}
+                                onClick={() => play('matches')}
+                            >
+                                Matches
+                            </button>
+                            <button
+                                type='button'
+                                className={classNames('edging2-desk__btn edging2-desk__btn--differs', {
+                                    'is-primary': suggest === 'differs',
+                                    'is-lead': suggest === 'differs',
+                                })}
+                                disabled={!canTrade}
+                                onClick={() => play('differs')}
+                            >
+                                Differs
+                            </button>
+                        </div>
+                        {message ? <p className='edging2-desk__message'>{message}</p> : null}
+                    </div>
+
+                    <div className='edging2-desk__results'>
+                        <h3>Last {freq.window || WINDOW} ticks</h3>
+                        <div className='edging2-desk__circles'>
+                            {Array.from({ length: 10 }, (_, digit) => {
+                                const pct = pcts[digit] ?? 0;
+                                return (
+                                    <button
+                                        key={digit}
+                                        type='button'
+                                        aria-pressed={selectedDigit === digit}
+                                        className={classNames(
+                                            'edging2-desk__circle',
+                                            `edging2-desk__circle--${edging2Tone(pct)}`,
+                                            {
+                                                selected: selectedDigit === digit,
+                                                'is-now': lastDigit === digit,
+                                            }
+                                        )}
+                                        onClick={() => setSelectedDigit(digit)}
+                                    >
+                                        <span className='edging2-desk__circle-digit'>{digit}</span>
+                                        <span className='edging2-desk__circle-pct'>{pct}%</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <h3>Statistics</h3>
+                        <div className='edging2-desk__stats-grid'>
+                            <div>
+                                <label>Trades</label>
+                                <strong>{stats.trades}</strong>
+                            </div>
+                            <div>
+                                <label>Wins</label>
+                                <strong className='is-win'>{stats.wins}</strong>
+                            </div>
+                            <div>
+                                <label>Losses</label>
+                                <strong className='is-lose'>{stats.losses}</strong>
+                            </div>
+                            <div>
+                                <label>Win rate</label>
+                                <strong>{winRate}%</strong>
+                            </div>
+                            <div>
+                                <label>Profit</label>
+                                <strong className={stats.profit >= 0 ? 'is-win' : 'is-lose'}>
+                                    {stats.profit >= 0 ? '+' : ''}
+                                    {stats.profit.toFixed(2)} {currency}
+                                </strong>
+                            </div>
+                            <div>
+                                <label>Hot / Cold</label>
+                                <strong>
+                                    {freq.hot.length ? freq.hot.join(' ') : '—'} /{' '}
+                                    {freq.cold.length ? freq.cold.join(' ') : '—'}
+                                </strong>
+                            </div>
+                        </div>
                         <button
                             type='button'
-                            className={classNames('edging2-desk__btn edging2-desk__btn--matches', {
-                                'is-lead': suggest === 'matches',
-                            })}
-                            disabled={!canTrade}
-                            onClick={() => play('matches')}
+                            className='edging2-desk__reset'
+                            onClick={() => {
+                                pendingRef.current = false;
+                                setSelectedDigit(null);
+                                setStats({ trades: 0, wins: 0, losses: 0, profit: 0 });
+                            }}
                         >
-                            <span aria-hidden='true'>🎯</span> MATCHES
+                            Reset
                         </button>
-                        <button
-                            type='button'
-                            className={classNames('edging2-desk__btn edging2-desk__btn--differs', {
-                                'is-lead': suggest === 'differs',
-                            })}
-                            disabled={!canTrade}
-                            onClick={() => play('differs')}
-                        >
-                            <span aria-hidden='true'>🎲</span> DIFFERS
-                        </button>
+
+                        <p className='edging2-desk__warning'>
+                            Frequency is history, not a prediction. Green or red is a short-term imbalance.
+                        </p>
                     </div>
-                </div>
-
-                {message ? <p className='edging2-desk__message'>{message}</p> : null}
-
-                <div className='edging2-desk__section'>
-                    <h3>Statistics</h3>
-                    <div className='edging2-desk__stats-grid'>
-                        <div>
-                            <label>Trades</label>
-                            <strong>{stats.trades}</strong>
-                        </div>
-                        <div>
-                            <label>Wins</label>
-                            <strong className='is-win'>{stats.wins}</strong>
-                        </div>
-                        <div>
-                            <label>Losses</label>
-                            <strong className='is-lose'>{stats.losses}</strong>
-                        </div>
-                        <div>
-                            <label>Win rate</label>
-                            <strong>{winRate}%</strong>
-                        </div>
-                        <div>
-                            <label>Profit</label>
-                            <strong className={stats.profit >= 0 ? 'is-win' : 'is-lose'}>
-                                {stats.profit >= 0 ? '+' : ''}
-                                {stats.profit.toFixed(2)} {currency}
-                            </strong>
-                        </div>
-                        <div>
-                            <label>Hot / Cold</label>
-                            <strong>
-                                {freq.hot.length ? freq.hot.join(' ') : '—'} / {freq.cold.length ? freq.cold.join(' ') : '—'}
-                            </strong>
-                        </div>
-                    </div>
-                    <button
-                        type='button'
-                        className='edging2-desk__reset'
-                        onClick={() => {
-                            pendingRef.current = false;
-                            setSelectedDigit(null);
-                            setStats({ trades: 0, wins: 0, losses: 0, profit: 0 });
-                        }}
-                    >
-                        Reset
-                    </button>
-                </div>
-
-                <div className='edging2-desk__warning'>
-                    Frequency is history, not a prediction. Green or red is a short-term imbalance.
                 </div>
             </div>
         </div>

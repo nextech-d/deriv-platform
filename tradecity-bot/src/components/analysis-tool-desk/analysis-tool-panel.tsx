@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ANALYSIS_DCIRCLE_SYMBOLS } from '@/constants/analysis-markets';
 import { useAnalysisTicks } from '@/hooks/useAnalysisTicks';
+import { useStore } from '@/hooks/useStore';
 import { loadAnalysisBiasInBuilder } from '@/utils/load-analysis-bias';
 import AnalysisToolDesk, { type AnalysisBias } from './analysis-tool-desk';
 
@@ -18,6 +19,7 @@ type TAnalysisToolPanelProps = {
  * Only scanned symbols stream, so the default load is a single feed.
  */
 const AnalysisToolPanel = ({ onSeededToBuilder, onOpenDTrader }: TAnalysisToolPanelProps) => {
+    const { app } = useStore();
     const [symbol, setSymbol] = useState(DEFAULT_SYMBOL);
     const [scanning, setScanning] = useState<Set<string>>(() => new Set([DEFAULT_SYMBOL]));
 
@@ -40,7 +42,9 @@ const AnalysisToolPanel = ({ onSeededToBuilder, onOpenDTrader }: TAnalysisToolPa
 
     const handleSendToBuilder = useCallback(
         async (bias: AnalysisBias) => {
-            const loaded = await loadAnalysisBiasInBuilder({
+            onSeededToBuilder();
+            await app.ensureBlocklyWorkspace();
+            await loadAnalysisBiasInBuilder({
                 symbol,
                 mode: bias.mode,
                 side: bias.side,
@@ -48,9 +52,8 @@ const AnalysisToolPanel = ({ onSeededToBuilder, onOpenDTrader }: TAnalysisToolPa
                 digitTarget: bias.digitTarget,
                 label: bias.label,
             });
-            if (loaded) onSeededToBuilder();
         },
-        [symbol, onSeededToBuilder]
+        [app, symbol, onSeededToBuilder]
     );
 
     return (

@@ -171,210 +171,222 @@ const EdgingDesk = ({
 
     return (
         <div className='edging-desk-page'>
+            <header className='edging-desk__header'>
+                <h2>Edging</h2>
+                <span className={classNames('edging-desk__status', { 'is-live': isConnected })}>
+                    <span aria-hidden='true'>●</span> {isConnected ? 'Live' : 'Waiting'}
+                </span>
+            </header>
+
             <div className='edging-desk'>
-                <div className='edging-desk__controls'>
-                    <div className='edging-desk__field'>
-                        <label htmlFor='edging-symbol'>Symbol</label>
-                        <select
-                            id='edging-symbol'
-                            value={symbol}
-                            onChange={event => onSymbolChange(event.target.value)}
-                        >
-                            {markets.map(item => (
-                                <option key={item.id} value={item.id}>
-                                    {item.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className='edging-desk__field'>
-                        <label htmlFor='edging-stake'>Total stake ({currency})</label>
-                        <input
-                            id='edging-stake'
-                            type='number'
-                            min={EDGING_MIN_TOTAL}
-                            step={0.1}
-                            value={stake}
-                            onChange={event => setStake(clampEdgingTotal(Number(event.target.value)))}
-                        />
-                        <span className='edging-desk__hint'>
-                            Per leg {perContract.toFixed(2)} {currency}
-                        </span>
-                    </div>
-                    <div className='edging-desk__field'>
-                        <label htmlFor='edging-duration'>Duration (ticks)</label>
-                        <input
-                            id='edging-duration'
-                            type='number'
-                            min={1}
-                            max={10}
-                            value={duration}
-                            onChange={event => setDuration(clampEdgingDuration(Number(event.target.value)))}
-                        />
-                        <span className='edging-desk__hint'>1-10 ticks</span>
-                    </div>
-                    <div className='edging-desk__field'>
-                        <label htmlFor='edging-stop'>Stop after</label>
-                        <input
-                            id='edging-stop'
-                            type='number'
-                            min={0}
-                            max={10}
-                            value={stopAfter}
-                            onChange={event =>
-                                setStopAfter(Math.max(0, Math.min(10, Number(event.target.value) || 0)))
-                            }
-                        />
-                        <span className='edging-desk__hint'>{stopAfter ? `${stopAfter} kills` : 'No auto stop'}</span>
-                    </div>
-                    <div className='edging-desk__field edging-desk__field--check'>
-                        <label htmlFor='edging-martingale'>Martingale</label>
-                        <input
-                            id='edging-martingale'
-                            type='checkbox'
-                            checked={useMartingale}
-                            onChange={event => setUseMartingale(event.target.checked)}
-                        />
-                        <span className='edging-desk__hint'>Doubles after a kill</span>
-                    </div>
-                    <div className='edging-desk__field'>
-                        <label>Last digit</label>
-                        <span
-                            className={classNames('edging-desk__digit', {
-                                'is-lose': lastDigit != null && EDGING_LOSE_DIGITS.has(lastDigit),
-                                'is-win': lastDigit != null && edgingWins(lastDigit),
-                            })}
-                        >
-                            {lastDigit ?? '—'}
-                        </span>
-                        <span className='edging-desk__hint'>
-                            {quote == null ? 'Waiting' : `${quote.toFixed(pipSize)} · ${cover}/${digits.length} cover`}
-                        </span>
-                    </div>
-                </div>
-
-                <div className='edging-desk__actions'>
-                    <div className='edging-desk__mode-tabs' role='tablist' aria-label='Edging mode'>
-                        {(['manual', 'auto'] as const).map(item => (
-                            <button
-                                key={item}
-                                type='button'
-                                role='tab'
-                                aria-selected={mode === item}
-                                className={classNames({ active: mode === item })}
-                                onClick={() => {
-                                    if (item === 'auto') skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
-                                    setMode(item);
-                                }}
-                            >
-                                {item === 'manual' ? 'Manual mode' : 'Auto mode'}
-                            </button>
-                        ))}
-                    </div>
-
-                    <button
-                        type='button'
-                        className='edging-desk__buy-btn'
-                        disabled={!canTrade || mode === 'auto'}
-                        onClick={() => fire()}
-                    >
-                        Buy Over {EDGING_OVER_BARRIER} &amp; Under {EDGING_UNDER_BARRIER} · {nextStake.toFixed(2)}{' '}
-                        {currency}
-                    </button>
-                </div>
-
-                {message ? <p className='edging-desk__message'>{message}</p> : null}
-
-                <div className='edging-desk__section'>
-                    <h3>Last {WINDOW} digits</h3>
-                    <div className='edging-desk__digits-row'>
-                        {digits.length ? (
-                            digits.map((digit, index) => (
-                                <span
-                                    key={`${index}-${digit}`}
-                                    className={classNames('edging-desk__digit-pill', {
-                                        winning: edgingWins(digit),
-                                        losing: !edgingWins(digit),
-                                    })}
-                                >
-                                    {digit}
-                                </span>
-                            ))
-                        ) : (
-                            <p className='edging-desk__hint'>Waiting for ticks.</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className='edging-desk__section'>
-                    <h3>Statistics</h3>
-                    <div className='edging-desk__stats-grid'>
-                        <div>
-                            <label>Trades</label>
-                            <strong>{stats.trades}</strong>
-                        </div>
-                        <div>
-                            <label>Wins</label>
-                            <strong className='is-win'>{stats.wins}</strong>
-                        </div>
-                        <div>
-                            <label>Losses</label>
-                            <strong className='is-lose'>{stats.losses}</strong>
-                        </div>
-                        <div>
-                            <label>Win rate</label>
-                            <strong>{winRate}%</strong>
-                        </div>
-                        <div>
-                            <label>Profit</label>
-                            <strong className={stats.profit >= 0 ? 'is-win' : 'is-lose'}>
-                                {stats.profit >= 0 ? '+' : ''}
-                                {stats.profit.toFixed(2)} {currency}
-                            </strong>
-                        </div>
-                        <div>
-                            <label>Kills in a row</label>
-                            <strong>{stats.consecutiveLosses}</strong>
-                        </div>
-                    </div>
-                    <button
-                        type='button'
-                        className='edging-desk__reset-btn'
-                        onClick={() => {
-                            pendingRef.current = false;
-                            legBufferRef.current = [];
-                            setMode('manual');
-                            setStats({ trades: 0, wins: 0, losses: 0, profit: 0, consecutiveLosses: 0 });
-                        }}
-                    >
-                        Reset
-                    </button>
-                </div>
-
-                <div className='edging-desk__section'>
-                    <h3>Frequency</h3>
-                    <div className='edging-desk__freq-list'>
-                        {freqs.map((count, digit) => (
-                            <div key={digit} className='edging-desk__freq-row'>
-                                <label>Digit {digit}</label>
-                                <span>{count}</span>
-                                <i className='edging-desk__freq-track'>
-                                    <b
-                                        className={classNames('edging-desk__freq-bar', {
-                                            'is-lose': EDGING_LOSE_DIGITS.has(digit),
-                                        })}
-                                        style={{ width: digits.length ? `${(count / digits.length) * 100}%` : '0%' }}
-                                    />
-                                </i>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className='edging-desk__info'>
-                    <h3>How it works</h3>
+                <p className='edging-desk__lead'>
                     Buys Over {EDGING_OVER_BARRIER} and Under {EDGING_UNDER_BARRIER} together. 0–3 pays Under, 6–9
                     pays Over. Both lose only on {EDGING_UNDER_BARRIER} and {EDGING_OVER_BARRIER}.
+                </p>
+
+                <div className='edging-desk__stage'>
+                    <div className='edging-desk__console'>
+                        <div className='edging-desk__fields'>
+                            <div className='edging-desk__field'>
+                                <label htmlFor='edging-symbol'>Symbol</label>
+                                <select
+                                    id='edging-symbol'
+                                    value={symbol}
+                                    onChange={event => onSymbolChange(event.target.value)}
+                                >
+                                    {markets.map(item => (
+                                        <option key={item.id} value={item.id}>
+                                            {item.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className='edging-desk__field'>
+                                <label htmlFor='edging-stake'>Total stake ({currency})</label>
+                                <input
+                                    id='edging-stake'
+                                    type='number'
+                                    min={EDGING_MIN_TOTAL}
+                                    step={0.1}
+                                    value={stake}
+                                    onChange={event => setStake(clampEdgingTotal(Number(event.target.value)))}
+                                />
+                                <span className='edging-desk__hint'>
+                                    Per leg {perContract.toFixed(2)} {currency}
+                                </span>
+                            </div>
+                            <div className='edging-desk__field'>
+                                <label htmlFor='edging-duration'>Duration (ticks)</label>
+                                <input
+                                    id='edging-duration'
+                                    type='number'
+                                    min={1}
+                                    max={10}
+                                    value={duration}
+                                    onChange={event => setDuration(clampEdgingDuration(Number(event.target.value)))}
+                                />
+                                <span className='edging-desk__hint'>1-10 ticks</span>
+                            </div>
+                            <div className='edging-desk__field'>
+                                <label htmlFor='edging-stop'>Stop after</label>
+                                <input
+                                    id='edging-stop'
+                                    type='number'
+                                    min={0}
+                                    max={10}
+                                    value={stopAfter}
+                                    onChange={event =>
+                                        setStopAfter(Math.max(0, Math.min(10, Number(event.target.value) || 0)))
+                                    }
+                                />
+                                <span className='edging-desk__hint'>
+                                    {stopAfter ? `${stopAfter} kills` : 'No auto stop'}
+                                </span>
+                            </div>
+                            <div className='edging-desk__field edging-desk__field--check'>
+                                <label htmlFor='edging-martingale'>Martingale</label>
+                                <input
+                                    id='edging-martingale'
+                                    type='checkbox'
+                                    checked={useMartingale}
+                                    onChange={event => setUseMartingale(event.target.checked)}
+                                />
+                                <span className='edging-desk__hint'>Doubles after a kill</span>
+                            </div>
+                            <div className='edging-desk__field'>
+                                <label>Last digit</label>
+                                <span
+                                    className={classNames('edging-desk__digit', {
+                                        'is-lose': lastDigit != null && EDGING_LOSE_DIGITS.has(lastDigit),
+                                        'is-win': lastDigit != null && edgingWins(lastDigit),
+                                    })}
+                                >
+                                    {lastDigit ?? '—'}
+                                </span>
+                                <span className='edging-desk__hint'>
+                                    {quote == null
+                                        ? 'Waiting'
+                                        : `${quote.toFixed(pipSize)} · ${cover}/${digits.length} cover`}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className='edging-desk__actions'>
+                            <div className='edging-desk__mode-tabs' role='tablist' aria-label='Edging mode'>
+                                {(['manual', 'auto'] as const).map(item => (
+                                    <button
+                                        key={item}
+                                        type='button'
+                                        role='tab'
+                                        aria-selected={mode === item}
+                                        className={classNames({ active: mode === item })}
+                                        onClick={() => {
+                                            if (item === 'auto') skipEpochRef.current = ticks.at(-1)?.epoch ?? 0;
+                                            setMode(item);
+                                        }}
+                                    >
+                                        {item === 'manual' ? 'Manual' : 'Auto'}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                type='button'
+                                className='edging-desk__buy-btn'
+                                disabled={!canTrade || mode === 'auto'}
+                                onClick={() => fire()}
+                            >
+                                Buy Over {EDGING_OVER_BARRIER} &amp; Under {EDGING_UNDER_BARRIER} ·{' '}
+                                {nextStake.toFixed(2)} {currency}
+                            </button>
+                        </div>
+
+                        {message ? <p className='edging-desk__message'>{message}</p> : null}
+                    </div>
+
+                    <div className='edging-desk__results'>
+                        <h3>Last {WINDOW} digits</h3>
+                        <div className='edging-desk__digits-row'>
+                            {digits.length ? (
+                                digits.map((digit, index) => (
+                                    <span
+                                        key={`${index}-${digit}`}
+                                        className={classNames('edging-desk__digit-pill', {
+                                            winning: edgingWins(digit),
+                                            losing: !edgingWins(digit),
+                                        })}
+                                    >
+                                        {digit}
+                                    </span>
+                                ))
+                            ) : (
+                                <p className='edging-desk__hint'>Waiting for ticks.</p>
+                            )}
+                        </div>
+
+                        <h3>Statistics</h3>
+                        <div className='edging-desk__stats-grid'>
+                            <div>
+                                <label>Trades</label>
+                                <strong>{stats.trades}</strong>
+                            </div>
+                            <div>
+                                <label>Wins</label>
+                                <strong className='is-win'>{stats.wins}</strong>
+                            </div>
+                            <div>
+                                <label>Losses</label>
+                                <strong className='is-lose'>{stats.losses}</strong>
+                            </div>
+                            <div>
+                                <label>Win rate</label>
+                                <strong>{winRate}%</strong>
+                            </div>
+                            <div>
+                                <label>Profit</label>
+                                <strong className={stats.profit >= 0 ? 'is-win' : 'is-lose'}>
+                                    {stats.profit >= 0 ? '+' : ''}
+                                    {stats.profit.toFixed(2)} {currency}
+                                </strong>
+                            </div>
+                            <div>
+                                <label>Kills in a row</label>
+                                <strong>{stats.consecutiveLosses}</strong>
+                            </div>
+                        </div>
+                        <button
+                            type='button'
+                            className='edging-desk__reset-btn'
+                            onClick={() => {
+                                pendingRef.current = false;
+                                legBufferRef.current = [];
+                                setMode('manual');
+                                setStats({ trades: 0, wins: 0, losses: 0, profit: 0, consecutiveLosses: 0 });
+                            }}
+                        >
+                            Reset
+                        </button>
+
+                        <h3>Frequency</h3>
+                        <div className='edging-desk__freq-list'>
+                            {freqs.map((count, digit) => (
+                                <div key={digit} className='edging-desk__freq-row'>
+                                    <label>Digit {digit}</label>
+                                    <span>{count}</span>
+                                    <i className='edging-desk__freq-track'>
+                                        <b
+                                            className={classNames('edging-desk__freq-bar', {
+                                                'is-lose': EDGING_LOSE_DIGITS.has(digit),
+                                            })}
+                                            style={{
+                                                width: digits.length ? `${(count / digits.length) * 100}%` : '0%',
+                                            }}
+                                        />
+                                    </i>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

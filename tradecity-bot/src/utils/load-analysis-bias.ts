@@ -66,14 +66,20 @@ const modifyFieldDropdownValues = (strategy_dom: HTMLElement, name: string, valu
 
 /** Seed the Blockly workspace from an analysis bias and return true when loaded. */
 export async function loadAnalysisBiasInBuilder(bias: AnalysisBiasSeed): Promise<boolean> {
-    const { contracts_for } = (ApiHelpers?.instance ?? {}) as {
-        contracts_for?: {
-            getMarketBySymbol: (symbol: string) => Promise<string>;
-            getSubmarketBySymbol: (symbol: string) => Promise<string>;
-            getTradeTypeCategoryByTradeType: (trade_type: string) => Promise<string>;
-        };
-    };
-    const workspace = (Blockly as unknown as { derivWorkspace?: unknown }).derivWorkspace;
+    const started = Date.now();
+    let contracts_for: {
+        getMarketBySymbol: (symbol: string) => Promise<string>;
+        getSubmarketBySymbol: (symbol: string) => Promise<string>;
+        getTradeTypeCategoryByTradeType: (trade_type: string) => Promise<string>;
+    } | undefined;
+    let workspace: unknown;
+
+    while (Date.now() - started < 2000) {
+        contracts_for = ((ApiHelpers?.instance ?? {}) as { contracts_for?: typeof contracts_for }).contracts_for;
+        workspace = window.Blockly?.derivWorkspace;
+        if (contracts_for && workspace) break;
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
     if (!contracts_for || !workspace) {
         console.warn('[AnalysisTool] Blockly or contracts API not ready');
