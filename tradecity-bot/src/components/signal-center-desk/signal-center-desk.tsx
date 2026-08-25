@@ -90,7 +90,7 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
     return (
         <div className='signal-center'>
             <header className='signal-center__topbar'>
-                <h2 className='signal-center__title'>Trading Tools Hub</h2>
+                <h2 className='signal-center__title'>Signal center</h2>
                 <div className='signal-center__views' role='group' aria-label='Layout'>
                     <button
                         type='button'
@@ -131,7 +131,7 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
                         onPick={selectTool}
                     />
                 ) : (
-                    <>
+                    <div className='signal-center__tool'>
                         <div className='signal-center__picker' ref={pickerRef}>
                             <button
                                 type='button'
@@ -175,11 +175,9 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
                         </div>
 
                         <div className='signal-center__stage'>
-                            <span className='signal-center__glow is-left' aria-hidden='true' />
-
                             <div className='signal-center__console'>
                                 <label className='signal-center__field'>
-                                    <span className='signal-center__field-label'>SELECT MARKET:</span>
+                                    <span className='signal-center__field-label'>Market</span>
                                     <select
                                         className='signal-center__select'
                                         value={market}
@@ -205,11 +203,11 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
 
                                 <div className='signal-center__tiles'>
                                     <div className='signal-center__tile'>
-                                        <span>LAST DIGIT</span>
+                                        <span>Last digit</span>
                                         <strong>{lastDigit == null ? '--' : lastDigit}</strong>
                                     </div>
                                     <div className='signal-center__tile'>
-                                        <span>TICKS COLLECTED</span>
+                                        <span>Ticks collected</span>
                                         <strong>
                                             {collected}/{tool.minTicks || values.length}
                                         </strong>
@@ -225,7 +223,7 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
                                             ? 'Live — updating on every tick'
                                             : status === 'paused'
                                               ? 'Paused — showing the last snapshot'
-                                              : 'Ready. Press ANALYZE to run.'}
+                                              : 'Ready. Press Analyze to run.'}
                                 </p>
 
                                 <div className='signal-center__actions'>
@@ -235,7 +233,7 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
                                         disabled={!market || !ready}
                                         onClick={() => setStatus('running')}
                                     >
-                                        ANALYZE
+                                        Analyze
                                     </button>
                                     <button
                                         type='button'
@@ -246,7 +244,7 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
                                             setStatus('paused');
                                         }}
                                     >
-                                        PAUSE
+                                        Pause
                                     </button>
                                     <button
                                         type='button'
@@ -257,29 +255,27 @@ const SignalCenterDesk = ({ market, onMarketChange, values, digits, onSendToBuil
                                             setSnapshot(null);
                                         }}
                                     >
-                                        STOP
+                                        Stop
                                     </button>
                                 </div>
-
-                                <section className='signal-center__results'>
-                                    <h3>ANALYSIS RESULTS</h3>
-                                    {reading ? (
-                                        <Results
-                                            reading={reading}
-                                            toolLabel={tool.label}
-                                            onSendToBuilder={onSendToBuilder}
-                                        />
-                                    ) : (
-                                        <p className='signal-center__empty'>
-                                            No data available. Run analysis to see results.
-                                        </p>
-                                    )}
-                                </section>
                             </div>
 
-                            <span className='signal-center__glow is-right' aria-hidden='true' />
+                            <section className='signal-center__results'>
+                                <h3>Results</h3>
+                                {reading ? (
+                                    <Results
+                                        reading={reading}
+                                        toolLabel={tool.label}
+                                        onSendToBuilder={onSendToBuilder}
+                                    />
+                                ) : (
+                                    <p className='signal-center__empty'>
+                                        No data available. Run analysis to see results.
+                                    </p>
+                                )}
+                            </section>
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
 
@@ -389,7 +385,7 @@ const Results = ({
                 className='signal-center__btn is-handoff'
                 onClick={() => onSendToBuilder(reading.handoff!, toolLabel)}
             >
-                SEND {reading.handoff.label.toUpperCase()} TO BOT BUILDER
+                Send {reading.handoff.label} to Bot builder
             </button>
         ) : null}
     </>
