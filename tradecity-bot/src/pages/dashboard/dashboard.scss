@@ -24,6 +24,16 @@
         transition: all 0.4s;
         margin-top: 1rem;
 
+        @include desktop-screen {
+            height: calc(100vh - var(--tc-header-h, 10rem) - 6.6rem - 3.6rem) !important;
+            position: fixed !important;
+            top: calc(var(--tc-header-h, 10rem) + 6.6rem) !important;
+            left: calc(100vw - 16px) !important;
+            right: auto !important;
+            margin-top: 0 !important;
+            transform: none;
+        }
+
         @include is-RTL {
             transform: translateX(var(--translate-panel-rtl));
         }
@@ -46,10 +56,6 @@
     }
 
     .dc-drawer--open {
-        @include desktop-screen {
-            transform: translateX(var(--translate-panel-reset)) !important;
-        }
-
         .dc-drawer__toggle-icon {
             @include is-RTL {
                 transform: rotate(calc(180deg)) !important;

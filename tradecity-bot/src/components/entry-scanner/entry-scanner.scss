@@ -9,6 +9,16 @@
     right: 1.5rem;
     bottom: 5.2rem;
     z-index: 80;
+
+    @include desktop-screen {
+        .layout:has(.run-panel__container) & {
+            right: calc(16px + 2.4rem);
+        }
+
+        .layout:has(.run-panel__container.dc-drawer--open) & {
+            right: calc(36.6rem + 2.4rem);
+        }
+    }
     width: 58px;
     height: 58px;
     padding: 0;
