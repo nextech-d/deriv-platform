@@ -20,18 +20,10 @@ const DIFFICULTY: Record<FreeBotStrategy['difficulty'], string> = {
     advanced: 'Advanced',
 };
 
-const MARK_COLORS = ['#ff444f', '#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#eab308'];
-
 const sentenceCase = (value: string): string => {
     const trimmed = value.trim();
     if (!trimmed) return value;
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
-};
-
-const markColor = (id: string): string => {
-    let hash = 0;
-    for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i)) % MARK_COLORS.length;
-    return MARK_COLORS[hash];
 };
 
 type TFreeBotsDeskProps = {
@@ -131,12 +123,11 @@ const FreeBotsDesk = ({ onLoadInBuilder, initialTier = 'free' }: TFreeBotsDeskPr
                         <article
                             key={bot.id}
                             className={classNames('free-bots-card', bot.category === 'premium' && 'is-premium')}
+                            data-accent={bot.category === 'premium' ? 'premium' : 'standard'}
                         >
+                            <span className='free-bots-card-icon' aria-hidden />
                             <header className='free-bots-card-top'>
-                                <h2>
-                                    <i className='free-bots-mark' style={{ background: markColor(bot.id) }} aria-hidden />
-                                    {sentenceCase(bot.name)}
-                                </h2>
+                                <h2>{sentenceCase(bot.name)}</h2>
                                 <div className='free-bots-card-marks'>
                                     {bot.isNew ? <span className='free-bots-new'>New</span> : null}
                                     <span className='free-bots-diff'>{DIFFICULTY[bot.difficulty]}</span>

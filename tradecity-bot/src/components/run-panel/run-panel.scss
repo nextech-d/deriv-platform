@@ -9,6 +9,29 @@
     &__container {
         width: 36.6rem !important;
         right: 0;
+        background: var(--tc-card);
+        color: var(--tc-ink);
+        box-shadow: var(--tc-card-shadow);
+
+        .dc-drawer__header {
+            border-bottom-color: var(--tc-card-border);
+            color: var(--tc-ink);
+            font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        }
+
+        .dc-drawer__footer {
+            background-color: var(--tc-card);
+            border-top-color: var(--tc-card-border);
+        }
+
+        .dc-drawer__toggle {
+            background-color: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
+            border-color: var(--tc-card-border);
+
+            svg {
+                fill: var(--tc-ink);
+            }
+        }
 
         @include desktop-screen {
             height: calc(100vh - var(--tc-header-h, 10rem) - 6.6rem - 3.6rem) !important;
@@ -48,6 +71,7 @@
         &-title {
             min-height: 1.8rem;
             margin-bottom: 4px;
+            font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
 
             @include typeface(--small-center-bold-black, none);
         }
@@ -65,7 +89,7 @@
 
         flex-direction: column;
         width: 35rem;
-        background-color: var(--general-section-2);
+        background-color: color-mix(in srgb, var(--tc-ink) 4%, var(--tc-card));
 
         @include mobile-or-tablet-screen {
             margin: 0;
@@ -83,12 +107,12 @@
             width: 33%;
             padding: 16px 0 2px;
             cursor: pointer;
-            color: var(--text-general);
+            color: var(--tc-ink);
             -webkit-tap-highlight-color: transparent;
 
             &-item {
                 display: inline-block;
-                border-bottom: 1px dotted var(--text-general);
+                border-bottom: 1px dotted var(--tc-muted);
             }
         }
 
@@ -133,6 +157,7 @@
             width: 318px;
             height: 32px !important;
             margin: 12px 24px;
+            font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
         }
     }
 

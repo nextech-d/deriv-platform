@@ -3,8 +3,9 @@
 /* Free bots catalog — TradeCity catalog under the main header. */
 .free-bots {
     --fb-red: var(--brand-red-coral, #ff444f);
-    --fb-ink: #000;
+    --fb-ink: var(--tc-ink);
     --fb-gold: #d4a017;
+    --fb-accent: #0ea5e9;
 
     display: flex;
     flex-direction: column;
@@ -21,6 +22,13 @@
     color: var(--tc-ink);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
+    @include desktop-screen {
+        margin: -1.6rem;
+        width: calc(100% + 3.2rem);
+        max-height: calc(var(--tab-content-height) + 3.2rem);
+        height: calc(100% + 3.2rem);
+    }
+
     @include mobile-or-tablet-screen {
         max-height: var(--tab-content-height-mobile);
     }
@@ -29,15 +37,21 @@
 .free-bots-toolbar {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 1.2rem;
-    min-height: 4.8rem;
-    padding: 0.6rem 1.2rem;
+    min-height: 5.2rem;
+    margin: 0;
+    padding: 0.7rem 2.4rem;
+    border: none;
+    border-radius: 0;
     border-bottom: 1px solid var(--tc-card-border);
     background: var(--tc-card);
+    box-shadow:
+        0 1px 0 color-mix(in srgb, var(--fb-accent) 35%, transparent),
+        0 10px 24px rgb(19 32 51 / 5%);
     flex-shrink: 0;
 }
 
@@ -60,24 +74,24 @@
 .free-bots-split {
     width: 1px;
     height: 1.35rem;
-    background: var(--general-section-1);
+    background: var(--tc-card-border);
 }
 
 .free-bots-segment {
     display: flex;
     overflow: hidden;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: var(--tc-card);
 }
 
 .free-bots-seg {
     min-height: 2.15rem;
     padding: 0 0.9rem;
     border: none;
-    border-right: 1px solid var(--general-section-1);
-    background: var(--general-main-1);
-    color: var(--text-less-prominent);
+    border-right: 1px solid var(--tc-card-border);
+    background: var(--tc-card);
+    color: var(--tc-muted);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
@@ -90,12 +104,12 @@
 
 .free-bots-seg:hover {
     color: var(--fb-ink);
-    background: var(--general-hover);
+    background: color-mix(in srgb, var(--tc-ink) 5%, var(--tc-card));
 }
 
 .free-bots-seg.is-on {
     color: #fff;
-    background: var(--fb-red);
+    background: var(--fb-accent);
 }
 
 .free-bots-toolbar-status {
@@ -111,10 +125,10 @@
     gap: 0.4rem;
     min-width: 14rem;
     padding: 0.35rem 0.55rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    color: var(--text-less-prominent);
-    background: var(--general-main-1);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    color: var(--tc-muted);
+    background: var(--tc-card);
 }
 
 .free-bots-search input {
@@ -122,7 +136,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    color: var(--text-general);
+    color: var(--tc-ink);
     font-size: 1.2rem;
 }
 
@@ -132,8 +146,8 @@
     min-height: 1.7rem;
     padding: 0 0.5rem;
     border-radius: 6px;
-    background: color-mix(in srgb, var(--fb-red) 10%, var(--general-main-1));
-    color: var(--fb-red);
+    background: color-mix(in srgb, var(--fb-accent) 12%, var(--tc-card));
+    color: var(--fb-accent);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
@@ -142,11 +156,11 @@
 .free-bots-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
+    gap: 1.2rem;
     align-items: stretch;
     width: min(100%, 112rem);
     margin-inline: auto;
-    padding: 1.4rem 8vw 6.4rem;
+    padding: 2.4rem 2.4rem 6.4rem;
 }
 
 @media (max-width: 1100px) {
@@ -166,24 +180,58 @@
 }
 
 .free-bots-card {
+    --window-accent: var(--fb-accent);
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
-    min-height: 0;
-    padding: 1rem 1rem 0.9rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
-    box-shadow: 0 1px 2px var(--shadow-drop);
+    align-items: flex-start;
+    gap: 1.2rem;
+    min-height: 16.4rem;
+    padding: 1.8rem 1.6rem 2rem;
+    border: 1px solid var(--tc-card-border);
+    border-radius: 1.1rem;
+    background: var(--tc-card);
+    box-shadow: var(--tc-card-shadow);
+    color: var(--tc-ink);
+    overflow: hidden;
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: auto 12% 0;
+        height: 0.4rem;
+        border-radius: 999px 999px 0 0;
+        background: var(--window-accent);
+        box-shadow: 0 0 18px var(--window-accent);
+    }
+
+    &[data-accent='premium'],
+    &.is-premium {
+        --window-accent: #eab308;
+    }
+
+    &:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--window-accent) 42%, var(--tc-card-border));
+    }
 }
 
-.free-bots-card.is-premium {
-    border-color: color-mix(in srgb, var(--fb-gold) 70%, var(--general-section-1));
-}
+.free-bots-card-icon {
+    display: grid;
+    place-items: center;
+    width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 0.85rem;
+    background: color-mix(in srgb, var(--window-accent) 14%, var(--tc-card));
+    box-shadow: 0 0 18px color-mix(in srgb, var(--window-accent) 18%, transparent);
 
-.free-bots-card:hover {
-    border-color: color-mix(in srgb, var(--fb-red) 42%, var(--general-section-1));
-    box-shadow: 0 4px 12px var(--shadow-drop);
+    &::before {
+        content: '';
+        width: 1.4rem;
+        height: 1.4rem;
+        border-radius: 0.35rem;
+        background: var(--window-accent);
+    }
 }
 
 .free-bots-card-top {
@@ -191,28 +239,18 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.6rem;
+    width: 100%;
 }
 
 .free-bots-card-top h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
     margin: 0;
     min-width: 0;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1.25;
-    color: var(--fb-ink);
-}
-
-.free-bots-mark {
-    display: block;
-    flex: none;
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 2px;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--tc-ink);
 }
 
 .free-bots-card-marks {
@@ -234,13 +272,13 @@
 }
 
 .free-bots-new {
-    background: color-mix(in srgb, var(--fb-red) 14%, #fff);
+    background: color-mix(in srgb, var(--fb-red) 14%, var(--tc-card));
     color: var(--fb-red);
 }
 
 .free-bots-diff {
-    background: var(--general-section-1);
-    color: var(--text-less-prominent);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
+    color: var(--tc-muted);
 }
 
 .free-bots-card-summary {
@@ -248,7 +286,7 @@
     flex: 1;
     font-size: 1.2rem;
     line-height: 1.4;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -268,24 +306,25 @@
     border-radius: 4px;
     font-size: 1.1rem;
     font-weight: 650;
-    color: var(--text-less-prominent);
-    background: var(--general-section-1);
+    color: var(--tc-muted);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
 }
 
 .free-bots-tag.is-market {
-    color: var(--text-less-prominent);
-    background: var(--general-section-2);
+    color: var(--tc-muted);
+    background: color-mix(in srgb, var(--tc-ink) 9%, var(--tc-card));
 }
 
 .free-bots-load {
-    width: 25%;
-    min-height: 2.4rem;
+    width: auto;
+    min-height: 3.2rem;
     margin-top: auto;
-    padding: 0 0.85rem;
+    padding: 0 1.2rem;
     border: none;
-    border-radius: 8px;
-    background: #000;
+    border-radius: 0.85rem;
+    background: var(--window-accent);
     color: #fff;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--window-accent) 28%, transparent);
     white-space: nowrap;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.3rem;
@@ -294,7 +333,7 @@
 }
 
 .free-bots-load:hover {
-    filter: brightness(1.06);
+    filter: brightness(1.08);
 }
 
 .free-bots-empty {
@@ -304,22 +343,22 @@
     justify-content: center;
     gap: 0.8rem;
     margin: 0;
-    padding: 4rem 8vw 6.4rem;
+    padding: 4rem 2.4rem 6.4rem;
     text-align: center;
 }
 
 .free-bots-empty p {
     margin: 0;
     font-size: 1.3rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .free-bots-clear {
     min-height: 2.4rem;
     padding: 0 1rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: var(--tc-card);
     color: var(--fb-ink);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.2rem;

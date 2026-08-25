@@ -19,17 +19,19 @@
     position: absolute;
     inset-inline-start: 250px;
     top: 0;
-    background-color: var(--general-main-2);
+    background-color: var(--bb-chrome, var(--tc-card));
+    color: var(--tc-ink);
     height: calc(100% - 2.4rem);
     max-height: calc(100% - 2.4rem);
     z-index: 11;
     pointer-events: auto;
     isolation: isolate;
-    border-radius: $BORDER_RADIUS;
+    border-radius: 1.1rem;
+    border: 1px solid var(--tc-card-border);
     font-size: 2em;
     margin-inline-start: $default-margin;
     margin-top: 20px;
-    box-shadow: 0 2px 8px 0 var(--shadow-box);
+    box-shadow: var(--tc-card-shadow);
     min-width: 400px;
     visibility: hidden;
 

@@ -5,7 +5,9 @@
     width: 23.6rem;
     height: 100%;
     padding: 0.8rem;
-    background: var(--general-main-1);
+    background: var(--bb-chrome, var(--tc-card));
+    color: var(--tc-ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
     z-index: 4;
     pointer-events: auto;
     isolation: isolate;
@@ -52,7 +54,7 @@
                     border-radius: 8px;
 
                     &:focus-within {
-                        border-color: var(--text-general);
+                        border-color: var(--tc-ink);
                     }
                 }
 
@@ -61,7 +63,7 @@
                     height: 2.8rem;
                     flex-grow: 1;
                     padding: 0.8rem;
-                    color: var(--text-general);
+                    color: var(--tc-ink);
                 }
 
                 &__leading-icon {
@@ -81,7 +83,7 @@
         user-select: none;
         z-index: 1;
         visibility: visible;
-        border: solid 1px var(--general-section-1);
+        border: solid 1px var(--tc-card-border);
     }
 
     &__content-wrapper {
@@ -95,22 +97,23 @@
     &__header {
         padding: 8px;
         position: relative;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
         font-weight: bold;
         font-size: 1.6em;
         text-align: center;
-        color: var(--text-general);
-        background-color: var(--general-section-5);
+        color: var(--tc-ink);
+        background-color: color-mix(in srgb, var(--tc-ink) 5%, var(--bb-chrome, var(--tc-card)));
     }
 
     &__item {
         display: flex;
         flex-direction: row;
-        color: var(--text-general);
+        color: var(--tc-ink);
         user-select: none; // Prevent text selection on rapid clicks
 
         &:hover {
             background-color: var(--general-hover);
-            color: var(--text-prominent);
+            color: var(--tc-ink);
         }
     }
 
@@ -149,11 +152,12 @@
         font-weight: bold;
         font-size: 14px;
         line-height: 1.4;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     }
 
     &__row {
         cursor: pointer;
-        border-top: 1px solid var(--general-section-6);
+        border-top: 1px solid var(--tc-card-border);
         user-select: none; // Prevent text selection on rapid clicks
 
         #{$toolbox}__category--selected {
@@ -161,7 +165,7 @@
         }
 
         &:last-of-type {
-            border-bottom: 1px solid var(--general-section-6);
+            border-bottom: 1px solid var(--tc-card-border);
         }
 
         &--active {
