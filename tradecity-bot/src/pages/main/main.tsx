@@ -16,7 +16,6 @@ import { DBOT_TABS, TAB_HASHES, TAB_IDS } from '@/constants/bot-contents';
 import { PLATFORM_TABS, RUN_CONTROL_KINDS } from '@/constants/platform-tabs';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
-import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
 import { useApiBase } from '@/hooks/useApiBase';
 import { useStore } from '@/hooks/useStore';
 import {
@@ -357,22 +356,11 @@ const AppWrapper = observer(() => {
     }, [active_tab]);
 
     React.useEffect(() => {
-        const trashcan_init_id = setTimeout(() => {
-            if (active_tab === BOT_BUILDER && Blockly?.derivWorkspace?.trashcan) {
-                const trashcanY = window.innerHeight - 250;
-                let trashcanX;
-                if (is_drawer_open) {
-                    trashcanX = isDbotRTL() ? 380 : window.innerWidth - 460;
-                } else {
-                    trashcanX = isDbotRTL() ? 20 : window.innerWidth - 100;
-                }
-                Blockly?.derivWorkspace?.trashcan?.setTrashcanPosition(trashcanX, trashcanY);
-            }
-        }, 100);
-
-        return () => {
-            clearTimeout(trashcan_init_id); // Clear the timeout on unmount
-        };
+        if (active_tab !== BOT_BUILDER) return undefined;
+        const ids = [400, 900, 1600].map(delay =>
+            window.setTimeout(() => window.Blockly?.Trashcan?.placeInVisibleHole?.(), delay)
+        );
+        return () => ids.forEach(id => clearTimeout(id));
         //eslint-disable-next-line react-hooks/exhaustive-deps
     }, [active_tab, is_drawer_open]);
 

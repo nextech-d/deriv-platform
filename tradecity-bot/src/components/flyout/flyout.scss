@@ -20,8 +20,8 @@
     inset-inline-start: 250px;
     top: 0;
     background-color: var(--general-main-2);
-    height: calc(100vh - 232px);
-    max-height: calc(100vh - 232px);
+    height: calc(100% - 2.4rem);
+    max-height: calc(100% - 2.4rem);
     z-index: 11;
     pointer-events: auto;
     isolation: isolate;

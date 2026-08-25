@@ -1,5 +1,4 @@
 import { action, makeObservable, observable, reaction } from 'mobx';
-import { scrollWorkspace } from '@/external/bot-skeleton';
 import { browserOptimizer } from '@/utils/browser-performance-optimizer';
 import { clickRateLimiter } from '@/utils/click-rate-limiter';
 import GTM from '@/utils/gtm';
@@ -137,56 +136,140 @@ export default class ToolboxStore {
         }, throttleDelay);
     }
 
-    private performWorkspaceAdjustment() {
-        // NOTE: added this load modal open check to prevent scroll when load modal is open
-        if (!this.is_workspace_scroll_adjusted && !this.root_store.load_modal.is_load_modal_open) {
-            this.is_adjusting_workspace = true;
-            this.is_workspace_scroll_adjusted = true;
+    private getVisibleWorkspaceHole(): DOMRect | null {
+        const injection =
+            (document.getElementById('scratch_div') as HTMLElement | null) ||
+            (document.querySelector('.bot-builder .injectionDiv') as HTMLElement | null);
+        if (!injection) return null;
 
-            setTimeout(() => {
-                const workspace = window.Blockly.derivWorkspace;
-                if (!workspace) {
-                    this.is_workspace_scroll_adjusted = false;
-                    this.is_adjusting_workspace = false;
-                    return;
-                }
+        const inj = injection.getBoundingClientRect();
+        const toolbox = document.getElementById('gtm-toolbox')?.getBoundingClientRect();
+        const toolbar = document.querySelector('.bot-builder .toolbar')?.getBoundingClientRect();
+        const panel = document.querySelector('.run-panel__container.dc-drawer--open')?.getBoundingClientRect();
+        const footer = document.querySelector('.app-footer')?.getBoundingClientRect();
 
-                if (!workspace.scale || workspace.scale < 0.4) {
-                    workspace.setScale(0.7);
-                    window.Blockly.svgResize(workspace);
-                }
+        const left = Math.max(inj.left, toolbox?.right ?? inj.left) + 16;
+        const top = Math.max(inj.top, toolbar?.bottom ?? inj.top) + 8;
+        const right = Math.min(inj.right, panel?.left ?? inj.right) - 16;
+        const bottom = Math.min(inj.bottom, footer?.top ?? inj.bottom) - 16;
+        const width = right - left;
+        const height = bottom - top;
+        if (width < 80 || height < 80) return null;
+        return new DOMRect(left, top, width, height);
+    }
 
-                const toolbox_width = document.getElementById('gtm-toolbox')?.getBoundingClientRect().width || 0;
-                const block_canvas_rect = workspace.svgBlockCanvas_?.getBoundingClientRect(); // eslint-disable-line
+    private getTopBlocksScreenRect(workspace: { getTopBlocks?: (ordered: boolean) => Array<{ getSvgRoot?: () => SVGElement }> }): DOMRect | null {
+        const blocks = workspace.getTopBlocks?.(false) ?? [];
+        let minLeft = Infinity;
+        let minTop = Infinity;
+        let maxRight = -Infinity;
+        let maxBottom = -Infinity;
 
-                if (!block_canvas_rect) {
-                    this.is_workspace_scroll_adjusted = false;
-                    this.is_adjusting_workspace = false;
-                    return;
-                }
+        blocks.forEach(block => {
+            const root = block.getSvgRoot?.();
+            if (!root) return;
+            const rect = root.getBoundingClientRect();
+            if (rect.width < 2 && rect.height < 2) return;
+            minLeft = Math.min(minLeft, rect.left);
+            minTop = Math.min(minTop, rect.top);
+            maxRight = Math.max(maxRight, rect.right);
+            maxBottom = Math.max(maxBottom, rect.bottom);
+        });
 
-                if (workspace.RTL && block_canvas_rect) {
-                    const is_mobile = this.core.ui.is_mobile;
-                    const block_canvas_space = is_mobile ? block_canvas_rect.right : block_canvas_rect.left;
+        if (!Number.isFinite(minLeft)) return null;
+        return new DOMRect(minLeft, minTop, maxRight - minLeft, maxBottom - minTop);
+    }
 
-                    const scroll_distance_mobile = toolbox_width - block_canvas_space + 20;
-                    const scroll_distance_desktop = toolbox_width - block_canvas_space + 36;
-                    const scroll_distance = this.core.ui.is_mobile ? scroll_distance_mobile : scroll_distance_desktop;
+    private scrollBlocksIntoHole(
+        workspace: { getMetrics?: () => { viewLeft: number; viewTop: number; scrollLeft: number; scrollTop: number }; scrollbar?: { set: (x: number, y: number) => void } },
+        hole: DOMRect,
+        union: DOMRect
+    ) {
+        const dx = hole.left - union.left;
+        const dy = hole.top - union.top;
+        if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+        const metrics = workspace.getMetrics?.();
+        if (!metrics || !workspace.scrollbar) return;
+        workspace.scrollbar.set(metrics.viewLeft - metrics.scrollLeft - dx, metrics.viewTop - metrics.scrollTop - dy);
+    }
 
-                    if (Math.round(block_canvas_space) <= toolbox_width || is_mobile) {
-                        scrollWorkspace(workspace, scroll_distance, true, false);
-                    }
-                } else if (Math.round(block_canvas_rect?.left) <= toolbox_width) {
-                    const scroll_distance = this.core.ui.is_mobile
-                        ? toolbox_width - block_canvas_rect.left + 50
-                        : toolbox_width - block_canvas_rect.left + 36;
-                    scrollWorkspace(workspace, scroll_distance, true, false);
-                }
+    private getTopBlocksWorkspaceBox(workspace: {
+        getTopBlocks?: (ordered: boolean) => Array<{ getRelativeToSurfaceXY?: () => { x: number; y: number }; getHeightWidth?: () => { width: number; height: number } }>;
+    }) {
+        const blocks = workspace.getTopBlocks?.(false) ?? [];
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
 
-                this.is_workspace_scroll_adjusted = false;
-                this.is_adjusting_workspace = false;
-            }, 300);
+        blocks.forEach(block => {
+            const xy = block.getRelativeToSurfaceXY?.();
+            const size = block.getHeightWidth?.();
+            if (!xy || !size) return;
+            minX = Math.min(minX, xy.x);
+            minY = Math.min(minY, xy.y);
+            maxX = Math.max(maxX, xy.x + size.width);
+            maxY = Math.max(maxY, xy.y + size.height);
+        });
+
+        if (!Number.isFinite(minX)) return null;
+        return { minX, minY, width: maxX - minX, height: maxY - minY };
+    }
+
+    private fitWorkspaceBlocksInView() {
+        const workspace = window.Blockly?.derivWorkspace;
+        if (!workspace) return false;
+
+        window.Blockly.svgResize?.(workspace);
+
+        if (!workspace.scale || workspace.scale < 0.4) {
+            workspace.setScale(0.7);
+            window.Blockly.svgResize?.(workspace);
         }
+
+        const hole = this.getVisibleWorkspaceHole();
+        const box = this.getTopBlocksWorkspaceBox(workspace);
+        if (!hole || !box) return false;
+
+        const needed = Math.min(hole.width / Math.max(box.width, 1), hole.height / Math.max(box.height, 1)) * 0.92;
+        const next_scale = Math.max(0.55, Math.min(1, needed));
+        if (Math.abs(next_scale - workspace.scale) >= 0.02) {
+            workspace.setScale(next_scale);
+            window.Blockly.svgResize?.(workspace);
+        }
+
+        const union = this.getTopBlocksScreenRect(workspace);
+        if (!union) return false;
+        this.scrollBlocksIntoHole(workspace, hole, union);
+        const settled = this.getTopBlocksScreenRect(workspace);
+        if (settled) this.scrollBlocksIntoHole(workspace, hole, settled);
+        window.Blockly.Trashcan?.placeInVisibleHole?.();
+        return true;
+    }
+
+    private performWorkspaceAdjustment() {
+        if (this.is_workspace_scroll_adjusted || this.root_store.load_modal.is_load_modal_open) {
+            return;
+        }
+
+        this.is_adjusting_workspace = true;
+        this.is_workspace_scroll_adjusted = true;
+
+        const finish = () => {
+            this.is_workspace_scroll_adjusted = false;
+            this.is_adjusting_workspace = false;
+        };
+
+        setTimeout(() => {
+            if (this.fitWorkspaceBlocksInView()) {
+                finish();
+                return;
+            }
+            setTimeout(() => {
+                this.fitWorkspaceBlocksInView();
+                finish();
+            }, 400);
+        }, 300);
     }
 
     toggleDrawer() {

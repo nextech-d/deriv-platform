@@ -38,7 +38,7 @@ const BotBuilder = observer(() => {
     }, [onMount, onUnmount]);
 
     React.useEffect(() => {
-        if (active_tab !== BOT_BUILDER || is_preview_on_popup) return;
+        if (active_tab !== BOT_BUILDER || is_preview_on_popup || is_loading) return;
         void (async () => {
             await app.ensureBlocklyWorkspace();
             toolbox.is_workspace_scroll_adjusted = false;
@@ -48,7 +48,7 @@ const BotBuilder = observer(() => {
                 window.Blockly?.svgResize?.(window.Blockly.derivWorkspace);
             }, 50);
         })();
-    }, [active_tab, app, is_preview_on_popup, toolbox]);
+    }, [active_tab, app, is_loading, is_preview_on_popup, toolbox]);
 
     React.useEffect(() => {
         const workspace = window.Blockly?.derivWorkspace;
