@@ -112,11 +112,11 @@
         gap: 1.4rem;
         width: 100%;
         margin-inline: auto;
-        padding: 2rem 3.6rem 6.4rem;
+        padding: 2rem 9.2rem 6.4rem;
         box-sizing: border-box;
 
         @include mobile-or-tablet-screen {
-            padding: 1.6rem 1.8rem 6.4rem;
+            padding: 1.6rem 4.6rem 6.4rem;
         }
     }
 
@@ -510,11 +510,11 @@
     }
 
     &__catalog {
-        padding: 2rem 3.6rem 6.4rem;
+        padding: 2rem 9.2rem 6.4rem;
         box-sizing: border-box;
 
         @include mobile-or-tablet-screen {
-            padding: 1.6rem 1.8rem 6.4rem;
+            padding: 1.6rem 4.6rem 6.4rem;
         }
     }
 

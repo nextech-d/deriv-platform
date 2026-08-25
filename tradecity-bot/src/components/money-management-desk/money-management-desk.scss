@@ -1,10 +1,11 @@
 @use 'components/shared/styles/mixins' as *;
 
-/* Money Management — ported from legacy TradeCity globals.css */
+/* Money management — plan + table as dashboard windows. Plan behaviour is unchanged. */
 .money-mgmt {
+    --mm-accent: #0ea5e9;
+
     display: flex;
     flex-direction: column;
-    // The tab panel is a flex row, so claim the full width or this shrink-wraps to its content.
     width: 100%;
     min-width: 0;
     height: 100%;
@@ -15,6 +16,13 @@
     color: var(--tc-ink);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
+    @include desktop-screen {
+        margin: -1.6rem;
+        width: calc(100% + 3.2rem);
+        max-height: calc(var(--tab-content-height) + 3.2rem);
+        height: calc(100% + 3.2rem);
+    }
+
     @include mobile-or-tablet-screen {
         min-height: var(--tab-content-height-mobile);
     }
@@ -23,28 +31,33 @@
 .money-mgmt-toolbar {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 56px;
-    padding: 0.45rem 1rem;
+    min-height: 5.2rem;
+    padding: 0.7rem 2.4rem;
+    border: none;
     border-bottom: 1px solid var(--tc-card-border);
     background: var(--tc-card);
+    box-shadow:
+        0 1px 0 color-mix(in srgb, var(--mm-accent) 35%, transparent),
+        0 10px 24px rgb(19 32 51 / 5%);
     flex-shrink: 0;
 }
 
 .money-mgmt-toolbar h1 {
     margin: 0;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    letter-spacing: 0;
+    letter-spacing: -0.02em;
+    color: var(--tc-ink);
 }
 
 .money-mgmt-toolbar-status {
     position: absolute;
-    right: 1rem;
+    right: 2.4rem;
     top: 50%;
     display: flex;
     align-items: center;
@@ -62,30 +75,63 @@
     min-height: 1.7rem;
     padding: 0 0.5rem;
     border-radius: 6px;
-    background: var(--general-section-1);
-    color: var(--text-less-prominent);
+    background: color-mix(in srgb, var(--tc-ink) 6%, var(--tc-card));
+    color: var(--tc-muted);
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
 }
 
 .money-mgmt-chip.is-hit {
-    color: #0f766e;
-    background: color-mix(in srgb, #0f766e 9%, var(--general-main-1));
+    color: var(--mm-accent);
+    background: color-mix(in srgb, var(--mm-accent) 12%, var(--tc-card));
 }
 
 .money-mgmt-body {
     display: grid;
-    gap: 1.1rem;
-    width: min(96rem, 100%);
+    gap: 1.4rem;
+    width: 100%;
     margin-inline: auto;
-    padding: 1.2rem 0.5rem 2rem;
+    padding: 2rem 9.2rem 6.4rem;
+    box-sizing: border-box;
+
+    @include mobile-or-tablet-screen {
+        padding: 1.6rem 4.6rem 6.4rem;
+    }
+}
+
+.money-mgmt-fields,
+.money-mgmt-kpis,
+.money-mgmt-plan,
+.money-mgmt-notice {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--tc-card-border);
+    border-radius: 1.1rem;
+    background: var(--tc-card);
+    box-shadow: var(--tc-card-shadow);
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: auto 12% 0;
+        height: 0.4rem;
+        border-radius: 999px 999px 0 0;
+        background: var(--mm-accent);
+        box-shadow: 0 0 18px var(--mm-accent);
+        pointer-events: none;
+    }
 }
 
 .money-mgmt-fields {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
+    padding: 1.6rem 1.8rem 2rem;
+
+    @include mobile-or-tablet-screen {
+        grid-template-columns: 1fr;
+    }
 }
 
 .money-mgmt-fields label {
@@ -97,7 +143,9 @@
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--text-less-prominent);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tc-muted);
 }
 
 .money-mgmt-fields input,
@@ -105,18 +153,18 @@
     width: 100%;
     min-height: 2.6rem;
     padding: 0 0.75rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
-    color: var(--text-general);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: color-mix(in srgb, var(--tc-ink) 3%, var(--tc-card));
+    color: var(--tc-ink);
     font-size: 1.3rem;
 }
 
 .money-mgmt-fields input:focus,
 .money-mgmt-plan td input:focus {
     outline: none;
-    border-color: color-mix(in srgb, #0f766e 42%, var(--general-section-1));
-    box-shadow: 0 0 0 3px color-mix(in srgb, #0f766e 12%, transparent);
+    border-color: color-mix(in srgb, var(--mm-accent) 45%, var(--tc-card-border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mm-accent) 16%, transparent);
 }
 
 .money-mgmt-toggle {
@@ -124,24 +172,29 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 1.3rem;
-    color: var(--text-general);
+    color: var(--tc-ink);
 }
 
 .money-mgmt-toggle input {
-    accent-color: #0f766e;
+    accent-color: var(--mm-accent);
 }
 
 .money-mgmt-kpis {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.65rem;
+    padding: 1.2rem 1.4rem 1.8rem;
+
+    @include mobile-or-tablet-screen {
+        grid-template-columns: 1fr;
+    }
 }
 
 .money-mgmt-kpi {
     padding: 0.75rem 0.85rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-section-1);
+    border: 1px solid var(--tc-card-border);
+    border-radius: 0.85rem;
+    background: color-mix(in srgb, var(--tc-ink) 3%, var(--tc-card));
 }
 
 .money-mgmt-kpi p {
@@ -149,31 +202,31 @@
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--text-less-prominent);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tc-muted);
 }
 
 .money-mgmt-kpi strong {
     display: block;
     margin-top: 0.2rem;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.5rem;
-    color: var(--text-general);
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+    color: var(--tc-ink);
 }
 
 .money-mgmt-plan {
-    padding: 1rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-main-1);
+    padding: 1.6rem 1.8rem 2rem;
 }
 
 .money-mgmt-plan h2 {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.9rem;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--tc-ink);
 }
 
 .money-mgmt-table-wrap {
@@ -191,77 +244,79 @@
     top: 0;
     z-index: 1;
     padding: 0.65rem 0.75rem;
-    background: var(--text-general);
-    color: var(--general-main-1);
-    font-weight: 650;
+    background: var(--tc-card);
+    color: var(--tc-muted);
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     text-align: left;
+    border-bottom: 1px solid var(--tc-card-border);
 }
 
 .money-mgmt-plan td {
     padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid var(--general-section-1);
-    color: var(--text-general);
+    border-bottom: 1px solid var(--tc-card-border);
+    color: var(--tc-ink);
 }
 
 .money-mgmt-plan tr.is-hit td {
-    background: color-mix(in srgb, #0f766e 6%, var(--general-main-1));
+    background: color-mix(in srgb, var(--mm-accent) 8%, var(--tc-card));
 }
 
 .money-mgmt-plan tr.is-miss td {
-    background: var(--general-section-1);
+    background: color-mix(in srgb, var(--tc-ink) 4%, var(--tc-card));
 }
 
 .money-mgmt-flag {
     display: inline-flex;
     min-width: 2.4rem;
     justify-content: center;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
     font-weight: 700;
 }
 
 .money-mgmt-flag.is-yes {
-    color: #0f766e;
+    color: var(--mm-accent);
 }
 
 .money-mgmt-flag.is-no {
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .money-mgmt-notice {
     display: grid;
     gap: 0.45rem;
-    padding: 0.85rem 1rem;
-    border: 1px solid var(--general-section-1);
-    border-radius: 8px;
-    background: var(--general-section-1);
+    padding: 1.2rem 1.4rem 1.8rem;
     text-align: center;
 }
 
 .money-mgmt-notice p {
     margin: 0;
     font-size: 1.3rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }
 
 .money-mgmt-saved {
     margin: 0;
     text-align: center;
     font-size: 1.2rem;
-    color: #0f766e;
+    color: var(--mm-accent);
 }
 
 .money-mgmt-actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.45rem;
+    gap: 0.55rem;
 }
 
 .money-mgmt-cta {
-    min-height: 2.6rem;
+    min-height: 3.2rem;
     min-width: 10.5rem;
-    padding: 0 0.95rem;
-    border-radius: 8px;
+    padding: 0 1.2rem;
+    border-radius: 0.85rem;
     font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
     font-size: 1.3rem;
     font-weight: 700;
@@ -270,24 +325,28 @@
 
 .money-mgmt-cta.is-ink {
     border: none;
-    background: var(--text-general);
-    color: var(--general-main-1);
+    background: var(--mm-accent);
+    color: #fff;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--mm-accent) 28%, transparent);
+}
+
+.money-mgmt-cta.is-ink:hover {
+    filter: brightness(1.08);
 }
 
 .money-mgmt-cta.is-ghost {
-    border: 1px solid var(--general-section-1);
-    background: var(--general-main-1);
-    color: var(--text-less-prominent);
+    border: 1px solid var(--tc-card-border);
+    background: var(--tc-card);
+    color: var(--tc-ink);
 }
 
 .money-mgmt-cta.is-ghost:hover {
-    color: var(--text-general);
-    background: var(--general-section-1);
+    background: color-mix(in srgb, var(--tc-ink) 5%, var(--tc-card));
 }
 
 .money-mgmt-summary {
     margin: 0;
     text-align: center;
     font-size: 1.3rem;
-    color: var(--text-less-prominent);
+    color: var(--tc-muted);
 }

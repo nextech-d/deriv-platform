@@ -152,7 +152,7 @@ const MoneyManagementDesk = ({ signedIn = false, formatLocal = dollars }: MoneyM
     return (
         <div className='money-mgmt'>
             <header className='money-mgmt-toolbar'>
-                <h1>Money Management</h1>
+                <h1>Money management</h1>
                 <div className='money-mgmt-toolbar-status'>
                     <span className='money-mgmt-chip'>{totalDays} days</span>
                     <span className='money-mgmt-chip'>{formatLocal(capital)} start</span>

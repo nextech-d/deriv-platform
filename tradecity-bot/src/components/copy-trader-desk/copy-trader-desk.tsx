@@ -89,8 +89,8 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
     if (!isLoggedIn) {
         return (
             <div className='copy-trader-desk'>
+                <Heading running={false} />
                 <div className='copy-trader-desk__inner'>
-                    <Heading running={false} />
                     <div className='copy-trader-desk__card copy-trader-desk__empty'>
                         <h3>Sign in first</h3>
                         <p>Log in to add extra-account PATs and copy trades.</p>
@@ -102,8 +102,11 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
 
     return (
         <div className='copy-trader-desk'>
+            <Heading running={running} />
             <div className='copy-trader-desk__inner'>
-                <Heading running={running} />
+                <p className='copy-trader-desk__lead'>
+                    Add extra-account PATs. Copy will not run on the desk that placed the trade.
+                </p>
 
                 {error ? <p className='copy-trader-desk__error'>{error}</p> : null}
 
@@ -221,7 +224,10 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
                             ) : null}
                             <button
                                 type='button'
-                                className='copy-trader-desk__primary-btn copy-trader-desk__start-btn'
+                                className={classNames(
+                                    'copy-trader-desk__primary-btn copy-trader-desk__start-btn',
+                                    running && 'is-stop'
+                                )}
                                 disabled={
                                     busy || loading || (!running && (Boolean(state.blocker) || copiesNothing))
                                 }
@@ -262,11 +268,7 @@ const CopyTraderDesk = ({ isLoggedIn }: CopyTraderDeskProps) => {
 
 const Heading = ({ running }: { running: boolean }) => (
     <header className='copy-trader-desk__header'>
-        <div>
-            <span className='copy-trader-desk__eyebrow'>Multi-account trading</span>
-            <h2>Copy trading accounts</h2>
-            <p>Add extra-account PATs. Copy will not run on the desk that placed the trade.</p>
-        </div>
+        <h2>Copy trader</h2>
         <span className={classNames('copy-trader-desk__status', { running })}>
             <span aria-hidden='true'>●</span> {running ? 'Copy trading running' : 'Copy trading paused'}
         </span>
