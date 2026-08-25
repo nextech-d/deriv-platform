@@ -7,11 +7,11 @@
     --ct-green: #12b76a;
     --ct-amber: #f59e0b;
     --ct-red: #dc3545;
-    --ct-surface: var(--general-main-1);
-    --ct-page: var(--general-section-1);
-    --ct-text: var(--text-general);
-    --ct-muted: var(--text-less-prominent);
-    --ct-border: var(--border-normal);
+    --ct-surface: var(--tc-card);
+    --ct-page: transparent;
+    --ct-text: var(--tc-ink);
+    --ct-muted: var(--tc-muted);
+    --ct-border: var(--tc-card-border);
 
     display: flex;
     flex-direction: column;

@@ -177,7 +177,8 @@
             position: relative;
             isolation: isolate;
             overflow: hidden;
-            width: 100%;
+            flex: 0 0 auto;
+            width: auto;
             min-height: calc(100% - 0.4rem);
             margin: 0;
             padding: 4.8rem 4vw 4rem;
@@ -192,13 +193,19 @@
             }
 
             @include mobile-or-tablet-screen {
+                margin-inline: 1.2rem;
                 padding: 3.2rem 1.6rem 2.4rem;
                 border-radius: 0.8rem;
+            }
+
+            @include desktop-screen {
+                margin-inline: 2.4rem;
             }
         }
 
         &__content {
             display: flex;
+            flex-direction: column;
             align-items: stretch;
             height: var(--tab-content-height);
             flex-grow: 1;
@@ -209,12 +216,12 @@
             @include mobile-or-tablet-screen {
                 display: block;
                 height: calc(100vh - 19rem);
-                padding: 1.2rem;
+                padding: 1.2rem 0 0;
             }
 
             @include desktop-screen {
-                padding: 3.2rem 2.4rem 2.8rem;
-                justify-content: center;
+                padding: 3.2rem 0 0;
+                justify-content: flex-start;
             }
 
             .quick-panel {
@@ -514,17 +521,16 @@
         width: 11.2rem;
         height: 11.2rem;
         border-radius: 50%;
-        background: radial-gradient(circle at 34% 32%, #fff 0%, #e7eef8 38%, #b7c7dc 100%);
+        // Light mode: a full daytime moon. The phase is shaded on the disc
+        // itself so the circle stays intact instead of punching a hole to the sky.
+        background: radial-gradient(circle at 30% 26%, #f7f9fd 0%, #c5d3e8 52%, #7e96b8 100%);
         box-shadow:
-            0 0 0 1px rgb(255 255 255 / 70%),
-            0 0 48px 16px rgb(125 176 255 / 18%);
+            inset -2.2rem -0.7rem 0.8rem 0 rgb(70 94 130 / 48%),
+            0 0 0 2px rgb(64 92 136 / 40%),
+            0 10px 28px rgb(70 100 150 / 20%);
 
         &::after {
-            content: '';
-            position: absolute;
-            inset: -10% 20% 8% -30%;
-            border-radius: 50%;
-            background: var(--hero-sky-cut);
+            content: none;
         }
 
         @include mobile-or-tablet-screen {
@@ -749,6 +755,14 @@
             box-shadow:
                 0 0 0 1px rgb(255 255 255 / 12%),
                 0 0 48px 16px rgb(125 176 255 / 22%);
+
+            &::after {
+                content: '';
+                position: absolute;
+                inset: -10% 20% 8% -30%;
+                border-radius: 50%;
+                background: var(--hero-sky-cut);
+            }
         }
 
         &__stars {

@@ -6,11 +6,11 @@
     --e2-green: #16a34a;
     --e2-amber: #f59e0b;
     --e2-ring-bg: #1a1d23;
-    --e2-surface: var(--general-main-1);
-    --e2-panel: var(--general-section-1);
-    --e2-text: var(--text-general);
-    --e2-muted: var(--text-less-prominent);
-    --e2-border: var(--border-normal);
+    --e2-surface: var(--tc-card);
+    --e2-panel: transparent;
+    --e2-text: var(--tc-ink);
+    --e2-muted: var(--tc-muted);
+    --e2-border: var(--tc-card-border);
 
     display: flex;
     flex-direction: column;

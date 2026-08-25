@@ -1,6 +1,12 @@
 @use 'components/shared/styles/constants' as *;
 @use 'components/shared/styles/mixins' as *;
 
+// Brand bar chrome only — do not restyle the account switcher.
+.layout .deriv-header {
+    background: var(--tc-card) !important;
+    box-shadow: 0 1px 0 var(--tc-card-border) !important;
+}
+
 .app-header {
     &__account-settings {
         padding-inline-end: 1.2rem;

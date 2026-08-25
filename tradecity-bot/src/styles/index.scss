@@ -5,7 +5,8 @@
 body {
     // Updated to use brand font variable from brand.config.json
     font-family: var(--brand-font-primary);
-    background: var(--general-main-1);
+    background: var(--tc-sky);
+    background-attachment: fixed;
 }
 
 .icon-general-fill-path {

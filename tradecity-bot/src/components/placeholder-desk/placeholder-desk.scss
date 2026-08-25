@@ -7,8 +7,8 @@
     justify-content: center;
     min-height: var(--tab-content-height);
     padding: 4rem 2rem;
-    background: var(--general-main-1);
-    color: var(--text-less-prominent);
+    background: transparent;
+    color: var(--tc-muted);
 
     @include mobile-or-tablet-screen {
         min-height: var(--tab-content-height-mobile);
@@ -18,7 +18,8 @@
         margin: 0 0 0.8rem;
         font-size: 1.8rem;
         font-weight: 700;
-        color: var(--text-general);
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        color: var(--tc-ink);
     }
 
     &__hint {

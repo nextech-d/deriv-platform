@@ -78,17 +78,17 @@
 
             &__active {
                 background: transparent;
-                color: var(--text-prominent);
+                color: var(--tc-ink);
                 font-weight: 700;
             }
 
             &__list {
-                background: var(--general-main-1);
+                background: var(--tc-card);
                 justify-content: start;
-                border-bottom: 1px solid var(--general-section-1);
+                border-bottom: 1px solid var(--tc-card-border);
 
                 @include desktop-screen {
-                    background: var(--general-main-1);
+                    background: var(--tc-card);
                     border-bottom: none;
                 }
 
@@ -274,7 +274,7 @@
                         justify-content: stretch;
                         gap: 0;
                         padding-inline: 0.6rem;
-                        background: var(--general-main-1);
+                        background: var(--tc-card);
                         scrollbar-width: none;
 
                         &::-webkit-scrollbar {
@@ -296,8 +296,8 @@
                         // Header is z-index 200 and 10rem tall; without this the menu row is painted under it.
                         z-index: 210;
                         height: var(--tc-menu-h, 4.4rem);
-                        background: var(--general-main-1);
-                        border-bottom: 1px solid var(--general-section-1);
+                        background: var(--tc-card);
+                        border-bottom: 1px solid var(--tc-card-border);
                         pointer-events: auto;
                     }
                 }
@@ -313,6 +313,9 @@
         gap: 0.2rem;
         line-height: 1.1;
         text-transform: none;
+        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+        font-weight: 700;
+        color: var(--tc-ink);
     }
 
     &__tab-icon {
@@ -567,7 +570,7 @@
     top: 6.6rem;
     inset-inline-start: 1.6rem;
     z-index: -1;
-    background: var(--general-main-1);
+    background: var(--tc-card);
     height: calc(100vh - var(--tc-header-h, 10rem) - 6.6rem - 3.6rem - 1.6rem);
     width: var(--bot-content-width);
     overflow: hidden;

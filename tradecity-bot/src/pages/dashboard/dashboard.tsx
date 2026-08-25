@@ -1,6 +1,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
+import SiteMapFooter from '@/components/layout/site-map-footer';
 import { useStore } from '@/hooks/useStore';
 import { useDevice } from '@deriv-com/ui';
 import OnboardTourHandler from '../tutorials/dbot-tours/onboarding-tour';
@@ -42,6 +43,7 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                             <Cards is_mobile={!isDesktop} handleTabChange={handleTabChange} />
                         </div>
                     </div>
+                    <SiteMapFooter onNavigate={handleTabChange} />
                 </div>
             </div>
             <InfoPanel />

@@ -6,11 +6,11 @@
     --ft-red-hover: #c82333;
     --ft-green: #22c55e;
     --ft-green-hover: #16a34a;
-    --ft-surface: var(--general-main-1);
-    --ft-panel: var(--general-section-1);
-    --ft-text: var(--text-general);
-    --ft-muted: var(--text-less-prominent);
-    --ft-border: var(--border-normal);
+    --ft-surface: var(--tc-card);
+    --ft-panel: transparent;
+    --ft-text: var(--tc-ink);
+    --ft-muted: var(--tc-muted);
+    --ft-border: var(--tc-card-border);
 
     display: flex;
     flex-direction: column;

@@ -23,8 +23,8 @@
     max-height: var(--tab-content-height);
     min-height: 0;
     overflow: hidden;
-    background: var(--general-main-1);
-    color: var(--text-general);
+    background: transparent;
+    color: var(--tc-ink);
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
 
     @include mobile-or-tablet-screen {

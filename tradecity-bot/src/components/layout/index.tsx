@@ -12,7 +12,7 @@ import Body from './main-body';
 import './layout.scss';
 
 const Layout = observer(() => {
-    const { isDesktop } = useDevice();
+    const { isDesktop, isMobile } = useDevice();
     const store = useStore();
     const is_quick_strategy_active = store?.quick_strategy?.is_open;
     const isCallbackPage = window.location.pathname === '/callback';
@@ -152,7 +152,7 @@ const Layout = observer(() => {
             <Body>
                 <Outlet />
             </Body>
-            {!isCallbackPage && isDesktop && <Footer />}
+            {!isCallbackPage && !isMobile && <Footer />}
         </div>
     );
 });

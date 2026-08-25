@@ -4,11 +4,11 @@
 .edging-desk-page {
     --ed-red: #dc3545;
     --ed-green: #22c55e;
-    --ed-surface: var(--general-main-1);
-    --ed-panel: var(--general-section-1);
-    --ed-text: var(--text-general);
-    --ed-muted: var(--text-less-prominent);
-    --ed-border: var(--border-normal);
+    --ed-surface: var(--tc-card);
+    --ed-panel: transparent;
+    --ed-text: var(--tc-ink);
+    --ed-muted: var(--tc-muted);
+    --ed-border: var(--tc-card-border);
 
     display: flex;
     flex-direction: column;
