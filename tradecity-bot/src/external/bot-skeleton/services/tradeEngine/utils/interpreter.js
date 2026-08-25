@@ -204,6 +204,7 @@ const Interpreter = () => {
             try {
                 $scope.stopped = true;
                 $scope.is_error_triggered = false;
+                bot.tradeEngine.unbindRunSpeedListener?.();
                 globalObserver.emit('bot.stop');
                 const { ticksService } = $scope;
                 // Unsubscribe previous ticks_history subscription

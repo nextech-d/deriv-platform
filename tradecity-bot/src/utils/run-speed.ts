@@ -1,6 +1,7 @@
 export type RunSpeed = 'fast' | 'slow';
 
 export const RUN_SPEED_KEY = 'tc-run-speed';
+export const RUN_SPEED_EVENT = 'tc-run-speed';
 export const SLOW_RUN_DELAY_MS = 2000;
 
 export function readRunSpeed(): RunSpeed {
@@ -19,9 +20,15 @@ export function writeRunSpeed(speed: RunSpeed): void {
     } catch {
         // ignore quota / private-mode failures
     }
+    window.dispatchEvent(new CustomEvent(RUN_SPEED_EVENT, { detail: speed }));
 }
 
 /** Fast buys on the next ready proposal. Slow waits before each purchase cycle. */
 export function runSpeedDelayMs(speed: RunSpeed = readRunSpeed()): number {
     return speed === 'slow' ? SLOW_RUN_DELAY_MS : 0;
+}
+
+/** Seconds to idle when trade options are not ready. Fast skips this wait. */
+export function runSpeedIdleSeconds(speed: RunSpeed = readRunSpeed()): number {
+    return speed === 'slow' ? 1 : 0;
 }

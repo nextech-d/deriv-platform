@@ -355,7 +355,10 @@ class DBot {
                 BinaryBotPrivateTickAnalysis();
                 BinaryBotPrivateRun(BinaryBotPrivateStart);
                 if (!BinaryBotPrivateHasCalledTradeOptions) {
-                    sleep(1);
+                    var idle = (Bot.getRunIdleSeconds && Bot.getRunIdleSeconds()) || 0;
+                    if (idle > 0) {
+                        sleep(idle);
+                    }
                     continue;
                 }
                 while (watch('before')) {

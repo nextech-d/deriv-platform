@@ -1,7 +1,7 @@
 import { applyMiddleware, createStore } from 'redux';
 import { thunk } from 'redux-thunk';
 import { getLocalizedErrorMessage } from '@/constants/backend-error-messages';
-import { runSpeedDelayMs } from '@/utils/run-speed';
+import { RUN_SPEED_EVENT, runSpeedDelayMs } from '@/utils/run-speed';
 import { createError } from '../../../utils/error';
 import { observer as globalObserver } from '../../../utils/observer';
 import { api_base } from '../../api/api-base';
@@ -43,23 +43,35 @@ const watchScope = ({ store, stopScope, passScope, passFlag }) => {
     if (store.getState().scope === stopScope) {
         return Promise.resolve(false);
     }
+
+    const isPass = state => state.scope === passScope && state[passFlag];
+    const isStop = state => state.scope === stopScope;
+
     return new Promise(resolve => {
-        const unsubscribe = store.subscribe(() => {
-            const newState = store.getState();
+        let done = false;
+        const finish = value => {
+            if (done) return;
+            done = true;
+            unsubscribe();
+            resolve(value);
+        };
 
-            if (newState.newTick === prevTick) return;
-            prevTick = newState.newTick;
-
-            if (newState.scope === passScope && newState[passFlag]) {
-                unsubscribe();
-                resolve(true);
+        const consider = state => {
+            if (done) return;
+            if (isStop(state)) {
+                finish(false);
+                return;
             }
+            if (!isPass(state)) return;
+            // Fast (and Slow after its 2s proposal delay): if the next tick already
+            // arrived while proposals were in flight, buy now instead of waiting T+2.
+            if (state.newTick === prevTick) return;
+            prevTick = state.newTick;
+            finish(true);
+        };
 
-            if (newState.scope === stopScope) {
-                unsubscribe();
-                resolve(false);
-            }
-        });
+        const unsubscribe = store.subscribe(() => consider(store.getState()));
+        consider(store.getState());
     });
 };
 
@@ -76,6 +88,7 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
         this.subscription_id_for_accumulators = null;
         this.is_proposal_requested_for_accumulators = false;
         this.store = createStore(rootReducer, applyMiddleware(thunk));
+        this.bindRunSpeedListener();
     }
 
     init(...args) {
@@ -171,11 +184,36 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
             }
         };
 
+        this.flushSlowRunWait = proceed;
+
         const delay = runSpeedDelayMs();
         if (delay > 0) {
             this.slow_run_timeout = setTimeout(proceed, delay);
             return;
         }
         proceed();
+    }
+
+    bindRunSpeedListener() {
+        if (typeof window === 'undefined' || this.onRunSpeedChange) return;
+        this.onRunSpeedChange = event => {
+            if (this.$scope?.stopped) return;
+            if (event.detail !== 'fast') return;
+            if (!this.slow_run_timeout || !this.flushSlowRunWait) return;
+            clearTimeout(this.slow_run_timeout);
+            this.slow_run_timeout = null;
+            this.flushSlowRunWait();
+        };
+        window.addEventListener(RUN_SPEED_EVENT, this.onRunSpeedChange);
+    }
+
+    unbindRunSpeedListener() {
+        if (typeof window === 'undefined' || !this.onRunSpeedChange) return;
+        window.removeEventListener(RUN_SPEED_EVENT, this.onRunSpeedChange);
+        this.onRunSpeedChange = null;
+        if (this.slow_run_timeout) {
+            clearTimeout(this.slow_run_timeout);
+            this.slow_run_timeout = null;
+        }
     }
 }
