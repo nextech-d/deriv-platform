@@ -192,9 +192,7 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
                                 // Disabled button, no action
                             }}
                             has_effect
-                            {...(is_stop_button_visible || !is_unavailable_for_payment_agent
-                                ? { primary: true }
-                                : { green: true })}
+                            {...(is_stop_button_visible ? { primary: true } : { green: true })}
                         >
                             {button_props.text}
                         </Button>
@@ -217,9 +215,7 @@ const TradeAnimation = observer(({ className, should_show_overlay }: TTradeAnima
                         /* [/AI] */
                     }}
                     has_effect
-                    {...(is_stop_button_visible || !is_unavailable_for_payment_agent
-                        ? { primary: true }
-                        : { green: true })}
+                    {...(is_stop_button_visible ? { primary: true } : { green: true })}
                 >
                     {button_props.text}
                 </Button>

@@ -22,7 +22,7 @@ const placeTrashInVisibleHole = () => {
     const panel = document.querySelector('.run-panel__container.dc-drawer--open')?.getBoundingClientRect();
     const footer = document.querySelector('.app-footer')?.getBoundingClientRect();
     const fab = document.querySelector('.entry-scanner-fab')?.getBoundingClientRect();
-    const trash_box = document.querySelector('.blocklyTrash')?.getBoundingClientRect();
+    const trash_box = injection.querySelector('.blocklyTrash')?.getBoundingClientRect();
     const trash_w = Math.max(96, trash_box?.width || 0);
     const trash_h = Math.max(96, trash_box?.height || 0);
 
@@ -32,7 +32,7 @@ const placeTrashInVisibleHole = () => {
     const y = Math.max(24, bottom_limit - inj.top - trash_h - 20);
     trashcan.setTrashcanPosition(x, y);
 
-    const placed = document.querySelector('.blocklyTrash')?.getBoundingClientRect();
+    const placed = injection.querySelector('.blocklyTrash')?.getBoundingClientRect();
     if (!placed || !fab) return;
     const overlaps =
         placed.left < fab.right && placed.right > fab.left && placed.top < fab.bottom && placed.bottom > fab.top;
@@ -42,5 +42,10 @@ const placeTrashInVisibleHole = () => {
 
 window.Blockly.Trashcan.placeInVisibleHole = placeTrashInVisibleHole;
 window.Blockly.Trashcan.prototype.position = function () {
-    placeTrashInVisibleHole();
+    // During inject, derivWorkspace is not assigned yet. Calling Blockly's default
+    // position here crashes (toolboxMetrics on an unfinished workspace). Preview
+    // workspaces inject with trashcan: false, so a no-op is correct for them.
+    if (this.workspace && this.workspace === window.Blockly.derivWorkspace) {
+        placeTrashInVisibleHole();
+    }
 };

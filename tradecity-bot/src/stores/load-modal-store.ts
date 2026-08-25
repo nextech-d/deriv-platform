@@ -2,6 +2,7 @@ import React from 'react';
 import { action, computed, makeObservable, observable, reaction } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import {
+    api_base,
     getSavedWorkspaces,
     load,
     removeExistingWorkspace,
@@ -88,8 +89,14 @@ export default class LoadModalStore {
                     const saved_workspaces = await getSavedWorkspaces();
                     if (!saved_workspaces) return;
                     this.setRecentStrategies(saved_workspaces);
-                    if (saved_workspaces.length > 0 && !this.selected_strategy_id) {
-                        this.setSelectedStrategyId(saved_workspaces[0].id);
+                    this.setDashboardStrategies(saved_workspaces);
+                    if (saved_workspaces.length > 0) {
+                        const id = this.selected_strategy_id || saved_workspaces[0].id;
+                        this.setSelectedStrategyId(id);
+                        if (this.tab_name === tabs_title.TAB_RECENT) {
+                            this.loadStrategyOnModalRecentPreview(id);
+                            this.updateXmlValuesOnStrategySelection();
+                        }
                     }
                 } else {
                     this.onLoadModalClose();
@@ -124,9 +131,11 @@ export default class LoadModalStore {
     }
 
     get selected_strategy(): TStrategy {
+        const pool =
+            this.recent_strategies.length > 0 ? this.recent_strategies : this.dashboard_strategies;
         return (
-            this.dashboard_strategies.find((ws: { id: string }) => ws.id === this.selected_strategy_id) ??
-            this.dashboard_strategies[0]
+            pool.find((ws: { id: string }) => ws.id === this.selected_strategy_id) ??
+            pool[0]
         );
     }
 
@@ -451,9 +460,11 @@ export default class LoadModalStore {
     };
 
     saveStrategyToLocalStorage = async () => {
+        const xmlValues = window.Blockly.xmlValues;
+        if (!xmlValues?.convertedDom) return;
         const { save_modal } = this.root_store;
         const { updateBotName } = save_modal;
-        const { convertedDom, from, file_name } = window.Blockly.xmlValues;
+        const { convertedDom, from, file_name } = xmlValues;
         updateBotName(file_name);
         await saveWorkspaceToRecent(convertedDom, from);
         const recent_files = await getSavedWorkspaces();
@@ -461,35 +472,110 @@ export default class LoadModalStore {
     };
 
     loadStrategyOnBotBuilder = async () => {
-        const {
-            strategy_id = window.Blockly.utils.idGenerator.genUid(),
-            convertedDom,
-            block_string,
-        } = window.Blockly.xmlValues;
+        const xmlValues = window.Blockly.xmlValues;
         const derivWorkspace = window.Blockly.derivWorkspace;
+        let convertedDom = xmlValues?.convertedDom;
+        if (!convertedDom && this.selected_strategy?.xml) {
+            convertedDom = window.Blockly.utils.xml.textToDom(this.selected_strategy.xml);
+        }
+        if (!convertedDom || !derivWorkspace) return;
+
+        const strategy_id =
+            xmlValues?.strategy_id ||
+            this.selected_strategy?.id ||
+            window.Blockly.utils?.idGenerator?.genUid?.() ||
+            `${Date.now()}`;
 
         window.Blockly.Xml.clearWorkspaceAndLoadFromXml(convertedDom, derivWorkspace);
         derivWorkspace.cleanUp();
         derivWorkspace.clearUndo();
         derivWorkspace.current_strategy_id = strategy_id;
 
+        api_base.toggleRunButton(false);
+        this.root_store.blockly_store.checkForSavedBots();
+
+        this.root_store.toolbox.is_workspace_scroll_adjusted = false;
+        window.setTimeout(() => {
+            this.root_store.toolbox.adjustWorkspace();
+        }, 0);
+
         /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
         /* [/AI] */
     };
 
     updateXmlValuesOnStrategySelection = () => {
-        if (this.recent_strategies.length === 0) return;
+        if (this.recent_strategies.length === 0 || !this.selected_strategy?.xml) return;
         updateXmlValues({
-            strategy_id: this.selected_strategy_id,
-            convertedDom: window?.Blockly?.utils?.xml?.textToDom(this.selected_strategy?.xml),
-            file_name: this.selected_strategy?.name,
-            from: this.selected_strategy?.save_type || save_types.UNSAVED,
+            strategy_id: this.selected_strategy_id || this.selected_strategy.id,
+            convertedDom: window?.Blockly?.utils?.xml?.textToDom(this.selected_strategy.xml),
+            file_name: this.selected_strategy.name,
+            from: this.selected_strategy.save_type || save_types.UNSAVED,
         });
+    };
+
+    fitPreviewWorkspace = (workspace: window.Blockly.WorkspaceSvg | null) => {
+        const container = document.getElementById('load-strategy__blockly-container');
+        if (!workspace || !container) return;
+
+        window.Blockly.svgResize?.(workspace);
+        const hole = container.getBoundingClientRect();
+        if (hole.width < 80 || hole.height < 80) return;
+
+        const blocks = workspace.getTopBlocks?.(false) ?? [];
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        blocks.forEach(block => {
+            const xy = block.getRelativeToSurfaceXY?.();
+            const size = block.getHeightWidth?.();
+            if (!xy || !size) return;
+            minX = Math.min(minX, xy.x);
+            minY = Math.min(minY, xy.y);
+            maxX = Math.max(maxX, xy.x + size.width);
+            maxY = Math.max(maxY, xy.y + size.height);
+        });
+        if (!Number.isFinite(minX)) return;
+
+        const needed =
+            Math.min(hole.width / Math.max(maxX - minX, 1), hole.height / Math.max(maxY - minY, 1)) * 0.9;
+        const next_scale = Math.max(0.4, Math.min(1, needed));
+        if (Math.abs(next_scale - (workspace.scale || 1)) >= 0.02) {
+            workspace.setScale(next_scale);
+            window.Blockly.svgResize?.(workspace);
+        }
+
+        let unionLeft = Infinity;
+        let unionTop = Infinity;
+        let unionRight = -Infinity;
+        let unionBottom = -Infinity;
+        blocks.forEach(block => {
+            const root = block.getSvgRoot?.();
+            if (!root) return;
+            const rect = root.getBoundingClientRect();
+            if (rect.width < 2 && rect.height < 2) return;
+            unionLeft = Math.min(unionLeft, rect.left);
+            unionTop = Math.min(unionTop, rect.top);
+            unionRight = Math.max(unionRight, rect.right);
+            unionBottom = Math.max(unionBottom, rect.bottom);
+        });
+        if (!Number.isFinite(unionLeft) || !workspace.scrollbar) return;
+
+        const metrics = workspace.getMetrics?.();
+        if (!metrics) return;
+        const pad = 16;
+        workspace.scrollbar.set(
+            metrics.viewLeft - metrics.scrollLeft - (hole.left + pad - unionLeft),
+            metrics.viewTop - metrics.scrollTop - (hole.top + pad - unionTop)
+        );
     };
 
     loadStrategyOnModalRecentPreview = async workspace_id => {
         this.setOpenButtonDisabled(true);
-        if (this.recent_strategies.length === 0 || this.tab_name !== tabs_title.TAB_RECENT) return;
+        if (this.recent_strategies.length === 0 || this.tab_name !== tabs_title.TAB_RECENT) {
+            this.setOpenButtonDisabled(false);
+            return;
+        }
 
         const inject_options = { ...inject_workspace_options, theme: window?.Blockly?.Themes?.zelos_renderer };
 
@@ -508,6 +594,8 @@ export default class LoadModalStore {
                 try {
                     const convertedDom = window.Blockly.utils.xml.textToDom(xml);
                     window.Blockly.Xml.clearWorkspaceAndLoadFromXml(convertedDom, this.recent_workspace);
+                    this.fitPreviewWorkspace(this.recent_workspace);
+                    window.setTimeout(() => this.fitPreviewWorkspace(this.recent_workspace), 50);
                 } catch (error) {
                     console.error('[LoadModal] Preview load failed', error);
                 }
@@ -533,7 +621,9 @@ export default class LoadModalStore {
         /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
         /* [/AI] */
 
-        const result = await load({ ...load_options, show_snackbar: false });
+        await load({ ...load_options, show_snackbar: false });
+        this.fitPreviewWorkspace(this.local_workspace);
+        window.setTimeout(() => this.fitPreviewWorkspace(this.local_workspace), 50);
         /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
         /* [/AI] */
     };

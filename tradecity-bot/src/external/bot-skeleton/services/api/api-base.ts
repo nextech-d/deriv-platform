@@ -439,6 +439,7 @@ class APIBase {
             return this.active_symbols;
         } catch (error) {
             console.error('Failed to fetch and process active symbols:', error);
+            this.toggleRunButton(false);
             throw error;
         }
     };

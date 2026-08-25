@@ -30,14 +30,12 @@ export const getRecentFileIcon = (save_type: string): React.ReactElement => {
 };
 
 const RecentWorkspace = observer(({ workspace }: TRecentWorkspaceProps) => {
-    const { load_modal, blockly_store } = useStore();
-    const { setLoading } = blockly_store;
+    const { load_modal } = useStore();
     const { getSaveType, loadStrategyOnModalRecentPreview, selected_strategy_id, updateXmlValuesOnStrategySelection } =
         load_modal;
 
     const onRecentWorkspaceClick = () => {
-        if (selected_strategy_id === workspace.id) return;
-        setLoading(true);
+        if (selected_strategy_id === workspace.id && load_modal.recent_workspace) return;
         loadStrategyOnModalRecentPreview(workspace.id);
         updateXmlValuesOnStrategySelection();
     };

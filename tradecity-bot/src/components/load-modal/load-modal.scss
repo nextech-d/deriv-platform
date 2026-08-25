@@ -5,6 +5,9 @@
         &__recent {
             display: flex;
             gap: 1.6rem;
+            flex: 1;
+            min-height: 0;
+            height: 100%;
 
             &__files {
                 width: 35%;
@@ -132,6 +135,8 @@
                 flex-basis: 65%;
                 display: flex;
                 flex-direction: column;
+                min-height: 0;
+                height: 100%;
 
                 .load-strategy__preview-workspace {
                     height: calc(100% - 5.2rem);
@@ -151,10 +156,22 @@
         }
 
         &__container {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+
             &--has-footer {
                 height: calc(80vh - 21rem);
                 margin-top: -1rem;
             }
+        }
+
+        &__local-preview {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            height: 100%;
         }
 
         &__title {
@@ -163,8 +180,14 @@
     }
 
     .load-strategy__preview-workspace {
-        min-height: unset;
-        height: unset;
+        flex: 1;
+        min-height: 0;
+        height: 100%;
         margin: 0;
+    }
+
+    #load-strategy__blockly-container {
+        height: 100%;
+        min-height: 0;
     }
 }

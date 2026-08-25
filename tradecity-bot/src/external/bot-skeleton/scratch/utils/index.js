@@ -9,6 +9,7 @@ import { saveWorkspaceToRecent } from '../../utils/local-storage';
 import { observer as globalObserver } from '../../utils/observer';
 import { removeLimitedBlocks } from '../../utils/workspace';
 import BlockConversion from '../backward-compatibility';
+import { api_base } from '../../services/api/api-base';
 import DBotStore from '../dbot-store';
 import { saveAs } from '../shared';
 
@@ -21,6 +22,7 @@ export const inject_workspace_options = {
     readOnly: true,
     scrollbars: true,
     renderer: 'zelos',
+    trashcan: false,
 };
 
 export const updateXmlValues = blockly_options => {
@@ -149,8 +151,11 @@ export const load = async ({
     if (!DBotStore?.instance || !workspace) return;
     const { setLoading, load_modal } = DBotStore.instance;
     const { setOpenButtonDisabled, setLoadedLocalFile } = load_modal;
+    const is_main_workspace = workspace === window.Blockly.derivWorkspace;
 
-    setLoading(true);
+    if (is_main_workspace) {
+        setLoading(true);
+    }
     // Delay execution to allow fully previewing previous strategy if users quickly switch between strategies.
     await delayExecution(100);
     const showInvalidStrategyError = () => {
@@ -235,6 +240,7 @@ export const load = async ({
         });
         if (workspace === window.Blockly.derivWorkspace) {
             globalObserver.emit('ui.log.success', { log_type: LogTypes.LOAD_BLOCK });
+            api_base.toggleRunButton(false);
         }
     } catch (e) {
         console.error(e); // eslint-disable-line
