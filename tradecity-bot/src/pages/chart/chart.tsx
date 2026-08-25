@@ -88,6 +88,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         /* [/AI] */
         if (state === 'READY') {
             setChartStatus(true);
+            window.dispatchEvent(new Event('resize'));
         }
     };
 
