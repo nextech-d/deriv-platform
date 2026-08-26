@@ -665,6 +665,8 @@
         cursor: pointer;
         overflow: hidden;
         position: relative;
+        content-visibility: auto;
+        contain-intrinsic-size: auto 16.4rem;
 
         &::after {
             content: '';

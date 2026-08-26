@@ -51,6 +51,10 @@ export default defineConfig({
     },
     output: {
         filenameHash: true,
+        minify: {
+            js: true,
+            css: true,
+        },
         copy: [
             {
                 from: 'node_modules/@deriv-com/smartcharts-champion/dist/*',
