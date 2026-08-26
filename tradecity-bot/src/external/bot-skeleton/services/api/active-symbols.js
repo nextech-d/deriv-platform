@@ -50,43 +50,21 @@ export default class ActiveSymbols {
             return this.active_symbols;
         }
 
-        // Wait for api_base to have symbols available
-        if (api_base.has_active_symbols) {
+        // Wait for api_base to have symbols available (single-flight on api_base)
+        try {
+            const symbols = await api_base.getActiveSymbols(is_forced_update);
+            this.active_symbols = symbols ?? api_base?.active_symbols ?? [];
+        } catch (error) {
+            console.error('Failed to fetch active symbols:', error);
             this.active_symbols = api_base?.active_symbols ?? [];
-        } else {
-            try {
-                // If promise doesn't exist, trigger the fetch
-                if (!api_base.active_symbols_promise) {
-                    api_base.active_symbols_promise = api_base.getActiveSymbols();
-                }
-                // Wait for the promise and use its resolved value
-                const symbols = await api_base.active_symbols_promise;
-                this.active_symbols = symbols ?? api_base?.active_symbols ?? [];
-            } catch (error) {
-                console.error('Failed to fetch active symbols:', error);
-                api_base.active_symbols_promise = null;
-                this.active_symbols = [];
-                this.has_initialization_error = true;
-            }
+            this.has_initialization_error = this.active_symbols.length === 0;
         }
 
-        // If still no symbols after waiting, try one more time with a fresh fetch
         if (!this.active_symbols || this.active_symbols.length === 0) {
-            console.warn('No symbols found, attempting fresh fetch...');
-            try {
-                const symbols = await api_base.getActiveSymbols();
-                this.active_symbols = symbols ?? [];
-
-                // If still no symbols after retry, mark as error state
-                if (!this.active_symbols || this.active_symbols.length === 0) {
-                    this.has_initialization_error = true;
-                    console.error('Failed to fetch active symbols: No symbols returned after retry');
-                }
-            } catch (error) {
-                console.error('Failed to fetch active symbols:', error);
-                this.active_symbols = [];
-                this.has_initialization_error = true;
-            }
+            this.has_initialization_error = true;
+            console.error('Failed to fetch active symbols: No symbols returned');
+        } else {
+            this.has_initialization_error = false;
         }
 
         this.is_initialised = true;

@@ -12,6 +12,7 @@ import useDevMode from '@/hooks/useDevMode';
 import { useStore } from '@/hooks/useStore';
 import useThemeSwitcher from '@/hooks/useThemeSwitcher';
 import { retryImport } from '@/utils/lazy-with-retry';
+import { suppressAutoTours } from '@/utils/suppress-auto-tours';
 import { ThemeProvider } from '@deriv-com/quill-ui';
 import { localize } from '@deriv-com/translations';
 import Audio from '../components/audio';
@@ -24,6 +25,7 @@ import '../components/bot-notification/bot-notification.scss';
 
 const loadBotBuilder = () => retryImport(() => import('../pages/bot-builder'));
 const BotBuilder = lazy(loadBotBuilder);
+suppressAutoTours();
 
 const AppContent = observer(() => {
     const [is_api_initialized, setIsApiInitialized] = React.useState(false);
@@ -122,7 +124,7 @@ const AppContent = observer(() => {
         if (!active_symbols?.retrieveActiveSymbols) {
             return Promise.resolve();
         }
-        return Promise.resolve(active_symbols.retrieveActiveSymbols(true)).catch(error => {
+        return Promise.resolve(active_symbols.retrieveActiveSymbols(false)).catch(error => {
             console.error('[App] Active symbols failed, continuing without them', error);
         });
     };
@@ -158,7 +160,10 @@ const AppContent = observer(() => {
 
     React.useEffect(() => {
         if (is_loading || !is_api_initialized || !client.is_logged_in || !client.loginid) return;
-        retrieveActiveSymbols();
+        const { active_symbols } = ApiHelpers.instance ?? {};
+        void Promise.resolve(active_symbols?.retrieveActiveSymbols?.(true)).catch(error => {
+            console.error('[App] Active symbols refresh failed', error);
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized, client.loginid]);
 

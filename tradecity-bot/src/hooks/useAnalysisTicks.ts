@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton';
+import { analysisTickQuote, analysisTickSymbol } from '@/utils/analysis-tick';
 import { createTickUiBatcher } from '@/utils/tick-ui-batcher';
 
 export interface AnalysisQuote {
@@ -28,72 +29,92 @@ export function useAnalysisTicks(symbols: string[]) {
     const seriesRef = useRef<Record<string, AnalysisQuote[]>>({});
 
     useEffect(() => {
-        const api = api_base?.api as TApi | null;
-        const wanted = key ? key.split(',') : [];
-        if (!api || !wanted.length) return;
+        const wanted = key ? key.split(',').filter(Boolean) : [];
+        if (!wanted.length) return;
 
         let disposed = false;
+        let poll: number | undefined;
+        let started = false;
         const subscriptionIds: string[] = [];
         const paint = createTickUiBatcher();
         const flushSeries = () => {
             if (!disposed) setSeries(seriesRef.current);
         };
+        let messageSubscription: { unsubscribe: () => void } | undefined;
 
-        const messageSubscription = api.onMessage().subscribe(({ data }) => {
-            if (disposed || data?.msg_type !== 'tick' || !data.tick) return;
-            const { symbol, quote, epoch } = data.tick;
-            if (!wanted.includes(symbol)) return;
+        const start = () => {
+            const api = api_base?.api as TApi | null;
+            if (!api || started) return Boolean(api);
+            started = true;
 
-            const previous = seriesRef.current[symbol] ?? [];
-            if (previous.length && previous[previous.length - 1]!.epoch >= Number(epoch)) return;
+            messageSubscription = api.onMessage().subscribe(({ data }) => {
+                if (disposed || data?.msg_type !== 'tick' || !data.tick) return;
+                const symbol = analysisTickSymbol(data.tick);
+                const quote = analysisTickQuote(data.tick);
+                const epoch = Number(data.tick.epoch);
+                if (!symbol || !wanted.includes(symbol) || Number.isNaN(quote) || Number.isNaN(epoch)) return;
 
-            const next = [...previous, { quote: Number(quote), epoch: Number(epoch), symbol }].slice(-MAX_TICKS);
-            seriesRef.current = { ...seriesRef.current, [symbol]: next };
-            paint.schedule(flushSeries);
-        });
+                const previous = seriesRef.current[symbol] ?? [];
+                if (previous.length && previous[previous.length - 1]!.epoch >= epoch) return;
 
-        wanted.forEach(symbol => {
-            api.send({
-                ticks_history: symbol,
-                subscribe: 1,
-                end: 'latest',
-                count: MAX_TICKS,
-                style: 'ticks',
-            })
-                .then(response => {
-                    if (disposed) {
-                        const late = response?.subscription?.id;
-                        if (late) api.forget(late);
-                        return;
-                    }
-                    const id = response?.subscription?.id;
-                    if (id) subscriptionIds.push(id);
+                const next = [...previous, { quote, epoch, symbol }].slice(-MAX_TICKS);
+                seriesRef.current = { ...seriesRef.current, [symbol]: next };
+                paint.schedule(flushSeries);
+            });
 
-                    const history = response?.history;
-                    if (history?.prices?.length) {
-                        const seeded: AnalysisQuote[] = history.prices.map((price: string, i: number) => ({
-                            quote: Number(price),
-                            epoch: Number(history.times[i]),
-                            symbol,
-                        }));
-                        seriesRef.current = { ...seriesRef.current, [symbol]: seeded.slice(-MAX_TICKS) };
-                        paint.schedule(flushSeries);
-                    }
+            wanted.forEach(symbol => {
+                api.send({
+                    ticks_history: symbol,
+                    subscribe: 1,
+                    end: 'latest',
+                    count: MAX_TICKS,
+                    style: 'ticks',
                 })
-                .catch(error => {
-                    if (error?.error?.code !== 'AlreadySubscribed') {
-                        console.warn('[AnalysisTool] tick subscription failed for', symbol, error?.error?.code);
-                    }
-                });
-        });
+                    .then(response => {
+                        if (disposed) {
+                            const late = response?.subscription?.id;
+                            if (late) api.forget(late);
+                            return;
+                        }
+                        const id = response?.subscription?.id;
+                        if (id) subscriptionIds.push(id);
 
-        setPipSizes((api_base?.pip_sizes ?? {}) as Record<string, number>);
+                        const history = response?.history;
+                        if (history?.prices?.length) {
+                            const seeded: AnalysisQuote[] = history.prices.map((price: string, i: number) => ({
+                                quote: Number(price),
+                                epoch: Number(history.times[i]),
+                                symbol,
+                            }));
+                            seriesRef.current = { ...seriesRef.current, [symbol]: seeded.slice(-MAX_TICKS) };
+                            paint.schedule(flushSeries);
+                        }
+                    })
+                    .catch(error => {
+                        if (error?.error?.code !== 'AlreadySubscribed') {
+                            console.warn('[AnalysisTool] tick subscription failed for', symbol, error?.error?.code);
+                        }
+                    });
+            });
+
+            setPipSizes((api_base?.pip_sizes ?? {}) as Record<string, number>);
+            return true;
+        };
+
+        if (!start()) {
+            poll = window.setInterval(() => {
+                if (disposed) return;
+                if (start() && poll) window.clearInterval(poll);
+            }, 250);
+        }
 
         return () => {
             disposed = true;
             paint.cancel();
-            messageSubscription.unsubscribe();
-            subscriptionIds.forEach(id => api.forget(id));
+            if (poll) window.clearInterval(poll);
+            messageSubscription?.unsubscribe();
+            const api = api_base?.api as TApi | null;
+            subscriptionIds.forEach(id => api?.forget(id));
         };
     }, [key]);
 

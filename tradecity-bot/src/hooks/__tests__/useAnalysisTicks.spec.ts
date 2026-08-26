@@ -79,4 +79,29 @@ describe('useAnalysisTicks', () => {
         expect(result.current.quotes.map(item => item.quote)).toEqual([100, 101, 102, 103]);
         expect(frames).toHaveLength(0);
     });
+
+    it('paints ticks that use underlying_symbol and ask', async () => {
+        (api_base.api.send as jest.Mock).mockResolvedValue({
+            subscription: { id: 'sub-2' },
+            history: { prices: [], times: [] },
+        });
+
+        const { result } = renderHook(() => useAnalysisTicks(['1HZ100V']));
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        listeners.forEach(listener =>
+            listener({
+                data: {
+                    msg_type: 'tick',
+                    tick: { underlying_symbol: '1HZ100V', ask: 800.5, bid: 800.4, epoch: 2 },
+                },
+            })
+        );
+        flushPaint();
+
+        expect(result.current.quotes).toEqual([{ quote: 800.5, epoch: 2, symbol: '1HZ100V' }]);
+    });
 });

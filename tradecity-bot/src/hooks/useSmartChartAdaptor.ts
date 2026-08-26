@@ -55,8 +55,8 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
         activeSymbols: ActiveSymbols;
         tradingTimes: TradingTimesMap;
     }>({
-        activeSymbols: [] as ActiveSymbols,
-        tradingTimes: {} as TradingTimesMap,
+        activeSymbols: FALLBACK_CHART_SYMBOLS,
+        tradingTimes: FALLBACK_TRADING_TIMES as TradingTimesMap,
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -144,8 +144,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                 const data = await adapter.getChartData();
 
                 if (!cancelled && isMountedRef.current) {
-                    // Check if activeSymbols is empty and we have retries left
-                    if (data.activeSymbols.length === 0 && retryCount < maxRetries) {
+                    if (data.activeSymbols.length === 0 && retryCount < 2) {
                         // Clear any existing timeout
                         if (retryTimeoutRef.current) {
                             clearTimeout(retryTimeoutRef.current);

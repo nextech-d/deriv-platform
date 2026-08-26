@@ -85,6 +85,13 @@ describe('useSmartChartAdaptor', () => {
     });
 
     describe('Initialization', () => {
+        it('seeds chart data with synthetic fallbacks before the API returns', () => {
+            const { result } = renderHook(() => useSmartChartAdaptor());
+
+            expect(result.current.chartData.activeSymbols).toEqual(FALLBACK_CHART_SYMBOLS);
+            expect(result.current.chartData.tradingTimes).toEqual(FALLBACK_TRADING_TIMES);
+        });
+
         it('should initialize adapter when chart_api.api is available', async () => {
             const { result } = renderHook(() => useSmartChartAdaptor());
 

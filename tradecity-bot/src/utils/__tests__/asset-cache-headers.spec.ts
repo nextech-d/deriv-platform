@@ -34,6 +34,14 @@ describe('long-cache hashed assets', () => {
         const rsbuild = fs.readFileSync(path.join(__dirname, '../../../rsbuild.config.ts'), 'utf8');
         expect(rsbuild).toMatch(/filenameHash:\s*true/);
     });
+
+    it('ships the SmartCharts Quill icon font at the path the chart requests', () => {
+        const font = path.join(
+            __dirname,
+            '../../../public/assets/packages/deriv_chart/assets/fonts/quill_icons.ttf'
+        );
+        expect(fs.existsSync(font)).toBe(true);
+    });
 });
 
 describe('gzip and brotli compression', () => {
