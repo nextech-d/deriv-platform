@@ -70,16 +70,18 @@
 
         .dc-tabs {
             &__active-line {
-                height: 3px;
-                border-radius: 3px 3px 0 0;
-                background-color: var(--brand-red-coral);
-                transition: none;
+                display: none;
             }
 
             &__active {
                 background: transparent;
-                color: var(--tc-ink);
+                color: #0ea5e9;
                 font-weight: 700;
+
+                .main__tab-icon {
+                    color: #0ea5e9 !important;
+                    opacity: 1;
+                }
             }
 
             &__list {
@@ -179,10 +181,19 @@
 
                 &:not(.dc-tabs__active) {
                     color: var(--text-less-prominent);
+
+                    .main__tab-icon {
+                        opacity: 0.72;
+                    }
                 }
 
                 &:hover:not(.dc-tabs__active) {
-                    color: var(--text-general);
+                    color: color-mix(in srgb, #0ea5e9 78%, var(--tc-ink));
+                    background: transparent;
+
+                    .main__tab-icon {
+                        opacity: 1;
+                    }
                 }
 
                 @include desktop-screen {
@@ -196,20 +207,29 @@
                     font-size: 1.1rem;
                     font-weight: 600;
                     letter-spacing: 0.01em;
-                    color: var(--text-general);
+                    color: var(--tc-muted);
                     background: transparent;
+                    border-radius: 0;
 
                     &:not(.dc-tabs__active) {
-                        color: var(--text-general);
+                        color: var(--tc-muted);
                     }
 
                     &:hover:not(.dc-tabs__active) {
-                        color: var(--text-prominent);
+                        color: color-mix(in srgb, #0ea5e9 78%, var(--tc-ink));
+                        background: transparent;
                     }
 
                     &.dc-tabs__active {
-                        color: var(--text-prominent);
+                        color: #0ea5e9;
                         font-weight: 700;
+                        background: transparent;
+                        box-shadow: none;
+
+                        .main__tab-icon {
+                            color: #0ea5e9 !important;
+                            opacity: 1;
+                        }
                     }
 
                     svg {
@@ -275,6 +295,7 @@
                         gap: 0;
                         padding-inline: 0.6rem;
                         background: var(--tc-card);
+                        box-shadow: 0 1px 0 color-mix(in srgb, #0ea5e9 35%, transparent);
                         scrollbar-width: none;
 
                         &::-webkit-scrollbar {
@@ -284,8 +305,20 @@
                 }
 
                 .dc-tabs__item--is-scrollable-and-active::after,
-                .dc-tabs__item::after {
+                .dc-tabs__item:not(.dc-tabs__active)::after {
                     display: none;
+                }
+
+                .dc-tabs__item.dc-tabs__active::after {
+                    content: '';
+                    position: absolute;
+                    inset: auto 12% 0;
+                    display: block;
+                    height: 0.35rem;
+                    border-radius: 999px 999px 0 0;
+                    background: #0ea5e9;
+                    box-shadow: 0 0 12px color-mix(in srgb, #0ea5e9 55%, transparent);
+                    pointer-events: none;
                 }
 
                 @include desktop-screen {
@@ -298,6 +331,9 @@
                         height: var(--tc-menu-h, 4.4rem);
                         background: var(--tc-card);
                         border-bottom: 1px solid var(--tc-card-border);
+                        box-shadow:
+                            0 1px 0 color-mix(in srgb, #0ea5e9 35%, transparent),
+                            0 10px 24px rgb(19 32 51 / 5%);
                         pointer-events: auto;
                     }
                 }
@@ -315,7 +351,7 @@
         text-transform: none;
         font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
         font-weight: 700;
-        color: var(--tc-ink);
+        color: inherit;
     }
 
     &__tab-icon {

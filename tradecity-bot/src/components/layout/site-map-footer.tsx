@@ -42,7 +42,7 @@ const SiteMapFooter = ({ onNavigate }: SiteMapFooterProps) => (
             <div className='site-map-footer__top'>
                 <div className='site-map-footer__brand'>
                     <p className='site-map-footer__word'>
-                        <span>Trade</span>
+                        <span className='site-map-footer__word-trade'>Trade</span>
                         <span className='site-map-footer__word-city'>City</span>
                     </p>
                     <p className='site-map-footer__tagline'>

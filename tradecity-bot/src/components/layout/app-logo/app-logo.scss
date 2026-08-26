@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Instrument+Serif:ital@1&display=swap');
+
 .app-header {
     &__logo {
         display: flex;
@@ -11,16 +13,35 @@
     }
 
     &__name {
-        font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
-        font-size: 2.1rem;
-        font-weight: 700;
-        letter-spacing: -0.05em;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.05em;
         line-height: 1;
-        color: var(--text-prominent);
+        overflow: visible;
+        color: var(--tc-ink);
         white-space: nowrap;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
 
-        span {
-            color: var(--brand-red-coral, #ff444f);
+        &-trade {
+            font-family: 'Barlow Condensed', 'IBM Plex Sans Condensed', sans-serif;
+            font-size: 1.7rem;
+            font-weight: 800;
+            font-style: normal;
+            font-synthesis: none;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        &-city {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 2.7rem;
+            font-weight: 400;
+            font-style: italic;
+            font-synthesis: none;
+            letter-spacing: -0.03em;
+            margin-inline-start: -0.02em;
+            color: #0ea5e9;
         }
     }
 }
