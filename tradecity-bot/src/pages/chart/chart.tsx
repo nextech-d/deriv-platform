@@ -103,7 +103,6 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         // Handle state changes: INITIAL, READY, SCROLL_TO_LEFT
         /* [/AI] */
         if (state === 'READY') {
-            setChartStatus(true);
             window.dispatchEvent(new Event('resize'));
         }
     };
@@ -144,6 +143,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
                 showLastDigitStats={show_digits_stats}
                 chartControlsWidgets={null}
                 enabledChartFooter={false}
+                chartStatusListener={(v: boolean) => setChartStatus(!v)}
                 stateChangeListener={handleStateChange}
                 toolbarWidget={() => (
                     <ToolbarWidgets

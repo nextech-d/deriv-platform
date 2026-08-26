@@ -121,6 +121,14 @@
     }
 }
 
+.dashboard__chart-wrapper {
+    overflow: visible;
+
+    .sc-loader {
+        pointer-events: none;
+    }
+}
+
 .dashboard__chart-wrapper--pending {
     display: flex;
     align-items: center;
