@@ -53,7 +53,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     const settings = {
         assetInformation: false, // ui.is_chart_asset_info_visible,
         countdown: true,
-        isHighestLowestMarkerEnabled: true,
+        isHighestLowestMarkerEnabled: false, // TODO: Pending UI
         language: common.current_language.toLowerCase(),
         position: ui.is_chart_layout_default ? 'bottom' : 'left',
         theme: ui.is_dark_mode_on ? 'dark' : 'light',
@@ -169,7 +169,6 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
                 getMarketsOrder={getMarketsOrder}
                 isLive
                 leftMargin={80}
-                drawingToolFloatingMenuPosition={isMobile ? { x: 100, y: 100 } : { x: 200, y: 200 }}
             />
             </div>
         </>

@@ -217,6 +217,6 @@ declare module '@deriv-com/smartcharts-champion' {
     export const Views: ComponentType<any>;
     export const DrawTools: ComponentType<any>;
     export const Share: ComponentType<any>;
-    export const ToolbarWidget: ComponentType<{ children?: React.ReactNode }>;
+    export const ToolbarWidget: ComponentType<{ children?: React.ReactNode; position?: string | null }>;
     export const ChartSetting: ComponentType<any>;
 }
