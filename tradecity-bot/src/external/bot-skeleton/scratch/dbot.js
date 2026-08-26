@@ -34,7 +34,7 @@ class DBot {
         const trade_type_block = window.Blockly?.Blocks?.trade_definition_tradetype;
         if (trade_type_block) {
         trade_type_block.onchange = function (event) {
-            if (!this.workspace || window.Blockly.derivWorkspace.isFlyoutVisible || this.workspace.isDragging()) {
+            if (!this.workspace || window.Blockly?.derivWorkspace?.isFlyoutVisible || this.workspace.isDragging()) {
                 return;
             }
 

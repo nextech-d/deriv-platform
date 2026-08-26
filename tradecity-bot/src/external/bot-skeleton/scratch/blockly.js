@@ -1,5 +1,5 @@
-import * as BlocklyJavaScript from 'blockly/javascript';
 import { localize } from '@deriv-com/translations';
+import { retryImport } from '@/utils/lazy-with-retry';
 import { setColors } from './hooks/colours.js';
 import goog from './goog.js';
 
@@ -32,8 +32,9 @@ const modifyBlocklyWorkSpaceContextMenu = () => {
 };
 
 export const loadBlockly = async isDarkMode => {
-    const BlocklyModule = await import('blockly');
-    window.Blockly = BlocklyModule.default;
+    const BlocklyModule = await retryImport(() => import('blockly'));
+    const BlocklyJavaScript = await retryImport(() => import('blockly/javascript'));
+    window.Blockly = BlocklyModule.default ?? BlocklyModule;
     window.Blockly.Colours = {};
     const BlocklyGenerator = new window.Blockly.Generator('code');
     const BlocklyJavaScriptGenerator = {

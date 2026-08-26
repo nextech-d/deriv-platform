@@ -1,0 +1,10 @@
+import '@fontsource/ibm-plex-sans/300.css';
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/700.css';
+import '@fontsource/ibm-plex-sans-condensed/400.css';
+import '@fontsource/ibm-plex-sans-condensed/700.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/barlow-condensed/800.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import './font-fallbacks.scss';

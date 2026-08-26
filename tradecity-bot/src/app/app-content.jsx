@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ToastContainer } from 'react-toastify';
 import AuthLoadingWrapper from '@/components/auth-loading-wrapper';
 import useLiveChat from '@/components/chat/useLiveChat';
 import ChunkLoader from '@/components/loader/chunk-loader';
-import { getUrlBase } from '@/components/shared';
 import TransactionDetailsModal from '@/components/transaction-details';
 import { api_base, ApiHelpers, ServerTime } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
@@ -12,17 +11,19 @@ import { useApiBase } from '@/hooks/useApiBase';
 import useDevMode from '@/hooks/useDevMode';
 import { useStore } from '@/hooks/useStore';
 import useThemeSwitcher from '@/hooks/useThemeSwitcher';
+import { retryImport } from '@/utils/lazy-with-retry';
 import { ThemeProvider } from '@deriv-com/quill-ui';
-import { setSmartChartsPublicPath } from '@deriv-com/smartcharts-champion';
 import { localize } from '@deriv-com/translations';
 import Audio from '../components/audio';
 import BlocklyLoading from '../components/blockly-loading';
 import BotStopped from '../components/bot-stopped';
-import BotBuilder from '../pages/bot-builder';
 import Main from '../pages/main';
 import './app.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import '../components/bot-notification/bot-notification.scss';
+
+const loadBotBuilder = () => retryImport(() => import('../pages/bot-builder'));
+const BotBuilder = lazy(loadBotBuilder);
 
 const AppContent = observer(() => {
     const [is_api_initialized, setIsApiInitialized] = React.useState(false);
@@ -89,10 +90,6 @@ const AppContent = observer(() => {
     );
 
     React.useEffect(() => {
-        setSmartChartsPublicPath(getUrlBase('/js/smartcharts/'));
-    }, []);
-
-    React.useEffect(() => {
         // Check if api is initialized and then subscribe to the api messages
         // Also we should only subscribe to the messages once user is logged in
         // And is not already subscribed to the messages
@@ -108,49 +105,26 @@ const AppContent = observer(() => {
         };
     }, [is_api_initialized, client.is_logged_in, client.loginid, handleMessage, connectionStatus]);
 
+    const boot_started = React.useRef(false);
+
     const init = () => {
         ServerTime.init(common);
         app.setDBotEngineStores();
         ApiHelpers.setInstance(app.api_helpers_store);
-        import('@/utils/gtm').then(({ default: GTM }) => {
-            GTM.init(store);
-        });
     };
 
     const finishLoading = () => {
         setIsLoading(false);
     };
 
-    const changeActiveSymbolLoadingState = () => {
-        try {
-            init();
-        } catch (error) {
-            console.error('[App] Engine init failed, continuing', error);
-            finishLoading();
-            return;
+    const retrieveActiveSymbols = () => {
+        const { active_symbols } = ApiHelpers.instance ?? {};
+        if (!active_symbols?.retrieveActiveSymbols) {
+            return Promise.resolve();
         }
-
-        const retrieveActiveSymbols = () => {
-            const { active_symbols } = ApiHelpers.instance;
-            if (!active_symbols?.retrieveActiveSymbols) {
-                finishLoading();
-                return;
-            }
-
-            const symbols = Promise.resolve(active_symbols.retrieveActiveSymbols(true)).catch(error => {
-                console.error('[App] Active symbols failed, continuing without them', error);
-            });
-            const cap = new Promise(resolve => {
-                window.setTimeout(resolve, 4000);
-            });
-            Promise.race([symbols, cap]).finally(finishLoading);
-        };
-
-        if (ApiHelpers?.instance?.active_symbols) {
-            retrieveActiveSymbols();
-        } else {
-            finishLoading();
-        }
+        return Promise.resolve(active_symbols.retrieveActiveSymbols(true)).catch(error => {
+            console.error('[App] Active symbols failed, continuing without them', error);
+        });
     };
 
     // Hard cap: header-only splash if WS/symbols hang (localhost often times out).
@@ -160,24 +134,31 @@ const AppContent = observer(() => {
     }, []);
 
     React.useEffect(() => {
-        if (is_api_initialized) {
-            try {
-                init();
-            } catch (error) {
-                console.error('[App] Engine init failed, continuing', error);
-                finishLoading();
-            }
-            if (!client.is_logged_in) {
-                changeActiveSymbolLoadingState();
-            }
+        if (!is_api_initialized || boot_started.current) return;
+        boot_started.current = true;
+
+        try {
+            init();
+        } catch (error) {
+            console.error('[App] Engine init failed, continuing', error);
+            finishLoading();
+            return;
         }
+
+        void loadBotBuilder().catch(() => {});
+
+        Promise.all([
+            retrieveActiveSymbols(),
+            import('@/utils/gtm')
+                .then(({ default: GTM }) => GTM.init(store))
+                .catch(() => {}),
+        ]).finally(finishLoading);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized]);
 
     React.useEffect(() => {
-        if (client.is_logged_in && is_api_initialized) {
-            changeActiveSymbolLoadingState();
-        }
+        if (is_loading || !is_api_initialized || !client.is_logged_in || !client.loginid) return;
+        retrieveActiveSymbols();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized, client.loginid]);
 
@@ -190,7 +171,9 @@ const AppContent = observer(() => {
                 <div className='bot-dashboard bot' data-testid='dt_bot_dashboard'>
                     <Audio />
                     <Main />
-                    <BotBuilder />
+                    <Suspense fallback={null}>
+                        <BotBuilder />
+                    </Suspense>
                     <BotStopped />
                     <TransactionDetailsModal />
                     <ToastContainer limit={3} draggable={false} />

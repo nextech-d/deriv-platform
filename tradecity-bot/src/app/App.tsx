@@ -10,11 +10,12 @@ import { useOAuthCallback } from '@/hooks/useOAuthCallback';
 import { StoreProvider } from '@/hooks/useStore';
 import { OAuthTokenExchangeService } from '@/services/oauth-token-exchange.service';
 import { initializeI18n, localize, TranslationProvider } from '@deriv-com/translations';
+import { retryImport } from '@/utils/lazy-with-retry';
 import CoreStoreProvider from './CoreStoreProvider';
 import './app-root.scss';
 
-const Layout = lazy(() => import('../components/layout'));
-const AppRoot = lazy(() => import('./app-root'));
+const Layout = lazy(() => retryImport(() => import('../components/layout')));
+const AppRoot = lazy(() => retryImport(() => import('./app-root')));
 
 // Translations CDN is optional — requires TRANSLATIONS_CDN_URL, R2_PROJECT_NAME, and CROWDIN_BRANCH_NAME env vars.
 // Without these, the app defaults to English. See user-guide/03-white-labeling.md#translations for setup instructions.

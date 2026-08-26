@@ -1,13 +1,14 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import ChunkLoader from '@/components/loader/chunk-loader';
+import { retryImport } from '@/utils/lazy-with-retry';
 import { useAccumulatorProposal } from '@/hooks/useAccumulatorProposal';
 import { useBulkTrading } from '@/hooks/useBulkTrading';
 import { useStore } from '@/hooks/useStore';
 import { copyRunningHint } from '@/utils/copy-mirror';
 import DTraderDesk from './d-trader-desk';
 
-const ChartWrapper = lazy(() => import('@/pages/chart/chart-wrapper'));
+const ChartWrapper = lazy(() => retryImport(() => import('@/pages/chart/chart-wrapper')));
 
 const DEFAULT_STAKE = 10;
 const DEFAULT_GROWTH_RATE = 0.03;

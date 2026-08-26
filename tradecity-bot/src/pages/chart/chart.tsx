@@ -4,14 +4,23 @@ import { observer } from 'mobx-react-lite';
 /* [AI] - Analytics removed - rudderstack event tracking removed */
 /* [/AI] */
 import { DEFAULT_CHART_SYMBOL } from '@/constants/chart-symbols';
+import { getUrlBase } from '@/components/shared';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
 import { useSmartChartAdaptor } from '@/hooks/useSmartChartAdaptor';
 import { useStore } from '@/hooks/useStore';
 import { normalizeSmartChartType } from '@/utils/normalize-smartchart-type';
-import { ChartTitle, SmartChart, TGranularity, TStateChangeListener } from '@deriv-com/smartcharts-champion';
+import {
+    ChartTitle,
+    SmartChart,
+    setSmartChartsPublicPath,
+    TGranularity,
+    TStateChangeListener,
+} from '@deriv-com/smartcharts-champion';
 import { useDevice } from '@deriv-com/ui';
 import ToolbarWidgets from './toolbar-widgets';
 import '@deriv-com/smartcharts-champion/dist/smartcharts.css';
+
+setSmartChartsPublicPath(getUrlBase('/js/smartcharts/'));
 
 const FEED_CALL = { activeSymbols: false, tradingTimes: false } as const;
 

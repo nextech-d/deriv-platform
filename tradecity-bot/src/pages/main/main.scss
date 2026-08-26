@@ -27,6 +27,13 @@
     }
 }
 
+.main__desk-chunk {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--tab-content-height);
+}
+
 .main {
     display: flex;
     overflow: hidden;

@@ -13,7 +13,7 @@ import TradeTypeConfirmationModal from '@/components/trade-type-confirmation-mod
 import TradingViewModal from '@/components/trading-view-chart/trading-view-modal';
 import EntryScanner from '@/components/entry-scanner/entry-scanner';
 import { DBOT_TABS, TAB_HASHES, TAB_IDS } from '@/constants/bot-contents';
-import { PLATFORM_TABS, RUN_CONTROL_KINDS } from '@/constants/platform-tabs';
+import { PLATFORM_TABS, RUN_CONTROL_KINDS, type PlatformTabKind } from '@/constants/platform-tabs';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { useApiBase } from '@/hooks/useApiBase';
@@ -32,29 +32,90 @@ import {
     setModalStateChangeCallback,
 } from '@/utils/trade-type-modal-handler';
 import { loadFreeBotInBuilder } from '@/utils/load-free-bot';
+import { retryImport } from '@/utils/lazy-with-retry';
 import { Localize, localize } from '@deriv-com/translations';
-import { useDevice } from '@deriv-com/ui';
+import { Loader, useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
-import AnalysisToolPanel from '../../components/analysis-tool-desk/analysis-tool-panel';
-import BulkTraderPanel from '../../components/bulk-trader-desk/bulk-trader-panel';
-import CopyTraderPanel from '../../components/copy-trader-desk/copy-trader-panel';
-import DTraderPanel from '../../components/d-trader-desk/d-trader-panel';
-import Edging2Panel from '../../components/edging-2-desk/edging-2-panel';
-import EdgingPanel from '../../components/edging-desk/edging-panel';
-import FastTraderPanel from '../../components/fast-trader-desk/fast-trader-panel';
-import ChartsDesk from '../../components/charts-desk/charts-desk';
-import FreeBotsDesk from '../../components/free-bots-desk/free-bots-desk';
-import MoneyManagementPanel from '../../components/money-management-desk/money-management-panel';
-import SignalCenterPanel from '../../components/signal-center-desk/signal-center-panel';
-import UltimateBotPanel from '../../components/ultimate-bot-desk/ultimate-bot-panel';
-import PlaceholderDesk from '../../components/placeholder-desk/placeholder-desk';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
 import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
 
-const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
-const Tutorial = lazy(() => import('../tutorials'));
+const loadAnalysisToolPanel = () => retryImport(() => import('../../components/analysis-tool-desk/analysis-tool-panel'));
+const loadBulkTraderPanel = () => retryImport(() => import('../../components/bulk-trader-desk/bulk-trader-panel'));
+const loadCopyTraderPanel = () => retryImport(() => import('../../components/copy-trader-desk/copy-trader-panel'));
+const loadDTraderPanel = () => retryImport(() => import('../../components/d-trader-desk/d-trader-panel'));
+const loadEdging2Panel = () => retryImport(() => import('../../components/edging-2-desk/edging-2-panel'));
+const loadEdgingPanel = () => retryImport(() => import('../../components/edging-desk/edging-panel'));
+const loadFastTraderPanel = () => retryImport(() => import('../../components/fast-trader-desk/fast-trader-panel'));
+const loadChartsDesk = () => retryImport(() => import('../../components/charts-desk/charts-desk'));
+const loadFreeBotsDesk = () => retryImport(() => import('../../components/free-bots-desk/free-bots-desk'));
+const loadMoneyManagementPanel = () =>
+    retryImport(() => import('../../components/money-management-desk/money-management-panel'));
+const loadSignalCenterPanel = () => retryImport(() => import('../../components/signal-center-desk/signal-center-panel'));
+const loadUltimateBotPanel = () => retryImport(() => import('../../components/ultimate-bot-desk/ultimate-bot-panel'));
+const loadPlaceholderDesk = () => retryImport(() => import('../../components/placeholder-desk/placeholder-desk'));
+
+const AnalysisToolPanel = lazy(loadAnalysisToolPanel);
+const BulkTraderPanel = lazy(loadBulkTraderPanel);
+const CopyTraderPanel = lazy(loadCopyTraderPanel);
+const DTraderPanel = lazy(loadDTraderPanel);
+const Edging2Panel = lazy(loadEdging2Panel);
+const EdgingPanel = lazy(loadEdgingPanel);
+const FastTraderPanel = lazy(loadFastTraderPanel);
+const ChartsDesk = lazy(loadChartsDesk);
+const FreeBotsDesk = lazy(loadFreeBotsDesk);
+const MoneyManagementPanel = lazy(loadMoneyManagementPanel);
+const SignalCenterPanel = lazy(loadSignalCenterPanel);
+const UltimateBotPanel = lazy(loadUltimateBotPanel);
+const PlaceholderDesk = lazy(loadPlaceholderDesk);
+const ChartWrapper = lazy(() => retryImport(() => import('../chart/chart-wrapper')));
+const Tutorial = lazy(() => retryImport(() => import('../tutorials')));
+
+const DESK_PREFETCH: Partial<Record<PlatformTabKind, () => Promise<unknown>>> = {
+    free_bots: loadFreeBotsDesk,
+    d_trader: loadDTraderPanel,
+    analysis_tool: loadAnalysisToolPanel,
+    signal_center: loadSignalCenterPanel,
+    money_management: loadMoneyManagementPanel,
+    copy_trader: loadCopyTraderPanel,
+    edging: loadEdgingPanel,
+    edging_2: loadEdging2Panel,
+    fast_trader: loadFastTraderPanel,
+    chart: loadChartsDesk,
+    ultimate_bot: loadUltimateBotPanel,
+    bulk_trader: loadBulkTraderPanel,
+    placeholder: loadPlaceholderDesk,
+};
+
+const nextDeskToPrefetch = (from_index: number) => {
+    for (let i = from_index + 1; i < PLATFORM_TABS.length; i++) {
+        const loader = DESK_PREFETCH[PLATFORM_TABS[i].kind];
+        if (loader) return loader;
+    }
+    return undefined;
+};
+
+const scheduleIdle = (fn: () => void) => {
+    if (typeof window.requestIdleCallback === 'function') {
+        const id = window.requestIdleCallback(fn, { timeout: 2500 });
+        return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(fn, 800);
+    return () => window.clearTimeout(id);
+};
+
+const DeskSuspense = ({ children }: { children: React.ReactNode }) => (
+    <Suspense
+        fallback={
+            <div className='main__desk-chunk'>
+                <Loader />
+            </div>
+        }
+    >
+        {children}
+    </Suspense>
+);
 
 const TAB_ICONS: Record<string, { color: string; path: string; stroke?: boolean }> = {
     dashboard: { color: '#ff444f', path: 'M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z' },
@@ -321,6 +382,21 @@ const AppWrapper = observer(() => {
     }, [active_tab, is_loading]);
 
     React.useEffect(() => {
+        const frame = window.requestAnimationFrame(() => {
+            window.dispatchEvent(new Event('resize'));
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [active_tab]);
+
+    React.useEffect(() => {
+        const loader = nextDeskToPrefetch(active_tab);
+        if (!loader || document.hidden) return undefined;
+        return scheduleIdle(() => {
+            void loader();
+        });
+    }, [active_tab]);
+
+    React.useEffect(() => {
         // Run on mount and when active tab changes
         updateTabShadowsHeight();
 
@@ -416,52 +492,94 @@ const AppWrapper = observer(() => {
                 return null;
             case 'free_bots':
                 return (
-                    <FreeBotsDesk
-                        onLoadInBuilder={async strategy => {
-                            const loaded = await loadFreeBotInBuilder(strategy);
-                            if (loaded) {
-                                handleTabChange(BOT_BUILDER);
-                            }
-                        }}
-                    />
+                    <DeskSuspense>
+                        <FreeBotsDesk
+                            onLoadInBuilder={async strategy => {
+                                const loaded = await loadFreeBotInBuilder(strategy);
+                                if (loaded) {
+                                    handleTabChange(BOT_BUILDER);
+                                }
+                            }}
+                        />
+                    </DeskSuspense>
                 );
             case 'analysis_tool':
                 return (
-                    <AnalysisToolPanel
-                        onSeededToBuilder={() => handleTabChange(BOT_BUILDER)}
-                        onOpenDTrader={() => handleTabChange(DBOT_TABS.D_TRADER)}
-                    />
+                    <DeskSuspense>
+                        <AnalysisToolPanel
+                            onSeededToBuilder={() => handleTabChange(BOT_BUILDER)}
+                            onOpenDTrader={() => handleTabChange(DBOT_TABS.D_TRADER)}
+                        />
+                    </DeskSuspense>
                 );
             case 'money_management':
-                return <MoneyManagementPanel />;
+                return (
+                    <DeskSuspense>
+                        <MoneyManagementPanel />
+                    </DeskSuspense>
+                );
             case 'ultimate_bot':
-                return <UltimateBotPanel />;
+                return (
+                    <DeskSuspense>
+                        <UltimateBotPanel />
+                    </DeskSuspense>
+                );
             case 'bulk_trader':
-                return <BulkTraderPanel />;
+                return (
+                    <DeskSuspense>
+                        <BulkTraderPanel />
+                    </DeskSuspense>
+                );
             case 'fast_trader':
-                return <FastTraderPanel />;
+                return (
+                    <DeskSuspense>
+                        <FastTraderPanel />
+                    </DeskSuspense>
+                );
             case 'edging':
-                return <EdgingPanel />;
+                return (
+                    <DeskSuspense>
+                        <EdgingPanel />
+                    </DeskSuspense>
+                );
             case 'edging_2':
-                return <Edging2Panel />;
+                return (
+                    <DeskSuspense>
+                        <Edging2Panel />
+                    </DeskSuspense>
+                );
             case 'copy_trader':
-                return <CopyTraderPanel />;
+                return (
+                    <DeskSuspense>
+                        <CopyTraderPanel />
+                    </DeskSuspense>
+                );
             case 'signal_center':
-                return <SignalCenterPanel onSeededToBuilder={() => handleTabChange(BOT_BUILDER)} />;
+                return (
+                    <DeskSuspense>
+                        <SignalCenterPanel onSeededToBuilder={() => handleTabChange(BOT_BUILDER)} />
+                    </DeskSuspense>
+                );
             case 'd_trader':
-                return <DTraderPanel />;
+                return (
+                    <DeskSuspense>
+                        <DTraderPanel />
+                    </DeskSuspense>
+                );
             case 'chart':
                 return (
-                    <ChartsDesk>
-                        <ErrorBoundary
-                            root_store={store}
-                            fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
-                        >
-                            <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
-                                <ChartWrapper show_digits_stats={true} />
-                            </Suspense>
-                        </ErrorBoundary>
-                    </ChartsDesk>
+                    <DeskSuspense>
+                        <ChartsDesk>
+                            <ErrorBoundary
+                                root_store={store}
+                                fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                            >
+                                <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
+                                    <ChartWrapper show_digits_stats={true} />
+                                </Suspense>
+                            </ErrorBoundary>
+                        </ChartsDesk>
+                    </DeskSuspense>
                 );
             case 'tutorial':
                 return (
@@ -474,7 +592,11 @@ const AppWrapper = observer(() => {
                     </div>
                 );
             default:
-                return <PlaceholderDesk title={localize(tab.label)} />;
+                return (
+                    <DeskSuspense>
+                        <PlaceholderDesk title={localize(tab.label)} />
+                    </DeskSuspense>
+                );
         }
     };
     // [/AI]
@@ -496,6 +618,7 @@ const AppWrapper = observer(() => {
                             active_index={active_tab}
                             className='main__tabs'
                             onTabItemClick={handleTabChange}
+                            keep_visited_mounted
                             top
                             header_fit_content
                         >

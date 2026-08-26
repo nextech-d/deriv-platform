@@ -50,6 +50,7 @@ export default defineConfig({
         },
     },
     output: {
+        filenameHash: true,
         copy: [
             {
                 from: 'node_modules/@deriv-com/smartcharts-champion/dist/*',
@@ -95,18 +96,43 @@ export default defineConfig({
                 : undefined,
     },
     tools: {
-        rspack: {
-            plugins: [],
-            resolve: {},
-            module: {
-                rules: [
-                    {
-                        test: /\.xml$/,
-                        exclude: /node_modules/,
-                        use: 'raw-loader',
+        rspack: config => {
+            config.module ??= {};
+            config.module.rules ??= [];
+            config.module.rules.push(
+                {
+                    test: /\.xml$/,
+                    exclude: /node_modules/,
+                    use: 'raw-loader',
+                },
+                {
+                    test: /\.(css|scss)$/,
+                    enforce: 'pre',
+                    loader: path.resolve(__dirname, 'scripts/strip-google-plex-import-loader.cjs'),
+                }
+            );
+
+            const split = config.optimization?.splitChunks;
+            if (split && typeof split === 'object') {
+                split.cacheGroups = {
+                    ...split.cacheGroups,
+                    blockly: {
+                        test: /[\\/]node_modules[\\/]blockly[\\/]/,
+                        name: 'blockly',
+                        chunks: 'async',
+                        priority: 30,
+                        reuseExistingChunk: true,
                     },
-                ],
-            },
+                    smartcharts: {
+                        test: /[\\/]node_modules[\\/]@deriv-com[\\/]smartcharts-champion[\\/]/,
+                        name: 'smartcharts',
+                        chunks: 'async',
+                        priority: 30,
+                        reuseExistingChunk: true,
+                    },
+                };
+            }
+            return config;
         },
     },
 });

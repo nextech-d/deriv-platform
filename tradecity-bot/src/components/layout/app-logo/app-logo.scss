@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Instrument+Serif:ital@1&display=swap');
-
 .app-header {
     &__logo {
         display: flex;
@@ -24,7 +22,7 @@
         text-rendering: optimizeLegibility;
 
         &-trade {
-            font-family: 'Barlow Condensed', 'IBM Plex Sans Condensed', sans-serif;
+            font-family: 'Barlow Condensed', 'Barlow Condensed Fallback', 'IBM Plex Sans Condensed', sans-serif;
             font-size: 1.7rem;
             font-weight: 800;
             font-style: normal;
@@ -34,7 +32,7 @@
         }
 
         &-city {
-            font-family: 'Instrument Serif', Georgia, serif;
+            font-family: 'Instrument Serif', 'Instrument Serif Fallback', Georgia, serif;
             font-size: 2.7rem;
             font-weight: 400;
             font-style: italic;

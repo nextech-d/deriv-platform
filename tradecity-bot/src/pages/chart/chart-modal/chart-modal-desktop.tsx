@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { observer } from 'mobx-react-lite';
 import DraggableResizeWrapper from '@/components/draggable/draggable-resize-wrapper';
 import { useStore } from '@/hooks/useStore';
 import { localize } from '@deriv-com/translations';
-import ChartWrapper from '../chart-wrapper';
+import { retryImport } from '@/utils/lazy-with-retry';
+
+const ChartWrapper = lazy(() => retryImport(() => import('../chart-wrapper')));
 
 const ChartModalDesktop = observer(() => {
     const { dashboard } = useStore();
@@ -23,7 +25,9 @@ const ChartModalDesktop = observer(() => {
                     enableResizing
                 >
                     <div className='chart-modal-dialog' data-testid='chart-modal-dialog'>
-                        <ChartWrapper show_digits_stats={false} />
+                        <Suspense fallback={null}>
+                            <ChartWrapper show_digits_stats={false} />
+                        </Suspense>
                     </div>
                 </DraggableResizeWrapper>
             )}

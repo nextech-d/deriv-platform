@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton';
+import { createTickUiBatcher } from '@/utils/tick-ui-batcher';
 
 export interface AnalysisQuote {
     quote: number;
@@ -33,6 +34,10 @@ export function useAnalysisTicks(symbols: string[]) {
 
         let disposed = false;
         const subscriptionIds: string[] = [];
+        const paint = createTickUiBatcher();
+        const flushSeries = () => {
+            if (!disposed) setSeries(seriesRef.current);
+        };
 
         const messageSubscription = api.onMessage().subscribe(({ data }) => {
             if (disposed || data?.msg_type !== 'tick' || !data.tick) return;
@@ -44,7 +49,7 @@ export function useAnalysisTicks(symbols: string[]) {
 
             const next = [...previous, { quote: Number(quote), epoch: Number(epoch), symbol }].slice(-MAX_TICKS);
             seriesRef.current = { ...seriesRef.current, [symbol]: next };
-            setSeries(seriesRef.current);
+            paint.schedule(flushSeries);
         });
 
         wanted.forEach(symbol => {
@@ -72,7 +77,7 @@ export function useAnalysisTicks(symbols: string[]) {
                             symbol,
                         }));
                         seriesRef.current = { ...seriesRef.current, [symbol]: seeded.slice(-MAX_TICKS) };
-                        setSeries(seriesRef.current);
+                        paint.schedule(flushSeries);
                     }
                 })
                 .catch(error => {
@@ -86,6 +91,7 @@ export function useAnalysisTicks(symbols: string[]) {
 
         return () => {
             disposed = true;
+            paint.cancel();
             messageSubscription.unsubscribe();
             subscriptionIds.forEach(id => api.forget(id));
         };

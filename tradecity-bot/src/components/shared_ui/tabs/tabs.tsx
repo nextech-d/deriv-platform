@@ -31,6 +31,7 @@ type TTabsProps = {
     is_full_width?: boolean;
     is_overflow_hidden?: boolean;
     is_scrollable?: boolean;
+    keep_visited_mounted?: boolean;
     onTabItemClick?: (active_tab_index: number) => void;
     should_update_hash?: boolean;
     single_tab_has_no_label?: boolean;
@@ -56,6 +57,7 @@ const Tabs = ({
     is_full_width = false,
     is_overflow_hidden = false,
     is_scrollable = false,
+    keep_visited_mounted = false,
     onTabItemClick,
     should_update_hash = false,
     single_tab_has_no_label = false,
@@ -64,6 +66,7 @@ const Tabs = ({
     const [active_line_style, updateActiveLineStyle] = React.useState({});
     const active_tab_ref = React.useRef<HTMLLIElement>(null);
     const tabs_wrapper_ref = React.useRef<HTMLUListElement>(null);
+    const visited_tabs = React.useRef(new Set<number>());
     const pushHash = (hash: string) => {
         history.replace(`${history.location.pathname}${window.location.search}#${hash}`);
     };
@@ -133,6 +136,10 @@ const Tabs = ({
         setActiveTabIndex(index);
         setActiveLineStyle();
     };
+
+    if (keep_visited_mounted) {
+        visited_tabs.current.add(active_tab_index);
+    }
 
     const valid_children = children.filter(child => child);
 
@@ -222,10 +229,24 @@ const Tabs = ({
             >
                 {React.Children.map(children, (child, index) => {
                     if (!child) return null;
-                    if (index !== active_tab_index) {
+                    const is_active = index === active_tab_index;
+                    if (!is_active && !(keep_visited_mounted && visited_tabs.current.has(index))) {
                         return undefined;
                     }
-                    return child.props.children;
+                    if (!keep_visited_mounted) {
+                        return child.props.children;
+                    }
+                    return (
+                        <div
+                            className={classNames('dc-tabs__panel', {
+                                'dc-tabs__panel--active': is_active,
+                                'dc-tabs__panel--inactive': !is_active,
+                            })}
+                            aria-hidden={!is_active}
+                        >
+                            {child.props.children}
+                        </div>
+                    );
                 })}
             </div>
         </div>
