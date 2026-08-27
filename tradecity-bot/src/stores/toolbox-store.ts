@@ -27,6 +27,7 @@ export default class ToolboxStore {
             onUnmount: action.bound,
             setWorkspaceOptions: action.bound,
             adjustWorkspace: action.bound,
+            fitBlocksNow: action.bound,
             toggleDrawer: action.bound,
             onToolboxItemClick: action.bound,
             onToolboxItemExpand: action.bound,
@@ -136,6 +137,16 @@ export default class ToolboxStore {
         }, throttleDelay);
     }
 
+    fitBlocksNow() {
+        if (this.workspace_adjust_timer) {
+            clearTimeout(this.workspace_adjust_timer);
+            this.workspace_adjust_timer = undefined;
+        }
+        this.is_workspace_scroll_adjusted = false;
+        this.is_adjusting_workspace = false;
+        this.fitWorkspaceBlocksInView();
+    }
+
     private getVisibleWorkspaceHole(): DOMRect | null {
         const injection =
             (document.getElementById('scratch_div') as HTMLElement | null) ||
@@ -145,16 +156,20 @@ export default class ToolboxStore {
         const inj = injection.getBoundingClientRect();
         const toolbox = document.getElementById('gtm-toolbox')?.getBoundingClientRect();
         const toolbar = document.querySelector('.bot-builder .toolbar')?.getBoundingClientRect();
+        const rail = document.querySelector('.bot-builder .toolbar__wrapper')?.getBoundingClientRect();
         const panel = document.querySelector('.run-panel__container.dc-drawer--open')?.getBoundingClientRect();
         const footer = document.querySelector('.app-footer')?.getBoundingClientRect();
+        const rail_is_vertical = Boolean(rail && rail.height > rail.width * 2);
+        const panel_is_right_drawer = Boolean(panel && panel.left > inj.left + 80 && panel.height > 120);
 
-        const left = Math.max(inj.left, toolbox?.right ?? inj.left) + 16;
+        const left =
+            Math.max(inj.left, toolbox?.right ?? inj.left, rail_is_vertical && rail ? rail.right : inj.left) + 8;
         const top = Math.max(inj.top, toolbar?.bottom ?? inj.top) + 8;
-        const right = Math.min(inj.right, panel?.left ?? inj.right) - 16;
-        const bottom = Math.min(inj.bottom, footer?.top ?? inj.bottom) - 16;
+        const right = Math.min(inj.right, panel_is_right_drawer && panel ? panel.left : inj.right) - 8;
+        const bottom = Math.min(inj.bottom, footer?.top ?? inj.bottom) - 8;
         const width = right - left;
         const height = bottom - top;
-        if (width < 80 || height < 80) return null;
+        if (width < 60 || height < 60) return null;
         return new DOMRect(left, top, width, height);
     }
 
@@ -181,16 +196,17 @@ export default class ToolboxStore {
     }
 
     private scrollBlocksIntoHole(
-        workspace: { getMetrics?: () => { viewLeft: number; viewTop: number; scrollLeft: number; scrollTop: number }; scrollbar?: { set: (x: number, y: number) => void } },
+        workspace: { getTopBlocks?: (ordered: boolean) => Array<{ moveBy?: (x: number, y: number) => void }>; scale?: number },
         hole: DOMRect,
         union: DOMRect
     ) {
         const dx = hole.left - union.left;
         const dy = hole.top - union.top;
         if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
-        const metrics = workspace.getMetrics?.();
-        if (!metrics || !workspace.scrollbar) return;
-        workspace.scrollbar.set(metrics.viewLeft - metrics.scrollLeft - dx, metrics.viewTop - metrics.scrollTop - dy);
+        const scale = workspace.scale || 1;
+        (workspace.getTopBlocks?.(false) ?? []).forEach(block => {
+            block.moveBy?.(dx / scale, dy / scale);
+        });
     }
 
     private getTopBlocksWorkspaceBox(workspace: {
@@ -231,8 +247,9 @@ export default class ToolboxStore {
         const box = this.getTopBlocksWorkspaceBox(workspace);
         if (!hole || !box) return false;
 
-        const needed = Math.min(hole.width / Math.max(box.width, 1), hole.height / Math.max(box.height, 1)) * 0.92;
-        const next_scale = Math.max(0.55, Math.min(1, needed));
+        const needed = Math.min(hole.width / Math.max(box.width, 1), hole.height / Math.max(box.height, 1)) * 0.9;
+        const min_scale = hole.width < 480 ? 0.22 : 0.55;
+        const next_scale = Math.max(min_scale, Math.min(0.95, needed));
         if (Math.abs(next_scale - workspace.scale) >= 0.02) {
             workspace.setScale(next_scale);
             window.Blockly.svgResize?.(workspace);

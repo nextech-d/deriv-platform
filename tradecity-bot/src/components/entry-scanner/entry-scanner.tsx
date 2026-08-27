@@ -251,16 +251,26 @@ const EntryScanner = observer(({ onSeededToBuilder }: TEntryScannerProps) => {
         closeAll();
         try {
             await app.ensureBlocklyWorkspace();
-            await loadAnalysisBiasInBuilder({
+            const loaded = await loadAnalysisBiasInBuilder({
                 symbol: stored.symbol,
                 mode: 'barrier',
                 side: stored.contractType === 'DIGITOVER' ? 'CALL' : 'PUT',
                 barrier: stored.barrier,
                 digitTarget: stored.lastDigit ?? stored.barrier,
                 label: stored.tradeLabel || stored.label,
+                stake: params.stake,
+                size: params.useMartingale ? params.martingale : 1,
+                profit: params.takeProfit,
+                loss: params.stopLoss,
             });
+            if (!loaded) {
+                setOpen(true);
+                setStatus('Scan did not load into Bot Builder. Try Load Scan again.');
+            }
         } catch (error) {
             console.warn('[EntryScanner] Failed to seed Bot Builder', error);
+            setOpen(true);
+            setStatus('Scan did not load into Bot Builder. Try Load Scan again.');
         }
     };
 
