@@ -5,6 +5,7 @@ import { retryImport } from '@/utils/lazy-with-retry';
 import { useAccumulatorProposal } from '@/hooks/useAccumulatorProposal';
 import { useBulkTrading } from '@/hooks/useBulkTrading';
 import { useStore } from '@/hooks/useStore';
+import { DBOT_TABS } from '@/constants/bot-contents';
 import { copyRunningHint } from '@/utils/copy-mirror';
 import DTraderDesk from './d-trader-desk';
 
@@ -19,11 +20,12 @@ const DEFAULT_TAKE_PROFIT = 50;
  * picking a market from the chart title is what the ticket prices and buys.
  */
 const DTraderPanel = observer(() => {
-    const { client, chart_store } = useStore();
+    const { client, chart_store, dashboard } = useStore();
     const currency = client?.currency || 'USD';
     const isLoggedIn = Boolean(client?.is_logged_in);
     const symbol = chart_store?.symbol ?? '';
 
+    const is_dtrader = dashboard.active_tab === DBOT_TABS.D_TRADER;
     const [stake, setStake] = useState(DEFAULT_STAKE);
     const [growthRate, setGrowthRate] = useState(DEFAULT_GROWTH_RATE);
     const [takeProfitOn, setTakeProfitOn] = useState(false);
@@ -79,9 +81,11 @@ const DTraderPanel = observer(() => {
             onCopyTradingToggle={setCopyTrading}
             onBuy={handleBuy}
             chart={
-                <Suspense fallback={<ChunkLoader message='Please wait, loading chart...' />}>
-                    <ChartWrapper prefix='d-trader' show_digits_stats={false} />
-                </Suspense>
+                is_dtrader ? (
+                    <Suspense fallback={<ChunkLoader message='Please wait, loading chart...' />}>
+                        <ChartWrapper prefix='d-trader' show_digits_stats={false} />
+                    </Suspense>
+                ) : null
             }
         />
     );

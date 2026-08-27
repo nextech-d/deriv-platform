@@ -13,7 +13,7 @@ export const hasAllRequiredBlocks = () => {
 };
 
 export const onWorkspaceResize = () => {
-    const workspace = window.Blockly.derivWorkspace;
+    const workspace = window.Blockly?.derivWorkspace;
     if (workspace) {
         // kept this commented to fix slow rendering issue
         //workspace.getAllFields().forEach(field => field.forceRerender());
