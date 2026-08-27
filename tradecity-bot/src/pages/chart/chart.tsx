@@ -73,18 +73,20 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
         };
 
         setIsSafari(isSafariBrowser());
-
-        return () => {
-            chart_api.api?.forgetAll('ticks');
-        };
     }, []);
 
     useEffect(() => {
-        if (!symbol) {
-            updateSymbol();
-            onSymbolChange(DEFAULT_CHART_SYMBOL);
-        }
-    }, [symbol, updateSymbol, onSymbolChange]);
+        updateSymbol();
+        const workspace = window.Blockly?.derivWorkspace;
+        if (!workspace?.addChangeListener) return undefined;
+        const onWorkspaceChange = (event: { name?: string; type?: string }) => {
+            if (event.name === 'SYMBOL_LIST' || event.type === 'create' || event.type === 'ended') {
+                updateSymbol();
+            }
+        };
+        workspace.addChangeListener(onWorkspaceChange);
+        return () => workspace.removeChangeListener(onWorkspaceChange);
+    }, [updateSymbol]);
 
     useEffect(() => {
         if (!adapterInitialized || !chartData.activeSymbols.length) return;
