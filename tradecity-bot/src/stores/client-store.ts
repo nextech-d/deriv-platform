@@ -8,7 +8,7 @@ import { removeCookies } from '@/components/shared/utils/storage/storage';
 import { observer as globalObserver, observer } from '@/external/bot-skeleton';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { ErrorLogger } from '@/utils/error-logger';
-import { mergeLiveBalance, type LiveBalancePayload } from '@/utils/live-balance';
+import { mergeLiveBalance, normalizeBalancePayload, type LiveBalancePayload } from '@/utils/live-balance';
 import type { Balance } from '@deriv/api-types';
 import {
     authData$,
@@ -29,6 +29,7 @@ export default class ClientStore {
 
     accounts: Record<string, TAuthData['account_list'][number]> = {};
     all_accounts_balance: Balance | null = null;
+    balance_version = 0;
     is_logging_out = false;
 
     private authDataSubscription: { unsubscribe: () => void } | null = null;
@@ -92,6 +93,7 @@ export default class ClientStore {
 
             all_accounts_balance: observable,
             balance: observable,
+            balance_version: observable,
             currency: observable,
 
             is_logged_in: observable,
@@ -232,6 +234,8 @@ export default class ClientStore {
     };
 
     applyBalanceUpdate = (payload?: LiveBalancePayload | Balance | null) => {
+        const normalized = normalizeBalancePayload(payload, this.loginid);
+        if (!normalized) return;
         const next = mergeLiveBalance(
             {
                 balance: this.balance,
@@ -239,11 +243,12 @@ export default class ClientStore {
                 loginid: this.loginid,
                 all_accounts_balance: this.all_accounts_balance as LiveBalancePayload | null,
             },
-            payload as LiveBalancePayload | null | undefined
+            normalized
         );
         this.balance = next.balance;
         this.currency = next.currency;
         this.all_accounts_balance = next.all_accounts_balance as Balance | null;
+        this.balance_version += 1;
     };
     setIsAccountRegenerating = (is_loading: boolean) => {
         this.is_account_regenerating = is_loading;
@@ -281,6 +286,7 @@ export default class ClientStore {
             this.balance = '0';
             this.currency = 'USD';
             this.all_accounts_balance = null;
+            this.balance_version = 0;
 
             // Clear localStorage
             localStorage.removeItem('active_loginid');
@@ -403,6 +409,7 @@ export default class ClientStore {
                 this.currency = 'USD';
 
                 this.all_accounts_balance = null;
+                this.balance_version = 0;
 
                 localStorage.removeItem('accountsList');
                 localStorage.removeItem('authToken');

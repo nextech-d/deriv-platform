@@ -6,6 +6,7 @@ import { DerivWSAccountsService } from '@/services/derivws-accounts.service';
 import { TAuthData } from '@/types/api-types';
 import { clearAuthData } from '@/utils/auth-utils';
 import { handleBackendError, isBackendError } from '@/utils/error-handler';
+import { socketMessageToBalancePayload } from '@/utils/live-balance';
 import { activeSymbolsProcessorService } from '../../../../services/active-symbols-processor.service';
 import { observer as globalObserver } from '../../utils/observer';
 import { doUntilDone, socket_state } from '../tradeEngine/utils/helpers';
@@ -74,7 +75,7 @@ class APIBase {
 
     private applyClientBalance = (payload: unknown) => {
         const store = globalObserver.getState('client.store') as
-            | { applyBalanceUpdate?: (next: unknown) => void }
+            | { applyBalanceUpdate?: (next: unknown) => void; loginid?: string }
             | null
             | undefined;
         store?.applyBalanceUpdate?.(payload);
@@ -84,9 +85,9 @@ class APIBase {
         if (this.balance_listener) return;
         if (!this.api?.onMessage) return;
         this.balance_listener = this.api.onMessage().subscribe((res: unknown) => {
-            const data = (res as { data?: { msg_type?: string; error?: unknown; balance?: unknown } })?.data;
-            if (data?.msg_type !== 'balance' || data.error || !data.balance) return;
-            this.applyClientBalance(data.balance);
+            const store = globalObserver.getState('client.store') as { loginid?: string } | null | undefined;
+            const payload = socketMessageToBalancePayload(res, store?.loginid ?? this.account_id);
+            if (payload) this.applyClientBalance(payload);
         });
     };
 

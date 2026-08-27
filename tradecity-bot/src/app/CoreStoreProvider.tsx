@@ -9,6 +9,7 @@ import { useApiBase } from '@/hooks/useApiBase';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
 import { TSocketResponseData } from '@/types/api-types';
+import { socketMessageToBalancePayload, unwrapSocketPayload } from '@/utils/live-balance';
 import { clearInvalidTokenParams } from '@/utils/url-utils';
 import { useTranslations } from '@deriv-com/translations';
 
@@ -115,31 +116,27 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
     }, [client, common]);
 
     const handleMessages = useCallback(
-        // Changed parameter type from Record<string, unknown> to unknown to match onMessage signature
         async (res: unknown) => {
             if (!res) return;
-            const data = (res as Record<string, unknown>).data as TSocketResponseData<'balance'>;
-            const { msg_type, error } = data;
+            const data = unwrapSocketPayload(res);
+            if (!data) return;
+            const error = data.error as { code?: string } | undefined;
 
-            // Handle auth errors by calling client.logout() directly instead of useLogout hook
-            // This prevents redundant logout operations since useLogout internally calls client.logout()
             if (
                 error?.code === 'AuthorizationRequired' ||
                 error?.code === 'DisabledClient' ||
                 error?.code === 'InvalidToken'
             ) {
-                // Clear all URL query parameters for these auth errors
                 clearInvalidTokenParams();
-                // Call client store logout directly to avoid double logout
                 await client?.logout();
+                return;
             }
 
-            if (msg_type === 'balance' && data && !error) {
-                client?.applyBalanceUpdate(data.balance);
+            const payload = socketMessageToBalancePayload(res, client?.loginid ?? '');
+            if (payload) {
+                client?.applyBalanceUpdate(payload);
             }
         },
-        // Fixed memory leak: removed handleLogout from deps as it's not used in function body
-        // Only client is actually referenced (line 129), preventing unnecessary re-subscriptions
         [client]
     );
 
