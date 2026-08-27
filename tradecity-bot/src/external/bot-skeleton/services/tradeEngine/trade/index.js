@@ -99,7 +99,9 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
         this.options = options;
         this.startPromise = this.loginAndGetBalance(token);
 
-        if (!this.checkTicksPromiseExists()) this.watchTicks(symbol);
+        if (!this.checkTicksPromiseExists()) {
+            this.startPromise = this.startPromise.then(() => this.watchTicks(symbol));
+        }
     }
 
     start(tradeOptions) {

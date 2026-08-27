@@ -335,8 +335,8 @@ class DBot {
             }
             function BinaryBotPrivateTickAnalysis() {
                 var currentTickTime = Bot.getLastTick(true);
-                while (currentTickTime === 'MarketIsClosed') {
-                    sleep(5);
+                while (!currentTickTime || currentTickTime === 'MarketIsClosed') {
+                    sleep(currentTickTime === 'MarketIsClosed' ? 5 : 1);
                     currentTickTime = Bot.getLastTick(true);
                 }
                 currentTickTime = currentTickTime.epoch;

@@ -26,7 +26,8 @@ export default Engine =>
                     if (this.is_proposal_subscription_required) {
                         this.checkProposalReady();
                     }
-                    const lastTick = ticks.slice(-1)[0];
+                    const lastTick = ticks?.slice(-1)[0];
+                    if (!lastTick?.epoch) return;
                     const { epoch } = lastTick;
                     this.store.dispatch({ type: constants.NEW_TICK, payload: epoch });
                 };
@@ -43,7 +44,7 @@ export default Engine =>
         getTicks(toString = false) {
             return new Promise(resolve => {
                 this.$scope.ticksService.request({ symbol: this.symbol }).then(ticks => {
-                    const ticks_list = ticks.map(tick => {
+                    const ticks_list = (ticks || []).map(tick => {
                         if (toString) {
                             return tick.quote.toFixed(this.getPipSize());
                         }
@@ -61,7 +62,12 @@ export default Engine =>
                     .request({ symbol: this.symbol })
                     .then(ticks => {
                         try {
-                            let last_tick = raw ? getLast(ticks) : getLast(ticks).quote;
+                            const last = getLast(ticks);
+                            if (!last) {
+                                resolve(undefined);
+                                return;
+                            }
+                            let last_tick = raw ? last : last.quote;
                             if (!raw && toString) {
                                 last_tick = last_tick.toFixed(this.getPipSize());
                             }
@@ -71,14 +77,16 @@ export default Engine =>
                         }
                     })
                     .catch(e => {
-                        if (e.code === 'MarketIsClosed') {
+                        if (e?.code === 'MarketIsClosed' || e?.error?.code === 'MarketIsClosed') {
                             const localizedError = {
                                 ...e,
-                                message: getLocalizedErrorMessage(e.code, e.details),
+                                message: getLocalizedErrorMessage('MarketIsClosed', e.details),
                             };
                             globalObserver.emit('Error', localizedError);
-                            resolve(e.code);
+                            resolve('MarketIsClosed');
+                            return;
                         }
+                        resolve(undefined);
                     })
             );
         }

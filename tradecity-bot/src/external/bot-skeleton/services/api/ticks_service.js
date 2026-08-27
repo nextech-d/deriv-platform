@@ -1,5 +1,6 @@
 /* eslint-disable no-confusing-arrow */
 import { Map } from 'immutable';
+import { analysisTickQuote, analysisTickSymbol } from '@/utils/analysis-tick';
 import { getLast, historyToTicks } from '../../utils/binary-utils';
 import { observer as globalObserver } from '../../utils/observer';
 import { doUntilDone, getUUID } from '../tradeEngine/utils/helpers';
@@ -7,7 +8,7 @@ import { api_base } from './api-base';
 
 const parseTick = tick => ({
     epoch: +tick.epoch,
-    quote: +tick.quote,
+    quote: analysisTickQuote(tick),
 });
 
 const parseOhlc = ohlc => ({
@@ -18,12 +19,23 @@ const parseOhlc = ohlc => ({
     epoch: +(ohlc.open_time || ohlc.epoch),
 });
 
-const parseCandles = candles => candles.map(t => parseOhlc(t));
+const parseCandles = candles => (Array.isArray(candles) ? candles.map(t => parseOhlc(t)) : []);
 
-const updateTicks = (ticks, newTick) => (getLast(ticks).epoch >= newTick.epoch ? ticks : [...ticks.slice(1), newTick]);
+const ticksFromResponse = response => {
+    if (response?.history?.times?.length) return historyToTicks(response.history);
+    if (response?.tick?.epoch) return [parseTick(response.tick)];
+    return [];
+};
+
+const updateTicks = (ticks, newTick) => {
+    const last = getLast(ticks);
+    if (!last) return [newTick];
+    return last.epoch >= newTick.epoch ? ticks : [...ticks.slice(1), newTick];
+};
 
 const updateCandles = (candles, ohlc) => {
     const lastCandle = getLast(candles);
+    if (!lastCandle) return [ohlc];
     if (
         (lastCandle.open === ohlc.open &&
             lastCandle.high === ohlc.high &&
@@ -50,6 +62,7 @@ export default class TicksService {
         this.ticks_history_promise = null;
         this.active_symbols_promise = null;
         this.candles_promise = null;
+        this.has_observer = false;
 
         this.observe();
     }
@@ -75,7 +88,11 @@ export default class TicksService {
             const style = getType(granularity);
 
             if (style === 'ticks' && this.ticks.has(symbol)) {
-                resolve(this.ticks.get(symbol));
+                const cached = this.ticks.get(symbol);
+                if (cached?.length) {
+                    resolve(cached);
+                    return;
+                }
             }
 
             if (style === 'candles' && this.candles.hasIn([symbol, Number(granularity)])) {
@@ -196,32 +213,36 @@ export default class TicksService {
     }
 
     observe() {
-        if (api_base.api) {
-            const subscription = api_base.api.onMessage().subscribe(({ data }) => {
-                if (data.msg_type === 'tick') {
-                    const { tick } = data;
-                    const { symbol, id } = tick;
-                    if (this.ticks.has(symbol)) {
-                        this.subscriptions = this.subscriptions.setIn(['tick', symbol], id);
-                        this.updateTicksAndCallListeners(symbol, updateTicks(this.ticks.get(symbol), parseTick(tick)));
-                    }
+        if (this.has_observer || !api_base.api) return;
+        this.has_observer = true;
+        const subscription = api_base.api.onMessage().subscribe(({ data }) => {
+            if (data.msg_type === 'tick') {
+                const { tick } = data;
+                if (!tick) return;
+                const symbol = analysisTickSymbol(tick);
+                const { id } = tick;
+                if (symbol && this.ticks.has(symbol)) {
+                    this.subscriptions = this.subscriptions.setIn(['tick', symbol], id);
+                    this.updateTicksAndCallListeners(symbol, updateTicks(this.ticks.get(symbol), parseTick(tick)));
                 }
+            }
 
-                if (data.msg_type === 'ohlc') {
-                    const { ohlc } = data;
-                    const { symbol, granularity, id } = ohlc;
-                    if (this.candles.hasIn([symbol, Number(granularity)])) {
-                        this.subscriptions = this.subscriptions.setIn(['ohlc', symbol, Number(granularity)], id);
-                        const address = [symbol, Number(granularity)];
-                        this.updateCandlesAndCallListeners(
-                            address,
-                            updateCandles(this.candles.getIn(address), parseOhlc(ohlc))
-                        );
-                    }
+            if (data.msg_type === 'ohlc') {
+                const { ohlc } = data;
+                if (!ohlc) return;
+                const symbol = analysisTickSymbol(ohlc);
+                const { granularity, id } = ohlc;
+                if (symbol && this.candles.hasIn([symbol, Number(granularity)])) {
+                    this.subscriptions = this.subscriptions.setIn(['ohlc', symbol, Number(granularity)], id);
+                    const address = [symbol, Number(granularity)];
+                    this.updateCandlesAndCallListeners(
+                        address,
+                        updateCandles(this.candles.getIn(address), parseOhlc(ohlc))
+                    );
                 }
-            });
-            api_base.pushSubscription(subscription);
-        }
+            }
+        });
+        api_base.pushSubscription(subscription);
     }
 
     requestStream(options) {
@@ -257,46 +278,59 @@ export default class TicksService {
 
     requestTicks(options) {
         const { symbol, granularity, style } = options;
-        const request_object = {
+        const history_request = {
             ticks_history: symbol === 'na' ? 'R_100' : symbol,
-            subscribe: 1,
             end: 'latest',
             count: 1000,
             granularity: granularity ? Number(granularity) : undefined,
             style,
         };
+        const request_object = { ...history_request, subscribe: 1 };
+
+        const applyTicks = (response, resolve) => {
+            if (style === 'ticks') {
+                const ticks = ticksFromResponse(response);
+                this.updateTicksAndCallListeners(symbol, ticks);
+                resolve(ticks);
+                return;
+            }
+            const candles = parseCandles(response?.candles);
+            this.updateCandlesAndCallListeners([symbol, Number(granularity)], candles);
+            resolve(candles);
+        };
+
+        const fetchHistoryOnly = () =>
+            api_base.api.send(history_request).then(response => {
+                if (style === 'ticks' && this.ticks.has(symbol) && this.ticks.get(symbol)?.length) {
+                    return this.ticks.get(symbol);
+                }
+                if (style === 'ticks') {
+                    const ticks = ticksFromResponse(response);
+                    this.updateTicksAndCallListeners(symbol, ticks);
+                    return ticks;
+                }
+                const candles = parseCandles(response?.candles);
+                this.updateCandlesAndCallListeners([symbol, Number(granularity)], candles);
+                return candles;
+            });
+
         return new Promise((resolve, reject) => {
-            if (!api_base.api) resolve([]);
-            doUntilDone(() => api_base.api.send(request_object), ['AlreadySubscribed'], api_base)
+            if (!api_base.api) {
+                reject(new Error('API connection not available for ticks'));
+                return;
+            }
+            this.observe();
+            doUntilDone(() => api_base.api.send(request_object), [], api_base)
                 .then(r => {
-                    if (style === 'ticks') {
-                        const ticks = historyToTicks(r.history);
-
-                        this.updateTicksAndCallListeners(symbol, ticks);
-                        resolve(ticks);
-                    } else {
-                        const candles = parseCandles(r.candles);
-
-                        this.updateCandlesAndCallListeners([symbol, Number(granularity)], candles);
-
-                        resolve(candles);
-                    }
+                    applyTicks(r, resolve);
                 })
                 .catch(error => {
-                    // Handle AlreadySubscribed errors gracefully - they're not fatal
-                    if (error?.error?.code === 'AlreadySubscribed') {
-                        // For AlreadySubscribed errors, we can still resolve with existing data
-                        if (style === 'ticks' && this.ticks.has(symbol)) {
-                            resolve(this.ticks.get(symbol));
-                        } else if (style === 'candles' && this.candles.hasIn([symbol, Number(granularity)])) {
-                            resolve(this.candles.getIn([symbol, Number(granularity)]));
-                        } else {
-                            resolve([]);
-                        }
+                    if (error?.error?.code === 'AlreadySubscribed' || error?.code === 'AlreadySubscribed') {
+                        fetchHistoryOnly()
+                            .then(resolve)
+                            .catch(reject);
                         return;
                     }
-                    // Don't clear auth data for InvalidSymbol errors as it causes unwanted logouts
-                    // InvalidSymbol errors can occur for various reasons and don't necessarily mean the user is unauthorized
                     reject(error);
                 });
         });
