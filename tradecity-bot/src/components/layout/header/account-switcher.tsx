@@ -426,7 +426,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                                     }}
                                 >
                                     <span className='acc-mark-wrap'>
-                                        <UsFlag />
+                                        {/* <UsFlag /> */}
                                         <TriggerMark isVirtual={account.isVirtual} />
                                     </span>
                                     <div className='acc-dropdown__copy'>
@@ -510,7 +510,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                 >
                     <span className='acc-info__trigger'>
                         <span className='acc-mark-wrap'>
-                            <UsFlag />
+                            {/* <UsFlag /> */}
                             <TriggerMark isVirtual={isVirtual} />
                         </span>
                         <span className='acc-info__balance acc-info__balance--trigger' data-testid='dt_acc_balance'>
