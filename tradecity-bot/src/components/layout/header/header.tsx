@@ -136,7 +136,12 @@ const AppHeader = observer(() => {
 
     const renderAccountSection = useCallback(
         (position: 'left' | 'right' = 'right') => {
-            if (position === 'right' && isDesktop && (isLocalHost || activeLoginid)) {
+            // Logged-in sessions need the switcher on mobile too — otherwise the
+            // right slot never leaves the spinner. Localhost preview stays desktop-only.
+            if (
+                position === 'right' &&
+                ((activeLoginid && activeAccount) || (isDesktop && isLocalHost))
+            ) {
                 return (
                     <div className='auth-actions'>
                         <div className='account-info'>

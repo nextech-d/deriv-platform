@@ -143,6 +143,9 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
                         client.setCurrency(balance.currency);
                     }
                 }
+                if (balance?.accounts) {
+                    client.setAllAccountsBalance(balance);
+                }
             }
         },
         // Fixed memory leak: removed handleLogout from deps as it's not used in function body

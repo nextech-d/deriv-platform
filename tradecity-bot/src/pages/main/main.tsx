@@ -683,7 +683,7 @@ const AppWrapper = observer(() => {
                     />
                 );
             })()}
-            <EntryScanner />
+            <EntryScanner onSeededToBuilder={() => handleTabChange(BOT_BUILDER)} />
         </React.Fragment>
     );
 });

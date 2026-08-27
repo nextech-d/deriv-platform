@@ -29,6 +29,7 @@ import {
     writeSavedParams,
     writeSavedScan,
 } from '@/utils/entry-scanner';
+import { loadAnalysisBiasInBuilder } from '@/utils/load-analysis-bias';
 import { ultimateStake } from '@/utils/ultimate-bot';
 import './entry-scanner.scss';
 
@@ -74,8 +75,12 @@ async function fetchPrices(symbol: string, count: number): Promise<Array<string 
     return Array.isArray(history?.prices) ? history.prices : [];
 }
 
-const EntryScanner = observer(() => {
-    const { client } = useStore();
+type TEntryScannerProps = {
+    onSeededToBuilder: () => void;
+};
+
+const EntryScanner = observer(({ onSeededToBuilder }: TEntryScannerProps) => {
+    const { app, client } = useStore();
     const currency = client?.currency || 'USD';
     const loggedIn = Boolean(client?.is_logged_in);
     const { buy, settlements, busy, notice } = useBulkTrading(currency);
@@ -235,15 +240,28 @@ const EntryScanner = observer(() => {
         setScanning(false);
     };
 
-    const loadScan = () => {
+    const loadScan = async () => {
         const stored = result ?? readSavedScan();
         if (!stored) {
             setStatus('No saved scan yet. Run Deep Scan first.');
             return;
         }
         applyResult(stored);
-        setParams(readSavedParams());
-        setParamsOpen(true);
+        onSeededToBuilder();
+        closeAll();
+        try {
+            await app.ensureBlocklyWorkspace();
+            await loadAnalysisBiasInBuilder({
+                symbol: stored.symbol,
+                mode: 'barrier',
+                side: stored.contractType === 'DIGITOVER' ? 'CALL' : 'PUT',
+                barrier: stored.barrier,
+                digitTarget: stored.lastDigit ?? stored.barrier,
+                label: stored.tradeLabel || stored.label,
+            });
+        } catch (error) {
+            console.warn('[EntryScanner] Failed to seed Bot Builder', error);
+        }
     };
 
     const updateParam = <K extends keyof EntryScanParams>(key: K, value: EntryScanParams[K]) => {
@@ -552,7 +570,7 @@ const EntryScanner = observer(() => {
                                     type='button'
                                     className='entry-scanner__btn entry-scanner__btn--ghost'
                                     disabled={scanning || (!saved && !result)}
-                                    onClick={loadScan}
+                                    onClick={() => void loadScan()}
                                 >
                                     Load Scan
                                 </button>
