@@ -270,10 +270,11 @@ export const loadBlocks = (xml, drop_event, event_group, workspace) => {
 
 export const loadWorkspace = async (xml, event_group, workspace) => {
     window.Blockly.Events.setGroup(event_group);
-    await workspace.asyncClear();
-    window.Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, workspace);
+    workspace.setResizesEnabled?.(true);
+    workspace.clear();
+    window.Blockly.Xml.domToWorkspace(xml, workspace);
     try {
-        workspace.cleanUp();
+        workspace.cleanUp(0, DBotStore.instance?.is_mobile ? 60 : 56);
     } catch (error) {
         console.warn('[Blockly] cleanUp after load failed', error);
     }

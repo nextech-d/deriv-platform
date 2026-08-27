@@ -9,7 +9,7 @@ import {
     save_types,
     saveWorkspaceToRecent,
 } from '@/external/bot-skeleton';
-import { inject_workspace_options, revealLoadedWorkspace, updateXmlValues } from '@/external/bot-skeleton/scratch/utils';
+import { inject_workspace_options, loadWorkspace, revealLoadedWorkspace, updateXmlValues } from '@/external/bot-skeleton/scratch/utils';
 import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
 import { TStores } from '@deriv/stores/types';
 import { localize } from '@deriv-com/translations';
@@ -486,12 +486,9 @@ export default class LoadModalStore {
             window.Blockly.utils?.idGenerator?.genUid?.() ||
             `${Date.now()}`;
 
-        window.Blockly.Xml.clearWorkspaceAndLoadFromXml(convertedDom, derivWorkspace);
-        try {
-            derivWorkspace.cleanUp();
-        } catch (error) {
-            console.warn('[LoadModal] cleanUp after import failed', error);
-        }
+        const event_group = `dbot-load${Date.now()}`;
+        await loadWorkspace(convertedDom, event_group, derivWorkspace);
+        window.Blockly.Events.setGroup(false);
         derivWorkspace.clearUndo();
         derivWorkspace.current_strategy_id = strategy_id;
 
