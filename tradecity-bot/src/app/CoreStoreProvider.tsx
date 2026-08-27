@@ -135,17 +135,7 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
             }
 
             if (msg_type === 'balance' && data && !error) {
-                const balance = data.balance;
-                if (balance && typeof balance.balance === 'number') {
-                    client.setBalance(balance.balance.toString());
-
-                    if (balance.currency) {
-                        client.setCurrency(balance.currency);
-                    }
-                }
-                if (balance?.accounts) {
-                    client.setAllAccountsBalance(balance);
-                }
+                client?.applyBalanceUpdate(data.balance);
             }
         },
         // Fixed memory leak: removed handleLogout from deps as it's not used in function body
@@ -154,20 +144,17 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
     );
 
     useEffect(() => {
-        if (!isAuthorizing && client) {
-            const subscription = api_base?.api?.onMessage().subscribe(handleMessages);
-            // Fixed unsubscribe type - only store if subscription exists
-            if (subscription) {
-                msg_listener.current = { unsubscribe: subscription.unsubscribe };
-            }
+        if (!client) return;
+        const subscription = api_base?.api?.onMessage()?.subscribe(handleMessages);
+        if (subscription) {
+            msg_listener.current = { unsubscribe: subscription.unsubscribe };
         }
 
         return () => {
-            if (msg_listener.current) {
-                msg_listener.current.unsubscribe?.();
-            }
+            msg_listener.current?.unsubscribe?.();
+            msg_listener.current = null;
         };
-    }, [connectionStatus, handleMessages, isAuthorizing, isAuthorized, client]);
+    }, [connectionStatus, handleMessages, isAuthorized, client]);
 
     useEffect(() => {
         if (!isAuthorizing && isAuthorized && !accountInitialization.current && client) {

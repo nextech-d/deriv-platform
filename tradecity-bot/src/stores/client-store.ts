@@ -8,6 +8,7 @@ import { removeCookies } from '@/components/shared/utils/storage/storage';
 import { observer as globalObserver, observer } from '@/external/bot-skeleton';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { ErrorLogger } from '@/utils/error-logger';
+import { mergeLiveBalance, type LiveBalancePayload } from '@/utils/live-balance';
 import type { Balance } from '@deriv/api-types';
 import {
     authData$,
@@ -113,6 +114,7 @@ export default class ClientStore {
             setAccountList: action,
 
             setAllAccountsBalance: action,
+            applyBalanceUpdate: action,
             setIsAccountRegenerating: action,
             setBalance: action,
             setCurrency: action,
@@ -227,6 +229,21 @@ export default class ClientStore {
 
     setAllAccountsBalance = (all_accounts_balance: Balance | undefined) => {
         this.all_accounts_balance = all_accounts_balance ?? null;
+    };
+
+    applyBalanceUpdate = (payload?: LiveBalancePayload | Balance | null) => {
+        const next = mergeLiveBalance(
+            {
+                balance: this.balance,
+                currency: this.currency,
+                loginid: this.loginid,
+                all_accounts_balance: this.all_accounts_balance as LiveBalancePayload | null,
+            },
+            payload as LiveBalancePayload | null | undefined
+        );
+        this.balance = next.balance;
+        this.currency = next.currency;
+        this.all_accounts_balance = next.all_accounts_balance as Balance | null;
     };
     setIsAccountRegenerating = (is_loading: boolean) => {
         this.is_account_regenerating = is_loading;

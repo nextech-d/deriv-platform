@@ -5,6 +5,7 @@ import { isVirtualAccount } from '@/utils/account-helpers';
 import { CurrencyIcon } from '@/components/currency/currency-icon';
 import { addComma, getDecimalPlaces } from '@/components/shared';
 import { useApiBase } from '@/hooks/useApiBase';
+import { resolveAccountBalance } from '@/utils/live-balance';
 import { Balance } from '@deriv/api-types';
 
 /** A custom hook that returns the account object for the current active account. */
@@ -30,13 +31,12 @@ const useActiveAccount = ({
         // Use centralized utility to determine if demo account
         const isVirtual = isVirtualAccount(activeAccount.loginid);
 
+        const amount = resolveAccountBalance(currentBalanceData?.balance, directBalance);
+        const decimals = getDecimalPlaces(currentBalanceData?.currency ?? activeAccount.currency);
+
         return {
             ...activeAccount,
-            balance: currentBalanceData?.balance
-                ? addComma(currentBalanceData.balance.toFixed(getDecimalPlaces(currentBalanceData.currency)))
-                : directBalance
-                  ? addComma(parseFloat(directBalance).toFixed(getDecimalPlaces(activeAccount.currency)))
-                  : addComma(parseFloat('0').toFixed(getDecimalPlaces(activeAccount.currency))),
+            balance: addComma(amount.toFixed(decimals)),
             currencyLabel: isVirtual ? 'Demo' : activeAccount?.currency,
             icon: <CurrencyIcon currency={activeAccount?.currency?.toLowerCase()} isVirtual={isVirtual} />,
             isVirtual: isVirtual,

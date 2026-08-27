@@ -60,6 +60,7 @@ class APIBase {
     is_stopping = false;
     active_symbols: any[] = [];
     current_auth_subscriptions: SubscriptionPromise[] = [];
+    private balance_listener: { unsubscribe: () => void } | null = null;
     is_authorized = false;
     active_symbols_promise: Promise<any[] | undefined> | null = null;
     common_store: CommonStore | undefined;
@@ -71,7 +72,27 @@ class APIBase {
     private readonly ENRICHMENT_TIMEOUT_MS = 10000; // 10 seconds
     private readonly MAX_RECONNECTION_ATTEMPTS = 5; // Maximum number of reconnection attempts before session reset
 
+    private applyClientBalance = (payload: unknown) => {
+        const store = globalObserver.getState('client.store') as
+            | { applyBalanceUpdate?: (next: unknown) => void }
+            | null
+            | undefined;
+        store?.applyBalanceUpdate?.(payload);
+    };
+
+    private observeClientBalance = () => {
+        if (this.balance_listener) return;
+        if (!this.api?.onMessage) return;
+        this.balance_listener = this.api.onMessage().subscribe((res: unknown) => {
+            const data = (res as { data?: { msg_type?: string; error?: unknown; balance?: unknown } })?.data;
+            if (data?.msg_type !== 'balance' || data.error || !data.balance) return;
+            this.applyClientBalance(data.balance);
+        });
+    };
+
     unsubscribeAllSubscriptions = () => {
+        this.balance_listener?.unsubscribe();
+        this.balance_listener = null;
         this.current_auth_subscriptions?.forEach(subscription_promise => {
             subscription_promise.then(({ subscription }) => {
                 if (subscription?.id) {
@@ -257,6 +278,7 @@ class APIBase {
 
         this.account_id = getAccountId() || '';
         setIsAuthorizing(true);
+        this.observeClientBalance();
 
         try {
             const { balance, error } = await this.api.balance();
@@ -336,6 +358,10 @@ class APIBase {
                 },
             });
 
+            if (balance) {
+                this.applyClientBalance(balance);
+            }
+
             // Update the WebSocket login ID in the client store
             const currentClientStore = globalObserver.getState('client.store');
             if (currentClientStore && balance?.loginid) {
@@ -389,6 +415,7 @@ class APIBase {
 
         const streamsToSubscribe = ['balance', 'transaction', 'proposal_open_contract'];
 
+        this.observeClientBalance();
         await Promise.all(streamsToSubscribe.map(subscribeToStream));
     }
 
