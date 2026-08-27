@@ -174,8 +174,6 @@ export const load = async ({
         const xmlDoc = new DOMParser().parseFromString(block_string, 'application/xml');
         if (xmlDoc.getElementsByTagName('parsererror').length) {
             return showInvalidStrategyError();
-        } else {
-            show_snackbar && botNotification(notification_message().BOT_IMPORT);
         }
     } catch (e) {
         return showInvalidStrategyError();
@@ -241,6 +239,8 @@ export const load = async ({
         if (workspace === window.Blockly.derivWorkspace) {
             globalObserver.emit('ui.log.success', { log_type: LogTypes.LOAD_BLOCK });
             api_base.toggleRunButton(false);
+            revealLoadedWorkspace(workspace);
+            show_snackbar && botNotification(notification_message().BOT_IMPORT);
         }
     } catch (e) {
         console.error(e); // eslint-disable-line
@@ -260,7 +260,11 @@ export const loadBlocks = (xml, drop_event, event_group, workspace) => {
     if (drop_event && Object.keys(drop_event).length !== 0) {
         cleanUpOnLoad(added_blocks, drop_event, workspace);
     } else {
-        workspace.cleanUp();
+        try {
+            workspace.cleanUp();
+        } catch (error) {
+            console.warn('[Blockly] cleanUp after loadBlocks failed', error);
+        }
     }
 };
 
@@ -268,7 +272,27 @@ export const loadWorkspace = async (xml, event_group, workspace) => {
     window.Blockly.Events.setGroup(event_group);
     await workspace.asyncClear();
     window.Blockly.Xml.clearWorkspaceAndLoadFromXml(xml, workspace);
-    workspace.cleanUp();
+    try {
+        workspace.cleanUp();
+    } catch (error) {
+        console.warn('[Blockly] cleanUp after load failed', error);
+    }
+};
+
+export const revealLoadedWorkspace = (workspace = window.Blockly?.derivWorkspace) => {
+    if (!workspace) return;
+    const paint = () => {
+        window.Blockly?.svgResize?.(workspace);
+        try {
+            workspace.cleanUp?.();
+        } catch (error) {
+            console.warn('[Blockly] cleanUp on reveal failed', error);
+        }
+        DBotStore.instance?.toolbox?.fitBlocksNow?.();
+        window.dispatchEvent(new Event('resize'));
+    };
+    paint();
+    [50, 200, 450].forEach(ms => window.setTimeout(paint, ms));
 };
 
 const loadBlocksFromHeader = (xml_string, block) => {

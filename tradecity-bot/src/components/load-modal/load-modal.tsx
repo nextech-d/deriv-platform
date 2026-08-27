@@ -74,8 +74,8 @@ const LoadModal: React.FC = observer(() => {
             height='80vh'
             is_open={is_load_modal_open}
             toggleModal={() => {
+                setPreviewOnPopup(false);
                 toggleLoadModal();
-                // Removed close event tracking as per V2 requirements
             }}
             onEntered={onEntered}
             elements_to_ignore={[document.querySelector('.injectionDiv')]}

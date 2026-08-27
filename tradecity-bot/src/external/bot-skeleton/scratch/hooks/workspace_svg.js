@@ -356,12 +356,8 @@ window.Blockly.WorkspaceSvg.getTopLevelWorkspaceMetrics_ = function () {
  * Dispose of all blocks in workspace, with an optimization to prevent resizes.
  */
 window.Blockly.WorkspaceSvg.prototype.asyncClear = function () {
-    const { setLoading } = DBotStore.instance;
-    setLoading(true);
-
     return new Promise(resolve => {
         this.clear();
-        setLoading(false);
         resolve();
     });
 };

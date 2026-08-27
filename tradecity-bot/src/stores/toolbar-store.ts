@@ -85,6 +85,7 @@ export default class ToolbarStore implements IToolbarStore {
             strategy_id: null,
             from: null,
             showIncompatibleStrategyDialog: null,
+            show_snackbar: false,
         });
         workspace.strategy_to_load = workspace.cached_xml.main;
         this.setResetButtonState(false);

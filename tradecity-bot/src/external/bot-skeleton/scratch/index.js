@@ -1,5 +1,6 @@
 export {
     load,
+    revealLoadedWorkspace,
     runGroupedEvents,
     runIrreversibleEvents,
     save,

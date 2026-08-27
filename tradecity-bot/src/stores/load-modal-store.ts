@@ -9,7 +9,7 @@ import {
     save_types,
     saveWorkspaceToRecent,
 } from '@/external/bot-skeleton';
-import { inject_workspace_options, updateXmlValues } from '@/external/bot-skeleton/scratch/utils';
+import { inject_workspace_options, revealLoadedWorkspace, updateXmlValues } from '@/external/bot-skeleton/scratch/utils';
 import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
 import { TStores } from '@deriv/stores/types';
 import { localize } from '@deriv-com/translations';
@@ -478,7 +478,7 @@ export default class LoadModalStore {
         if (!convertedDom && this.selected_strategy?.xml) {
             convertedDom = window.Blockly.utils.xml.textToDom(this.selected_strategy.xml);
         }
-        if (!convertedDom || !derivWorkspace) return;
+        if (!convertedDom || !derivWorkspace) return false;
 
         const strategy_id =
             xmlValues?.strategy_id ||
@@ -487,20 +487,18 @@ export default class LoadModalStore {
             `${Date.now()}`;
 
         window.Blockly.Xml.clearWorkspaceAndLoadFromXml(convertedDom, derivWorkspace);
-        derivWorkspace.cleanUp();
+        try {
+            derivWorkspace.cleanUp();
+        } catch (error) {
+            console.warn('[LoadModal] cleanUp after import failed', error);
+        }
         derivWorkspace.clearUndo();
         derivWorkspace.current_strategy_id = strategy_id;
 
         api_base.toggleRunButton(false);
         this.root_store.blockly_store.checkForSavedBots();
-
-        this.root_store.toolbox.is_workspace_scroll_adjusted = false;
-        window.setTimeout(() => {
-            this.root_store.toolbox.adjustWorkspace();
-        }, 0);
-
-        /* [AI] - Analytics event tracking removed - see migrate-docs/MONITORING_PACKAGES.md for re-implementation guide */
-        /* [/AI] */
+        revealLoadedWorkspace(derivWorkspace);
+        return true;
     };
 
     updateXmlValuesOnStrategySelection = () => {

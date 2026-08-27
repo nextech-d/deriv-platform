@@ -28,12 +28,14 @@ const LocalFooter = observer(() => {
             <Button
                 text={localize('Open')}
                 onClick={() => {
-                    loadStrategyOnBotBuilder();
-                    saveStrategyToLocalStorage();
-                    setLoadedLocalFile(null);
-                    toggleLoadModal();
-                    setPreviewOnPopup(false);
-                    setOpenSettings(NOTIFICATION_TYPE.BOT_IMPORT);
+                    void (async () => {
+                        const loaded = await loadStrategyOnBotBuilder();
+                        saveStrategyToLocalStorage();
+                        setLoadedLocalFile(null);
+                        toggleLoadModal();
+                        setPreviewOnPopup(false);
+                        if (loaded) setOpenSettings(NOTIFICATION_TYPE.BOT_IMPORT);
+                    })();
                 }}
                 is_loading={is_open_button_loading}
                 has_effect
