@@ -9,7 +9,7 @@ import './workspace.scss';
 
 const WorkspaceWrapper = observer(() => {
     const { blockly_store } = useStore();
-    const { onMount, onUnmount, is_loading, workspace_ready } = blockly_store;
+    const { onMount, onUnmount, workspace_ready } = blockly_store;
     const has_workspace = workspace_ready || Boolean(window.Blockly?.derivWorkspace);
 
     React.useEffect(() => {
@@ -19,7 +19,7 @@ const WorkspaceWrapper = observer(() => {
         };
     }, []);
 
-    if (is_loading || !has_workspace) return null;
+    if (!has_workspace) return null;
 
     return (
         <React.Fragment>

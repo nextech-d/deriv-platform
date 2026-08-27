@@ -1,4 +1,5 @@
 import { action, makeObservable, observable, reaction } from 'mobx';
+import { getVisibleBuilderHole } from '@/utils/builder-chrome';
 import { browserOptimizer } from '@/utils/browser-performance-optimizer';
 import { clickRateLimiter } from '@/utils/click-rate-limiter';
 import GTM from '@/utils/gtm';
@@ -148,29 +149,7 @@ export default class ToolboxStore {
     }
 
     private getVisibleWorkspaceHole(): DOMRect | null {
-        const injection =
-            (document.getElementById('scratch_div') as HTMLElement | null) ||
-            (document.querySelector('.bot-builder .injectionDiv') as HTMLElement | null);
-        if (!injection) return null;
-
-        const inj = injection.getBoundingClientRect();
-        const toolbox = document.getElementById('gtm-toolbox')?.getBoundingClientRect();
-        const toolbar = document.querySelector('.bot-builder .toolbar')?.getBoundingClientRect();
-        const rail = document.querySelector('.bot-builder .toolbar__wrapper')?.getBoundingClientRect();
-        const panel = document.querySelector('.run-panel__container.dc-drawer--open')?.getBoundingClientRect();
-        const footer = document.querySelector('.app-footer')?.getBoundingClientRect();
-        const rail_is_vertical = Boolean(rail && rail.height > rail.width * 2);
-        const panel_is_right_drawer = Boolean(panel && panel.left > inj.left + 80 && panel.height > 120);
-
-        const left =
-            Math.max(inj.left, toolbox?.right ?? inj.left, rail_is_vertical && rail ? rail.right : inj.left) + 8;
-        const top = Math.max(inj.top, toolbar?.bottom ?? inj.top) + 8;
-        const right = Math.min(inj.right, panel_is_right_drawer && panel ? panel.left : inj.right) - 8;
-        const bottom = Math.min(inj.bottom, footer?.top ?? inj.bottom) - 8;
-        const width = right - left;
-        const height = bottom - top;
-        if (width < 60 || height < 60) return null;
-        return new DOMRect(left, top, width, height);
+        return getVisibleBuilderHole();
     }
 
     private getTopBlocksScreenRect(workspace: { getTopBlocks?: (ordered: boolean) => Array<{ getSvgRoot?: () => SVGElement }> }): DOMRect | null {
@@ -238,17 +217,12 @@ export default class ToolboxStore {
 
         window.Blockly.svgResize?.(workspace);
 
-        if (!workspace.scale || workspace.scale < 0.4) {
-            workspace.setScale(0.7);
-            window.Blockly.svgResize?.(workspace);
-        }
-
         const hole = this.getVisibleWorkspaceHole();
         const box = this.getTopBlocksWorkspaceBox(workspace);
         if (!hole || !box) return false;
 
         const needed = Math.min(hole.width / Math.max(box.width, 1), hole.height / Math.max(box.height, 1)) * 0.9;
-        const min_scale = hole.width < 480 ? 0.22 : 0.55;
+        const min_scale = hole.width < 720 ? 0.22 : 0.4;
         const next_scale = Math.max(min_scale, Math.min(0.95, needed));
         if (Math.abs(next_scale - workspace.scale) >= 0.02) {
             workspace.setScale(next_scale);

@@ -1,3 +1,4 @@
+import { getVisibleBuilderHole, getWorkspaceOriginPad } from '@/utils/builder-chrome';
 import { config } from '../../constants/config';
 import DBotStore from '../dbot-store';
 
@@ -153,10 +154,14 @@ window.Blockly.WorkspaceSvg.prototype.cleanUp = function (x = 0, y = 0, blocks_t
                 config().mainBlocks.findIndex(main_block_type => main_block_type === block.type);
             return blockIndex(a) - blockIndex(b);
         });
-    const column_count = DBotStore.instance?.is_mobile || window.innerWidth < 768 ? 1 : 2;
+    const hole = getVisibleBuilderHole();
+    const pad = getWorkspaceOriginPad(this.scale);
+    const origin_x = Math.max(x, pad.x);
+    const origin_y = Math.max(y, pad.y);
+    const column_count = hole && hole.width >= 1200 ? 2 : 1;
     const blocks_per_column = Math.ceil(root_blocks.length / column_count);
 
-    let original_cursor_y = y;
+    let original_cursor_y = origin_y;
 
     const MINIMUM_BLOCK_X_WIDTH = 650;
 
@@ -166,18 +171,18 @@ window.Blockly.WorkspaceSvg.prototype.cleanUp = function (x = 0, y = 0, blocks_t
         root_blocks.forEach((block, index) => {
             block?.svgGroup_?.setAttribute('data-testid', block?.type);
             if (index === (column_index + 1) * blocks_per_column) {
-                original_cursor_y = y;
+                original_cursor_y = origin_y;
                 column_index++;
             }
 
             const xy = block.getRelativeToSurfaceXY();
-
-            const cursor_x = is_import ? x : -xy.x;
             const cursor_y = original_cursor_y - (is_import ? 0 : xy.y) + (DBotStore.instance.is_mobile ? 50 : 0);
 
             if (column_index === 0) {
+                const cursor_x = is_import ? origin_x : origin_x - xy.x;
                 block.moveBy(cursor_x, cursor_y);
             } else {
+                const cursor_x = is_import ? origin_x : -xy.x;
                 const start = (column_index - 1) * blocks_per_column;
                 const initialValue = {
                     getHeightWidth: () => ({

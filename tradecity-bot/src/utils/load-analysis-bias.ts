@@ -145,8 +145,7 @@ const modifyFieldDropdownValues = (strategy_dom: HTMLElement, name: string, valu
 
 function fitLoadedStrategy(workspace: { cleanUp?: (x?: number, y?: number) => void }) {
     window.Blockly?.svgResize?.(workspace);
-    const is_mobile = Boolean(DBotStore.instance?.is_mobile) || window.innerWidth < 768;
-    workspace.cleanUp?.(is_mobile ? 0 : 0, is_mobile ? 8 : 56);
+    workspace.cleanUp?.();
     const toolbox = DBotStore.instance?.toolbox as
         | { is_workspace_scroll_adjusted?: boolean; adjustWorkspace?: () => void; fitBlocksNow?: () => void }
         | undefined;

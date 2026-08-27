@@ -41,12 +41,13 @@ const BotBuilder = observer(() => {
         if (active_tab !== BOT_BUILDER || is_preview_on_popup || is_loading) return;
         void (async () => {
             await app.ensureBlocklyWorkspace();
-            toolbox.is_workspace_scroll_adjusted = false;
-            toolbox.adjustWorkspace();
+            toolbox.fitBlocksNow();
+            window.setTimeout(() => toolbox.fitBlocksNow(), 80);
             window.setTimeout(() => {
                 window.dispatchEvent(new Event('resize'));
                 window.Blockly?.svgResize?.(window.Blockly.derivWorkspace);
-            }, 50);
+                toolbox.fitBlocksNow();
+            }, 400);
         })();
     }, [active_tab, app, is_loading, is_preview_on_popup, toolbox]);
 
