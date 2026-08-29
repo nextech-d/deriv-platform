@@ -1,5 +1,5 @@
 import { action, makeObservable, observable } from 'mobx';
-import { config, load, runGroupedEvents } from '@/external/bot-skeleton';
+import { config, mountStrategyOnWorkspace } from '@/external/bot-skeleton';
 import RootStore from './root-store';
 
 interface IToolbarStore {
@@ -64,30 +64,22 @@ export default class ToolbarStore implements IToolbarStore {
 
     onResetOkButtonClick = (): void => {
         this.setResetButtonState(true);
-        runGroupedEvents(
-            false,
-            () => {
-                this.resetDefaultStrategy();
-            },
-            'reset'
-        );
+        void this.resetDefaultStrategy();
         this.is_dialog_open = false;
     };
 
     resetDefaultStrategy = async () => {
         const workspace = window.Blockly.derivWorkspace;
-        workspace.current_strategy_id = window?.Blockly?.utils?.idGenerator?.genUid();
-        await load({
-            block_string: workspace.cached_xml.main,
-            file_name: config().default_file_name,
-            workspace,
-            drop_event: null,
-            strategy_id: null,
-            from: null,
-            showIncompatibleStrategyDialog: null,
-            show_snackbar: false,
-        });
-        workspace.strategy_to_load = workspace.cached_xml.main;
+        const main_xml = workspace?.cached_xml?.main;
+        if (!workspace || !main_xml) {
+            this.setResetButtonState(false);
+            return;
+        }
+
+        const xml = window.Blockly.utils.xml.textToDom(main_xml);
+        const strategy_id = window.Blockly.utils.idGenerator.genUid();
+        await mountStrategyOnWorkspace(xml, workspace, { strategy_id });
+        workspace.strategy_to_load = main_xml;
         this.setResetButtonState(false);
     };
 

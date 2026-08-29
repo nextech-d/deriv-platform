@@ -2,14 +2,13 @@ import React from 'react';
 import { action, computed, makeObservable, observable, reaction } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    api_base,
     getSavedWorkspaces,
     load,
     removeExistingWorkspace,
     save_types,
     saveWorkspaceToRecent,
 } from '@/external/bot-skeleton';
-import { inject_workspace_options, loadWorkspace, revealLoadedWorkspace, updateXmlValues } from '@/external/bot-skeleton/scratch/utils';
+import { inject_workspace_options, mountStrategyOnWorkspace, updateXmlValues } from '@/external/bot-skeleton/scratch/utils';
 import { isDbotRTL } from '@/external/bot-skeleton/utils/workspace';
 import { TStores } from '@deriv/stores/types';
 import { localize } from '@deriv-com/translations';
@@ -19,18 +18,6 @@ import { TStrategy } from 'Types';
 import { tabs_title } from '../constants/load-modal';
 import { waitForDomElement } from '../utils/dom-observer';
 import RootStore from './root-store';
-
-const waitForBuilderCanvas = async (max_ms = 4000): Promise<boolean> => {
-    const deadline = Date.now() + max_ms;
-    while (Date.now() < deadline) {
-        const rect = document.getElementById('scratch_div')?.getBoundingClientRect();
-        if (rect && rect.width >= 80 && rect.height >= 80) return true;
-        await new Promise<void>(resolve => {
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-        });
-    }
-    return false;
-};
 
 export default class LoadModalStore {
     root_store: RootStore;
@@ -298,11 +285,15 @@ export default class LoadModalStore {
 
     resetBotBuilderStrategy = () => {
         const workspace = window.Blockly.derivWorkspace;
-        if (workspace) {
-            window.Blockly.derivWorkspace.asyncClear();
-            window.Blockly.Xml.domToWorkspace(window.Blockly.utils.xml.textToDom(workspace.cached_xml.main), workspace);
-            window.Blockly.derivWorkspace.strategy_to_load = workspace.cached_xml.main;
-        }
+        const main_xml = workspace?.cached_xml?.main;
+        if (!workspace || !main_xml) return;
+
+        const xml = window.Blockly.utils.xml.textToDom(main_xml);
+        void mountStrategyOnWorkspace(xml, workspace, {
+            strategy_id: window.Blockly.utils.idGenerator.genUid(),
+        }).then(() => {
+            workspace.strategy_to_load = main_xml;
+        });
     };
 
     loadStrategyToBuilder = async (strategy: TStrategy, is_show_notification: boolean = true) => {
@@ -498,21 +489,10 @@ export default class LoadModalStore {
             window.Blockly.utils?.idGenerator?.genUid?.() ||
             `${Date.now()}`;
 
-        if (this.is_load_modal_open) {
-            this.toggleLoadModal();
-        }
-        this.root_store.dashboard.setPreviewOnPopup(false);
-        await waitForBuilderCanvas();
+        const mounted = await mountStrategyOnWorkspace(convertedDom, derivWorkspace, { strategy_id });
+        if (!mounted) return false;
 
-        const event_group = `dbot-load${Date.now()}`;
-        await loadWorkspace(convertedDom, event_group, derivWorkspace);
-        window.Blockly.Events.setGroup(false);
-        derivWorkspace.clearUndo();
-        derivWorkspace.current_strategy_id = strategy_id;
-
-        api_base.toggleRunButton(false);
         this.root_store.blockly_store.checkForSavedBots();
-        revealLoadedWorkspace(derivWorkspace);
         return true;
     };
 

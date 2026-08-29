@@ -1,5 +1,6 @@
 export {
     load,
+    mountStrategyOnWorkspace,
     revealLoadedWorkspace,
     runGroupedEvents,
     runIrreversibleEvents,

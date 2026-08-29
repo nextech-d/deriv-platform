@@ -216,15 +216,14 @@ export const load = async ({
         if (is_collection) {
             loadBlocks(xml, drop_event, event_group, workspace);
         } else {
-            await loadWorkspace(xml, event_group, workspace);
-
             const is_main_workspace = workspace === window.Blockly.derivWorkspace;
+            const resolved_strategy_id = strategy_id || window.Blockly.utils.idGenerator.genUid();
+            await mountStrategyOnWorkspace(xml, workspace, { strategy_id: resolved_strategy_id });
+
             if (is_main_workspace) {
                 const { save_modal } = DBotStore.instance;
 
                 save_modal.updateBotName(file_name);
-                workspace.clearUndo();
-                workspace.current_strategy_id = strategy_id || window.Blockly.utils.idGenerator.genUid();
                 await saveWorkspaceToRecent(xml, from);
             }
         }
@@ -238,8 +237,6 @@ export const load = async ({
         });
         if (workspace === window.Blockly.derivWorkspace) {
             globalObserver.emit('ui.log.success', { log_type: LogTypes.LOAD_BLOCK });
-            api_base.toggleRunButton(false);
-            revealLoadedWorkspace(workspace);
             show_snackbar && botNotification(notification_message().BOT_IMPORT);
         }
     } catch (e) {
@@ -278,6 +275,26 @@ export const loadWorkspace = async (xml, event_group, workspace) => {
     } catch (error) {
         console.warn('[Blockly] cleanUp after load failed', error);
     }
+};
+
+/** Shared runtime mount path for Import Open and toolbar Reset (matches post-refresh inject). */
+export const mountStrategyOnWorkspace = async (xml, workspace, { strategy_id } = {}) => {
+    if (!xml || !workspace) return false;
+
+    const event_group = `dbot-load${Date.now()}`;
+    await loadWorkspace(xml, event_group, workspace);
+    workspace.clearUndo();
+    if (strategy_id) {
+        workspace.current_strategy_id = strategy_id;
+    }
+
+    const is_main_workspace = workspace === window.Blockly.derivWorkspace;
+    if (is_main_workspace) {
+        api_base.toggleRunButton(false);
+        revealLoadedWorkspace(workspace);
+    }
+
+    return true;
 };
 
 export const revealLoadedWorkspace = (workspace = window.Blockly?.derivWorkspace) => {
