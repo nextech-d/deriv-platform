@@ -8,7 +8,7 @@ import { removeCookies } from '@/components/shared/utils/storage/storage';
 import { observer as globalObserver, observer } from '@/external/bot-skeleton';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { ErrorLogger } from '@/utils/error-logger';
-import { mergeLiveBalance, normalizeBalancePayload, type LiveBalancePayload } from '@/utils/live-balance';
+import { mergeLiveBalance, normalizeBalancePayload, toBalanceNumber, type LiveBalancePayload } from '@/utils/live-balance';
 import type { Balance } from '@deriv/api-types';
 import {
     authData$,
@@ -196,7 +196,26 @@ export default class ClientStore {
     };
 
     setLoginId = (loginid: string) => {
+        if (!loginid) return;
+        const changed = this.loginid !== loginid;
         this.loginid = loginid;
+
+        const row = this.all_accounts_balance?.accounts?.[loginid];
+        const from_map = toBalanceNumber(row?.balance);
+        const from_accounts = toBalanceNumber(this.accounts[loginid]?.balance);
+
+        if (from_map !== undefined) {
+            this.balance = String(from_map);
+            if (row?.currency) this.currency = row.currency;
+        } else if (from_accounts !== undefined) {
+            this.balance = String(from_accounts);
+            const currency = this.accounts[loginid]?.currency;
+            if (currency) this.currency = currency;
+        }
+
+        if (changed) {
+            this.balance_version += 1;
+        }
     };
 
     setAccountList = (account_list?: TAuthData['account_list']) => {

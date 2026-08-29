@@ -9,8 +9,9 @@ import { useApiBase } from '@/hooks/useApiBase';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
 import { TSocketResponseData } from '@/types/api-types';
-import { socketMessageToBalancePayload, unwrapSocketPayload } from '@/utils/live-balance';
+import { installActiveLoginidSync } from '@/utils/active-loginid-sync';
 import { clearInvalidTokenParams } from '@/utils/url-utils';
+import { unwrapSocketPayload } from '@/utils/live-balance';
 import { useTranslations } from '@deriv-com/translations';
 
 type TClientInformation = {
@@ -52,6 +53,11 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
             client?.setIsLoggedIn(false);
         }
     }, [accountList, activeAccount, activeLoginid, client, isAuthorized]);
+
+    useEffect(() => {
+        if (!client) return;
+        installActiveLoginidSync(loginid => client.setLoginId(loginid));
+    }, [client]);
 
     useEffect(() => {
         initFormErrorMessages(FORM_ERROR_MESSAGES());
@@ -129,12 +135,6 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
             ) {
                 clearInvalidTokenParams();
                 await client?.logout();
-                return;
-            }
-
-            const payload = socketMessageToBalancePayload(res, client?.loginid ?? '');
-            if (payload) {
-                client?.applyBalanceUpdate(payload);
             }
         },
         [client]

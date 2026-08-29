@@ -86,7 +86,8 @@ class APIBase {
         if (!this.api?.onMessage) return;
         this.balance_listener = this.api.onMessage().subscribe((res: unknown) => {
             const store = globalObserver.getState('client.store') as { loginid?: string } | null | undefined;
-            const payload = socketMessageToBalancePayload(res, store?.loginid ?? this.account_id);
+            const active_loginid = getAccountId() || store?.loginid || this.account_id;
+            const payload = socketMessageToBalancePayload(res, active_loginid);
             if (payload) this.applyClientBalance(payload);
         });
     };

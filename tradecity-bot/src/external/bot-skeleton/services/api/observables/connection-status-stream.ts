@@ -15,6 +15,15 @@ export const isAuthorized$ = new BehaviorSubject<boolean>(false);
 export const account_list$ = new BehaviorSubject<TAuthData['account_list']>([]);
 export const authData$ = new BehaviorSubject<TAuthData | null>(null);
 
+/** Tracks active_loginid including switches that only update localStorage. */
+export const activeLoginid$ = new BehaviorSubject<string>(
+    typeof localStorage !== 'undefined' ? localStorage.getItem('active_loginid') || '' : ''
+);
+
+export const notifyActiveLoginidChange = (loginid: string) => {
+    activeLoginid$.next(loginid);
+};
+
 // Create functions to easily update status
 export const setConnectionStatus = (status: CONNECTION_STATUS) => {
     connectionStatus$.next(status);
@@ -39,6 +48,7 @@ export const setAccountList = (accountList: TAuthData['account_list']) => {
 export const setAuthData = (authData: TAuthData | null) => {
     if (authData?.loginid) {
         localStorage.setItem('active_loginid', authData.loginid);
+        notifyActiveLoginidChange(authData.loginid);
     }
     authData$.next(authData);
 };

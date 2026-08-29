@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
     account_list$,
+    activeLoginid$,
     authData$,
     CONNECTION_STATUS,
     connectionStatus$,
     isAuthorized$,
     isAuthorizing$,
+    notifyActiveLoginidChange,
 } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { TAuthData } from '@/types/api-types';
 
@@ -34,7 +36,13 @@ export const useApiBase = () => {
         });
         const authDataSubscription = authData$.subscribe(authData => {
             setAuthData(authData);
-            setActiveLoginid(authData?.loginid ?? '');
+            const stored = localStorage.getItem('active_loginid');
+            const loginid = stored || authData?.loginid || '';
+            setActiveLoginid(loginid);
+            if (loginid) notifyActiveLoginidChange(loginid);
+        });
+        const activeLoginidSubscription = activeLoginid$.subscribe(loginid => {
+            if (loginid) setActiveLoginid(loginid);
         });
 
         return () => {
@@ -43,6 +51,7 @@ export const useApiBase = () => {
             isAuthorizingSubscription.unsubscribe();
             accountListSubscription.unsubscribe();
             authDataSubscription.unsubscribe();
+            activeLoginidSubscription.unsubscribe();
         };
     }, []);
 
