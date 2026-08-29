@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useObserver } from 'mobx-react-lite';
 /* [AI] - Analytics removed - utility functions moved to @/utils/account-helpers */
 import { isVirtualAccount } from '@/utils/account-helpers';
 /* [/AI] */
@@ -18,42 +18,34 @@ const useActiveAccount = ({
     directBalance?: string;
 }) => {
     const { accountList, activeLoginid } = useApiBase();
-    const { client } = useStore() ?? {};
-    const liveMap = client?.all_accounts_balance ?? allBalanceData;
-    const liveDirect = client?.balance ?? directBalance;
-    const balanceVersion = client?.balance_version;
 
-    const activeAccount = useMemo(
-        () => accountList?.find(account => account.loginid === activeLoginid),
-        [activeLoginid, accountList]
-    );
+    return useObserver(() => {
+        const { client } = useStore() ?? {};
+        const liveMap = client?.all_accounts_balance ?? allBalanceData;
+        const liveDirect = client?.balance ?? directBalance;
+        void client?.balance_version;
 
-    const currentBalanceData = liveMap?.accounts?.[activeAccount?.loginid ?? ''];
+        const activeAccount = accountList?.find(account => account.loginid === activeLoginid);
+        if (!activeAccount) {
+            return { data: undefined };
+        }
 
-    const modifiedAccount = useMemo(() => {
-        if (!activeAccount) return undefined;
-
-        // Use centralized utility to determine if demo account
         const isVirtual = isVirtualAccount(activeAccount.loginid);
-
+        const currentBalanceData = liveMap?.accounts?.[activeAccount.loginid ?? ''];
         const amount = resolveAccountBalance(currentBalanceData?.balance, liveDirect);
         const decimals = getDecimalPlaces(currentBalanceData?.currency ?? activeAccount.currency);
 
         return {
-            ...activeAccount,
-            balance: addComma(amount.toFixed(decimals)),
-            currencyLabel: isVirtual ? 'Demo' : activeAccount?.currency,
-            icon: <CurrencyIcon currency={activeAccount?.currency?.toLowerCase()} isVirtual={isVirtual} />,
-            isVirtual: isVirtual,
-            isActive: activeAccount?.loginid === activeLoginid,
+            data: {
+                ...activeAccount,
+                balance: addComma(amount.toFixed(decimals)),
+                currencyLabel: isVirtual ? 'Demo' : activeAccount?.currency,
+                icon: <CurrencyIcon currency={activeAccount?.currency?.toLowerCase()} isVirtual={isVirtual} />,
+                isVirtual,
+                isActive: activeAccount?.loginid === activeLoginid,
+            },
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeAccount, activeLoginid, liveMap, liveDirect, balanceVersion]);
-
-    return {
-        /** User's current active account. */
-        data: modifiedAccount,
-    };
+    });
 };
 
 export default useActiveAccount;

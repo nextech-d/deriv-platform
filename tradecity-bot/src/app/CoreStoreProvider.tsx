@@ -9,9 +9,10 @@ import { useApiBase } from '@/hooks/useApiBase';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
 import { TSocketResponseData } from '@/types/api-types';
+import { getAccountId } from '@/utils/account-helpers';
 import { installActiveLoginidSync } from '@/utils/active-loginid-sync';
 import { clearInvalidTokenParams } from '@/utils/url-utils';
-import { unwrapSocketPayload } from '@/utils/live-balance';
+import { socketMessageToBalancePayload, unwrapSocketPayload } from '@/utils/live-balance';
 import { useTranslations } from '@deriv-com/translations';
 
 type TClientInformation = {
@@ -135,6 +136,13 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
             ) {
                 clearInvalidTokenParams();
                 await client?.logout();
+                return;
+            }
+
+            const active_loginid = getAccountId() || client?.loginid || '';
+            const payload = socketMessageToBalancePayload(res, active_loginid);
+            if (payload) {
+                client?.applyBalanceUpdate(payload);
             }
         },
         [client]

@@ -223,6 +223,7 @@ class APIBase {
         this.time_interval = null;
 
         chart_api.init(force_create_connection);
+        this.observeClientBalance();
     }
 
     getConnectionStatus() {
