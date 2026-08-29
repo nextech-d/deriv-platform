@@ -20,6 +20,18 @@ import { tabs_title } from '../constants/load-modal';
 import { waitForDomElement } from '../utils/dom-observer';
 import RootStore from './root-store';
 
+const waitForBuilderCanvas = async (max_ms = 4000): Promise<boolean> => {
+    const deadline = Date.now() + max_ms;
+    while (Date.now() < deadline) {
+        const rect = document.getElementById('scratch_div')?.getBoundingClientRect();
+        if (rect && rect.width >= 80 && rect.height >= 80) return true;
+        await new Promise<void>(resolve => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+    }
+    return false;
+};
+
 export default class LoadModalStore {
     root_store: RootStore;
     core: TStores;
@@ -485,6 +497,12 @@ export default class LoadModalStore {
             this.selected_strategy?.id ||
             window.Blockly.utils?.idGenerator?.genUid?.() ||
             `${Date.now()}`;
+
+        if (this.is_load_modal_open) {
+            this.toggleLoadModal();
+        }
+        this.root_store.dashboard.setPreviewOnPopup(false);
+        await waitForBuilderCanvas();
 
         const event_group = `dbot-load${Date.now()}`;
         await loadWorkspace(convertedDom, event_group, derivWorkspace);

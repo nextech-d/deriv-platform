@@ -7,7 +7,7 @@ import Button from '../shared_ui/button';
 
 const RecentFooter = observer(() => {
     const { load_modal, dashboard } = useStore();
-    const { is_open_button_loading, is_open_button_disabled, loadStrategyOnBotBuilder, toggleLoadModal } = load_modal;
+    const { is_open_button_loading, is_open_button_disabled, loadStrategyOnBotBuilder } = load_modal;
     const { setOpenSettings } = dashboard;
 
     return (
@@ -16,7 +16,6 @@ const RecentFooter = observer(() => {
             onClick={() => {
                 void (async () => {
                     const loaded = await loadStrategyOnBotBuilder();
-                    toggleLoadModal();
                     if (loaded) setOpenSettings(NOTIFICATION_TYPE.BOT_IMPORT);
                 })();
             }}

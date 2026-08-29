@@ -14,9 +14,8 @@ const LocalFooter = observer(() => {
         loadStrategyOnBotBuilder,
         setLoadedLocalFile,
         saveStrategyToLocalStorage,
-        toggleLoadModal,
     } = load_modal;
-    const { setOpenSettings, setPreviewOnPopup } = dashboard;
+    const { setOpenSettings } = dashboard;
     const { isDesktop } = useDevice();
     const Wrapper = isDesktop ? React.Fragment : Button.Group;
 
@@ -32,8 +31,6 @@ const LocalFooter = observer(() => {
                         const loaded = await loadStrategyOnBotBuilder();
                         saveStrategyToLocalStorage();
                         setLoadedLocalFile(null);
-                        toggleLoadModal();
-                        setPreviewOnPopup(false);
                         if (loaded) setOpenSettings(NOTIFICATION_TYPE.BOT_IMPORT);
                     })();
                 }}

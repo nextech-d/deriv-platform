@@ -588,6 +588,11 @@ export default class RunPanelStore {
         // listen for new version update
         const listen_new_version = new Event('ListenPWAUpdate');
         document.dispatchEvent(listen_new_version);
+
+        // Refresh header balance after a user bot session — not on interpreter recycle (bot.stop).
+        window.setTimeout(() => {
+            void this.core.client?.refreshBalanceFromApi?.();
+        }, 0);
     };
 
     onBotReadyEvent = () => {
