@@ -6,6 +6,7 @@ import { addComma, getCurrencyDisplayCode, getDecimalPlaces, standalone_routes }
 import Text from '@/components/shared_ui/text';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { useApiBase } from '@/hooks/useApiBase';
+import useActiveAccount from '@/hooks/api/account/useActiveAccount';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
 import { DerivWSAccountsService, type DerivAccount } from '@/services/derivws-accounts.service';
@@ -113,7 +114,7 @@ const LogoutIcon = () => (
     </svg>
 );
 
-const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
+const AccountSwitcher = observer(({ activeAccount: activeAccountOverride }: TAccountSwitcher) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isGroupOpen, setIsGroupOpen] = useState(true);
     const [tab, setTab] = useState<TAccountTab>('real');
@@ -128,9 +129,22 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { accountList, activeLoginid } = useApiBase();
     const { client, run_panel } = useStore() ?? {};
+    const {
+        data: activeAccountFromHook,
+        refreshBalance,
+        isLoading: isBalanceLoading,
+    } = useActiveAccount({
+        allBalanceData: client?.all_accounts_balance ?? null,
+        directBalance: client?.balance,
+    });
+    const activeAccount = activeAccountFromHook ?? activeAccountOverride;
     const handleLogout = useLogout();
 
     const is_bot_running = run_panel?.is_running || api_base.is_running;
+
+    useEffect(() => {
+        refreshBalance(true);
+    }, [is_bot_running, refreshBalance]);
 
     const placeDropdown = useCallback(() => {
         const trigger = wrapperRef.current;
@@ -272,6 +286,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                 setResetMessage(response.error.message);
             } else {
                 setResetMessage(localize('Balance reset.'));
+                refreshBalance(true);
             }
         } catch (error) {
             const message = (error as { error?: { message?: string } })?.error?.message;
@@ -279,7 +294,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
         } finally {
             setIsResetting(false);
         }
-    }, [is_bot_running, isResetting]);
+    }, [is_bot_running, isResetting, refreshBalance]);
 
     const formattedAccounts = useMemo(() => {
         const byLoginid = new Map<string, TSwitchAccount>();
@@ -514,7 +529,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                             <TriggerMark isVirtual={isVirtual} />
                         </span>
                         <span className='acc-info__balance acc-info__balance--trigger' data-testid='dt_acc_balance'>
-                            {headerBalance}
+                            {isBalanceLoading ? '…' : headerBalance}
                         </span>
                     </span>
                     <span

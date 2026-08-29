@@ -39,6 +39,14 @@ export default class ClientStore {
     private is_regenerating = false;
     private instance_id: string = '';
 
+    private onBotRunning = () => {
+        void this.refreshBalanceFromApi();
+    };
+
+    private onBotStop = () => {
+        void this.refreshBalanceFromApi();
+    };
+
     // TODO: fix with self exclusion
 
     onAuthorizeEvent = (data: {
@@ -86,6 +94,9 @@ export default class ClientStore {
 
         // Set up visibility change listener to regenerate WebSocket when tab becomes visible
         this.setupVisibilityListener();
+
+        observer.register('bot.running', this.onBotRunning);
+        observer.register('bot.stop', this.onBotStop);
 
         makeObservable(this, {
             accounts: observable,
@@ -269,6 +280,22 @@ export default class ClientStore {
         this.all_accounts_balance = next.all_accounts_balance as Balance | null;
         this.balance_version += 1;
     };
+
+    refreshBalanceFromApi = async () => {
+        if (!api_base.api) return;
+        try {
+            const response = (await api_base.api.balance()) as {
+                balance?: LiveBalancePayload;
+                error?: unknown;
+            };
+            if (!response?.error && response.balance) {
+                this.applyBalanceUpdate(response.balance);
+            }
+        } catch {
+            // Keep the last known balance if the poll fails.
+        }
+    };
+
     setIsAccountRegenerating = (is_loading: boolean) => {
         this.is_account_regenerating = is_loading;
     };
@@ -482,6 +509,8 @@ export default class ClientStore {
     destroy() {
         this.authDataSubscription?.unsubscribe();
         observer.unregister('api.authorize', this.onAuthorizeEvent);
+        observer.unregister('bot.running', this.onBotRunning);
+        observer.unregister('bot.stop', this.onBotStop);
         this.removeVisibilityListener();
 
         // Properly clean up the global observer reference

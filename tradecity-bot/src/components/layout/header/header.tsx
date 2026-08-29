@@ -3,7 +3,6 @@ import clsx from 'clsx';
 import { observer } from 'mobx-react-lite';
 import { generateOAuthURL } from '@/components/shared';
 import Button from '@/components/shared_ui/button';
-import useActiveAccount from '@/hooks/api/account/useActiveAccount';
 import { useApiBase } from '@/hooks/useApiBase';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
@@ -29,11 +28,6 @@ const AppHeader = observer(() => {
     const [isOAuthPending, setIsOAuthPending] = useState(() => {
         const params = new URLSearchParams(window.location.search);
         return Boolean(params.get('code') && params.get('state'));
-    });
-
-    const { data: activeAccount } = useActiveAccount({
-        allBalanceData: client?.all_accounts_balance,
-        directBalance: client?.balance,
     });
 
     const handleLogout = useLogout();
@@ -140,12 +134,12 @@ const AppHeader = observer(() => {
             // right slot never leaves the spinner. Localhost preview stays desktop-only.
             if (
                 position === 'right' &&
-                ((activeLoginid && activeAccount) || (isDesktop && isLocalHost))
+                ((activeLoginid) || (isDesktop && isLocalHost))
             ) {
                 return (
                     <div className='auth-actions'>
                         <div className='account-info'>
-                            <AccountSwitcher activeAccount={activeAccount ?? DESIGN_PREVIEW_ACCOUNT} />
+                            <AccountSwitcher activeAccount={isLocalHost ? DESIGN_PREVIEW_ACCOUNT : undefined} />
                         </div>
                     </div>
                 );
@@ -200,7 +194,6 @@ const AppHeader = observer(() => {
             isDesktop,
             activeLoginid,
             client,
-            activeAccount,
             authTimeout,
             is_account_regenerating,
             isOAuthPending,
