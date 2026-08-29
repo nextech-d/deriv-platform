@@ -13,18 +13,72 @@ const logger = {
     error: console.error.bind(console, '[SmartCharts Transport]'),
 };
 
+type StoredSubscription = {
+    request: Record<string, unknown>;
+    callback: (response: unknown) => void;
+    realSubscriptionId: string | null;
+    requestedSymbol?: string;
+};
+
+function routeMessageToSubscription(data: unknown, storedSub: StoredSubscription): boolean {
+    const subscriptionId = (data as { subscription?: { id?: string } })?.subscription?.id;
+    if (subscriptionId) {
+        if (!storedSub.realSubscriptionId) {
+            storedSub.realSubscriptionId = subscriptionId;
+        }
+        if (subscriptionId === storedSub.realSubscriptionId) {
+            storedSub.callback(data);
+            return true;
+        }
+        return false;
+    }
+
+    const msg = data as {
+        tick?: { symbol?: string };
+        ohlc?: { symbol?: string };
+        echo_req?: { ticks_history?: string; ticks?: string };
+        msg_type?: string;
+    };
+    const msgSymbol = msg?.tick?.symbol || msg?.ohlc?.symbol || msg?.echo_req?.ticks_history || msg?.echo_req?.ticks;
+    const isQuote = Boolean(msg?.tick || msg?.ohlc) || msg?.msg_type === 'tick' || msg?.msg_type === 'ohlc';
+    if (isQuote && storedSub.requestedSymbol && msgSymbol === storedSub.requestedSymbol) {
+        storedSub.callback(data);
+        return true;
+    }
+
+    return false;
+}
+
 /**
  * Create transport wrapper around chart_api.api
  * @returns TTransport implementation
  */
 export function createTransport(): TTransport {
-    const subscriptions = new Map<string, any>();
+    const subscriptions = new Map<string, StoredSubscription>();
+    let messageSubscription: { unsubscribe: () => void } | null = null;
+
+    const ensureMessageListener = () => {
+        if (messageSubscription || !chart_api.api) return;
+
+        messageSubscription = chart_api.api.onMessage()?.subscribe(({ data }: { data: unknown }) => {
+            subscriptions.forEach(storedSub => {
+                routeMessageToSubscription(data, storedSub);
+            });
+        });
+    };
+
+    const teardownMessageListener = () => {
+        if (messageSubscription) {
+            messageSubscription.unsubscribe();
+            messageSubscription = null;
+        }
+    };
 
     return {
         /**
          * Send one-shot API request
          */
-        async send(request: any): Promise<any> {
+        async send(request: Record<string, unknown>): Promise<unknown> {
             if (!chart_api.api) {
                 await chart_api.init();
             }
@@ -37,82 +91,45 @@ export function createTransport(): TTransport {
          * @param callback - Callback for streaming updates
          * @returns subscription ID
          */
-        subscribe(request: any, callback: (response: any) => void): string {
+        subscribe(request: Record<string, unknown>, callback: (response: unknown) => void): string {
             if (!chart_api.api) {
                 throw new Error('Chart API not initialized');
             }
-            // Generate a unique temporary ID for tracking
+
             const tempId = `temp-${Date.now()}-${Math.random()}`;
-
-            // Send initial subscription request
             const subscribeRequest = { ...request, subscribe: 1 };
+            const requestedSymbol = (request.ticks_history || request.ticks) as string | undefined;
 
-            const requestedSymbol = request.ticks_history || request.ticks;
-
-            // Set up global message listener first (before sending request)
-            const messageSubscription = chart_api.api.onMessage()?.subscribe(({ data }: { data: any }) => {
-                const storedSub = subscriptions.get(tempId);
-                if (!storedSub) return;
-
-                const subscriptionId = data?.subscription?.id;
-                if (subscriptionId) {
-                    if (!storedSub.realSubscriptionId) {
-                        storedSub.realSubscriptionId = subscriptionId;
-                        subscriptions.set(tempId, storedSub);
-                    }
-                    if (subscriptionId === storedSub.realSubscriptionId) {
-                        callback(data);
-                        return;
-                    }
-                }
-
-                // Deriv tick/ohlc frames sometimes omit subscription.id. Match by symbol
-                // so the chart keeps moving instead of freezing on the first candle.
-                const msgSymbol =
-                    data?.tick?.symbol || data?.ohlc?.symbol || data?.echo_req?.ticks_history || data?.echo_req?.ticks;
-                const isQuote =
-                    Boolean(data?.tick || data?.ohlc) || data?.msg_type === 'tick' || data?.msg_type === 'ohlc';
-                if (isQuote && requestedSymbol && msgSymbol === requestedSymbol) {
-                    callback(data);
-                }
-            });
-
-            // Store subscription info with temp ID
             subscriptions.set(tempId, {
                 request: subscribeRequest,
                 callback,
-                messageSubscription,
-                realSubscriptionId: null, // Will be set when we get the first response
+                realSubscriptionId: null,
+                requestedSymbol,
             });
 
-            // Send the subscription request
+            ensureMessageListener();
+
             chart_api.api
                 .send(subscribeRequest)
-                .then((response: any) => {
+                .then((response: { subscription?: { id?: string } }) => {
                     const subscriptionId = response?.subscription?.id;
 
                     if (subscriptionId) {
-                        // Update stored subscription with real ID
                         const storedSub = subscriptions.get(tempId);
                         if (storedSub) {
                             storedSub.realSubscriptionId = subscriptionId;
-                            subscriptions.set(tempId, storedSub);
                         }
-
-                        // Call callback with initial response
                         callback(response);
                     } else {
                         logger.error('No subscription ID in response:', response);
                     }
                 })
-                .catch((error: any) => {
+                .catch((error: unknown) => {
                     logger.error('Subscription failed:', error);
-                    // Clean up failed subscription
-                    const storedSub = subscriptions.get(tempId);
-                    if (storedSub?.messageSubscription) {
-                        storedSub.messageSubscription.unsubscribe();
-                    }
                     subscriptions.delete(tempId);
+                    if (subscriptions.size === 0) {
+                        teardownMessageListener();
+                    }
                 });
 
             return tempId;
@@ -126,20 +143,16 @@ export function createTransport(): TTransport {
             const subscription = subscriptions.get(subscriptionId);
 
             if (subscription) {
-                // Cancel RxJS subscription
-                if (subscription.messageSubscription) {
-                    subscription.messageSubscription.unsubscribe();
-                }
-
-                // Send forget request to server using the real subscription ID
                 if (chart_api.api && subscription.realSubscriptionId) {
                     chart_api.api.forget(subscription.realSubscriptionId);
                 }
-
-                // Clean up local storage
                 subscriptions.delete(subscriptionId);
             } else {
                 logger.warn('No subscription found for ID:', subscriptionId);
+            }
+
+            if (subscriptions.size === 0) {
+                teardownMessageListener();
             }
         },
 
@@ -152,13 +165,12 @@ export function createTransport(): TTransport {
                 if (msgType) {
                     chart_api.api.forgetAll(msgType);
                 } else {
-                    // Forget all ticks by default
                     chart_api.api.forgetAll('ticks');
                 }
             }
 
-            // Clean up local subscriptions
             subscriptions.clear();
+            teardownMessageListener();
         },
     };
 }

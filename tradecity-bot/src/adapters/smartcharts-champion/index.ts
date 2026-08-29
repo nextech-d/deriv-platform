@@ -263,6 +263,11 @@ export function buildSmartchartsChampionAdapter(
         subscribeQuotes(request: TGetQuotesRequest, callback: TSubscriptionCallback): TUnsubscribeFunction {
             const subscriptionKey = `${request.symbol}-${request.granularity}`;
 
+            const existingUnsubscribe = subscriptions.get(subscriptionKey);
+            if (existingUnsubscribe) {
+                existingUnsubscribe();
+            }
+
             // Build subscription request
             const apiRequest: any = {
                 ticks_history: request.symbol,

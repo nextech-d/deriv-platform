@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 /* [AI] - Analytics removed - rudderstack event tracking removed */
@@ -15,6 +15,8 @@ import {
     setSmartChartsPublicPath,
     TGranularity,
     TStateChangeListener,
+    type ActiveSymbols,
+    type TradingTimesMap,
 } from '@deriv-com/smartcharts-champion';
 import { useDevice } from '@deriv-com/ui';
 import ToolbarWidgets from './toolbar-widgets';
@@ -24,8 +26,153 @@ setSmartChartsPublicPath(getUrlBase('/js/smartcharts/'));
 
 const FEED_CALL = { activeSymbols: false, tradingTimes: false } as const;
 
+type TChartCanvasProps = {
+    show_digits_stats: boolean;
+    symbol: string;
+    chart_type: string | undefined;
+    granularity: number | undefined;
+    isDesktop: boolean;
+    isMobile: boolean;
+    is_drawer_open: boolean;
+    is_chart_modal_visible: boolean;
+    isSafari: boolean;
+    settings: {
+        assetInformation: boolean;
+        countdown: boolean;
+        isHighestLowestMarkerEnabled: boolean;
+        language: string;
+        position: string;
+        theme: string;
+    };
+    activeSymbols: ActiveSymbols;
+    tradingTimes: TradingTimesMap;
+    getQuotes: ReturnType<typeof useSmartChartAdaptor>['getQuotes'];
+    subscribeQuotes: ReturnType<typeof useSmartChartAdaptor>['subscribeQuotes'];
+    unsubscribeQuotes: ReturnType<typeof useSmartChartAdaptor>['unsubscribeQuotes'];
+    is_connection_opened: boolean;
+    getMarketsOrder: (active_symbols: unknown[]) => string[];
+    onSymbolChange: (symbol: string) => void;
+    updateChartType: (chart_type: string) => void;
+    updateGranularity: (granularity: number) => void;
+    setChartStatus: (status: boolean) => void;
+};
+
+/** Isolated from MobX observer so tick-driven parent updates do not reset SmartChart subscriptions. */
+const ChartCanvas = memo(
+    ({
+        show_digits_stats,
+        symbol,
+        chart_type,
+        granularity,
+        isDesktop,
+        isMobile,
+        is_drawer_open,
+        is_chart_modal_visible,
+        isSafari,
+        settings,
+        activeSymbols,
+        tradingTimes,
+        getQuotes,
+        subscribeQuotes,
+        unsubscribeQuotes,
+        is_connection_opened,
+        getMarketsOrder,
+        onSymbolChange,
+        updateChartType,
+        updateGranularity,
+        setChartStatus,
+    }: TChartCanvasProps) => {
+        const normalizedChartType = normalizeSmartChartType(chart_type);
+
+        const handleStateChange: TStateChangeListener = useCallback((state, _options) => {
+            if (state === 'READY') {
+                window.dispatchEvent(new Event('resize'));
+            }
+        }, []);
+
+        const chartStatusListener = useCallback(
+            (v: boolean) => {
+                setChartStatus(!v);
+            },
+            [setChartStatus]
+        );
+
+        const toolbarWidget = useCallback(
+            () => (
+                <ToolbarWidgets
+                    updateChartType={updateChartType}
+                    updateGranularity={updateGranularity}
+                    position={!isDesktop ? 'bottom' : 'top'}
+                    isDesktop={isDesktop}
+                />
+            ),
+            [updateChartType, updateGranularity, isDesktop]
+        );
+
+        const topWidgets = useCallback(
+            () => <ChartTitle onChange={onSymbolChange} />,
+            [onSymbolChange]
+        );
+
+        const chartDataProp = useMemo(
+            () => ({ activeSymbols, tradingTimes }),
+            [activeSymbols, tradingTimes]
+        );
+
+        useEffect(() => {
+            const frame = requestAnimationFrame(() => {
+                window.dispatchEvent(new Event('resize'));
+            });
+            return () => cancelAnimationFrame(frame);
+        }, []);
+
+        return (
+            <>
+                <div id='smartcharts_modal' className='ciq-modal' />
+                <div
+                    className={classNames('dashboard__chart-wrapper', {
+                        'dashboard__chart-wrapper--expanded': is_drawer_open && isDesktop,
+                        'dashboard__chart-wrapper--modal': is_chart_modal_visible && isDesktop,
+                        'dashboard__chart-wrapper--safari': isSafari,
+                    })}
+                    dir='ltr'
+                >
+                    <SmartChart
+                        id={`dbot-${symbol}`}
+                        key={`chart-${symbol}`}
+                        barriers={[]}
+                        showLastDigitStats={show_digits_stats}
+                        chartControlsWidgets={null}
+                        enabledChartFooter={false}
+                        chartStatusListener={chartStatusListener}
+                        stateChangeListener={handleStateChange}
+                        toolbarWidget={toolbarWidget}
+                        chartType={normalizedChartType}
+                        isMobile={isMobile}
+                        enabledNavigationWidget={isDesktop}
+                        granularity={granularity as TGranularity}
+                        getQuotes={getQuotes}
+                        subscribeQuotes={subscribeQuotes}
+                        unsubscribeQuotes={unsubscribeQuotes}
+                        chartData={chartDataProp}
+                        feedCall={FEED_CALL}
+                        settings={settings}
+                        symbol={symbol}
+                        topWidgets={topWidgets}
+                        isConnectionOpened={is_connection_opened}
+                        getMarketsOrder={getMarketsOrder}
+                        isLive
+                        leftMargin={80}
+                    />
+                </div>
+            </>
+        );
+    }
+);
+
+ChartCanvas.displayName = 'ChartCanvas';
+
 const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) => {
-    const barriers: [] = [];
     const { common, ui } = useStore();
     const { chart_store, run_panel, dashboard } = useStore();
     const [isSafari, setIsSafari] = useState(false);
@@ -50,14 +197,17 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     const { is_drawer_open } = run_panel;
     const { is_chart_modal_visible } = dashboard;
 
-    const settings = {
-        assetInformation: false, // ui.is_chart_asset_info_visible,
-        countdown: true,
-        isHighestLowestMarkerEnabled: false, // TODO: Pending UI
-        language: common.current_language.toLowerCase(),
-        position: ui.is_chart_layout_default ? 'bottom' : 'left',
-        theme: ui.is_dark_mode_on ? 'dark' : 'light',
-    };
+    const settings = useMemo(
+        () => ({
+            assetInformation: false,
+            countdown: true,
+            isHighestLowestMarkerEnabled: false,
+            language: common.current_language.toLowerCase(),
+            position: ui.is_chart_layout_default ? 'bottom' : 'left',
+            theme: ui.is_dark_mode_on ? 'dark' : 'light',
+        }),
+        [common.current_language, ui.is_chart_layout_default, ui.is_dark_mode_on]
+    );
 
     useEffect(() => {
         // Safari browser detection using feature detection
@@ -98,16 +248,6 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
 
     const is_connection_opened = adapterInitialized || !!chart_api?.api;
     const resolvedSymbol = symbol || DEFAULT_CHART_SYMBOL;
-    const normalizedChartType = normalizeSmartChartType(chart_type);
-
-    const handleStateChange: TStateChangeListener = (state, options) => {
-        /* [AI] - Analytics removed - rudderstack event call removed */
-        // Handle state changes: INITIAL, READY, SCROLL_TO_LEFT
-        /* [/AI] */
-        if (state === 'READY') {
-            window.dispatchEvent(new Event('resize'));
-        }
-    };
 
     const activeSymbols = chartData.activeSymbols;
     const tradingTimes = chartData.tradingTimes;
@@ -128,52 +268,29 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     }
 
     return (
-        <>
-            <div id='smartcharts_modal' className='ciq-modal' />
-            <div
-                className={classNames('dashboard__chart-wrapper', {
-                    'dashboard__chart-wrapper--expanded': is_drawer_open && isDesktop,
-                    'dashboard__chart-wrapper--modal': is_chart_modal_visible && isDesktop,
-                    'dashboard__chart-wrapper--safari': isSafari,
-                })}
-                dir='ltr'
-            >
-            <SmartChart
-                id={`dbot-${resolvedSymbol}`}
-                key={`chart-${resolvedSymbol}`}
-                barriers={barriers}
-                showLastDigitStats={show_digits_stats}
-                chartControlsWidgets={null}
-                enabledChartFooter={false}
-                chartStatusListener={(v: boolean) => setChartStatus(!v)}
-                stateChangeListener={handleStateChange}
-                toolbarWidget={() => (
-                    <ToolbarWidgets
-                        updateChartType={updateChartType}
-                        updateGranularity={updateGranularity}
-                        position={!isDesktop ? 'bottom' : 'top'}
-                        isDesktop={isDesktop}
-                    />
-                )}
-                chartType={normalizedChartType}
-                isMobile={isMobile}
-                enabledNavigationWidget={isDesktop}
-                granularity={granularity as TGranularity}
-                getQuotes={getQuotes}
-                subscribeQuotes={subscribeQuotes}
-                unsubscribeQuotes={unsubscribeQuotes}
-                chartData={{ activeSymbols, tradingTimes }}
-                feedCall={FEED_CALL}
-                settings={settings}
-                symbol={resolvedSymbol}
-                topWidgets={() => <ChartTitle onChange={onSymbolChange} />}
-                isConnectionOpened={is_connection_opened}
-                getMarketsOrder={getMarketsOrder}
-                isLive
-                leftMargin={80}
-            />
-            </div>
-        </>
+        <ChartCanvas
+            show_digits_stats={show_digits_stats}
+            symbol={resolvedSymbol}
+            chart_type={chart_type}
+            granularity={granularity}
+            isDesktop={isDesktop}
+            isMobile={isMobile}
+            is_drawer_open={is_drawer_open}
+            is_chart_modal_visible={is_chart_modal_visible}
+            isSafari={isSafari}
+            settings={settings}
+            activeSymbols={activeSymbols}
+            tradingTimes={tradingTimes}
+            getQuotes={getQuotes}
+            subscribeQuotes={subscribeQuotes}
+            unsubscribeQuotes={unsubscribeQuotes}
+            is_connection_opened={is_connection_opened}
+            getMarketsOrder={getMarketsOrder}
+            onSymbolChange={onSymbolChange}
+            updateChartType={updateChartType}
+            updateGranularity={updateGranularity}
+            setChartStatus={setChartStatus}
+        />
     );
 });
 

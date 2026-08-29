@@ -570,14 +570,18 @@ const AppWrapper = observer(() => {
                 return (
                     <DeskSuspense>
                         <ChartsDesk>
-                            <ErrorBoundary
-                                root_store={store}
-                                fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
-                            >
-                                <Suspense fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}>
-                                    <ChartWrapper show_digits_stats={false} />
-                                </Suspense>
-                            </ErrorBoundary>
+                            {active_tab === DBOT_TABS.CHART ? (
+                                <ErrorBoundary
+                                    root_store={store}
+                                    fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                                >
+                                    <Suspense
+                                        fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                                    >
+                                        <ChartWrapper show_digits_stats={false} />
+                                    </Suspense>
+                                </ErrorBoundary>
+                            ) : null}
                         </ChartsDesk>
                     </DeskSuspense>
                 );
