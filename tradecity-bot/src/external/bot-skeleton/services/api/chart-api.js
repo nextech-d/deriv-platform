@@ -23,15 +23,17 @@ class ChartAPI {
             // Force inject symbols after a short delay to ensure api_base is ready
             // this.forceInjectSymbols();
         }
-        this.getTime();
     };
 
     getTime() {
-        if (!this.time_interval) {
-            this.time_interval = setInterval(() => {
-                this.api.send({ time: 1 });
-            }, 30000);
-        }
+        if (this.time_interval || !this.api) return;
+        this.time_interval = setInterval(() => {
+            this.api?.send({ time: 1 });
+        }, 30000);
+    }
+
+    ensureTimePing() {
+        this.getTime();
     }
 
     reconnectIfNotConnected = () => {

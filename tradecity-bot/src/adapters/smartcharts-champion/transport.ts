@@ -82,6 +82,7 @@ export function createTransport(): TTransport {
             if (!chart_api.api) {
                 await chart_api.init();
             }
+            chart_api.ensureTimePing();
             return chart_api.api.send(request);
         },
 
@@ -95,6 +96,8 @@ export function createTransport(): TTransport {
             if (!chart_api.api) {
                 throw new Error('Chart API not initialized');
             }
+
+            chart_api.ensureTimePing();
 
             const tempId = `temp-${Date.now()}-${Math.random()}`;
             const subscribeRequest = { ...request, subscribe: 1 };

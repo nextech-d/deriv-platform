@@ -10,8 +10,6 @@ import Dialog from '@/components/shared_ui/dialog';
 import MobileWrapper from '@/components/shared_ui/mobile-wrapper';
 import Tabs from '@/components/shared_ui/tabs/tabs';
 import TradeTypeConfirmationModal from '@/components/trade-type-confirmation-modal';
-import TradingViewModal from '@/components/trading-view-chart/trading-view-modal';
-import EntryScanner from '@/components/entry-scanner/entry-scanner';
 import { DBOT_TABS, TAB_HASHES, TAB_IDS } from '@/constants/bot-contents';
 import { PLATFORM_TABS, RUN_CONTROL_KINDS, type PlatformTabKind } from '@/constants/platform-tabs';
 import { api_base, updateWorkspaceName } from '@/external/bot-skeleton';
@@ -36,10 +34,15 @@ import { retryImport } from '@/utils/lazy-with-retry';
 import { Localize, localize } from '@deriv-com/translations';
 import { Loader, useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
-import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
 import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
+
+const ChartModal = lazy(() => retryImport(() => import('../chart/chart-modal')));
+const TradingViewModal = lazy(() =>
+    retryImport(() => import('@/components/trading-view-chart/trading-view-modal'))
+);
+const EntryScanner = lazy(() => retryImport(() => import('@/components/entry-scanner/entry-scanner')));
 
 const loadAnalysisToolPanel = () => retryImport(() => import('../../components/analysis-tool-desk/analysis-tool-panel'));
 const loadBulkTraderPanel = () => retryImport(() => import('../../components/bulk-trader-desk/bulk-trader-panel'));
@@ -157,6 +160,84 @@ const TabMark = ({ kind, label }: { kind: string; label: React.ReactNode }) => {
     );
 };
 
+/** Run panel + modals — isolated so journal/drawer ticks do not re-render the tab strip. */
+const MainDesktopChrome = observer(
+    ({ onSeededToBuilder }: { onSeededToBuilder: () => void }) => {
+        const { dashboard, quick_strategy, run_panel } = useStore();
+        const { active_tab, is_chart_modal_visible, is_trading_view_modal_visible } = dashboard;
+        const { is_open } = quick_strategy;
+        const { is_stop_button_visible } = run_panel;
+        const activeKind = PLATFORM_TABS[active_tab]?.kind;
+        const showRunControl =
+            (activeKind != null && RUN_CONTROL_KINDS.has(activeKind)) || is_stop_button_visible;
+
+        return (
+            <>
+                <DesktopWrapper>
+                    <div className='main__run-strategy-wrapper'>
+                        {showRunControl && <RunStrategy />}
+                        <RunPanel />
+                    </div>
+                    {is_chart_modal_visible && (
+                        <Suspense fallback={null}>
+                            <ChartModal />
+                        </Suspense>
+                    )}
+                    {is_trading_view_modal_visible && (
+                        <Suspense fallback={null}>
+                            <TradingViewModal />
+                        </Suspense>
+                    )}
+                </DesktopWrapper>
+                <MobileWrapper>{!is_open && <RunPanel />}</MobileWrapper>
+                <Suspense fallback={null}>
+                    <EntryScanner onSeededToBuilder={onSeededToBuilder} />
+                </Suspense>
+            </>
+        );
+    }
+);
+
+MainDesktopChrome.displayName = 'MainDesktopChrome';
+
+const MainDialog = observer(({ onLogin }: { onLogin: () => Promise<void> }) => {
+    const { run_panel } = useStore();
+    const {
+        is_dialog_open,
+        dialog_options,
+        onCancelButtonClick,
+        onCloseDialog,
+        onOkButtonClick,
+    } = run_panel;
+    const { cancel_button_text, ok_button_text, title, message, dismissable, is_closed_on_cancel } =
+        dialog_options as {
+            [key: string]: string;
+        };
+
+    return (
+        <Dialog
+            cancel_button_text={cancel_button_text || localize('Cancel')}
+            className='dc-dialog__wrapper--fixed'
+            confirm_button_text={ok_button_text || localize('Ok')}
+            has_close_icon
+            is_mobile_full_width={false}
+            is_visible={is_dialog_open}
+            onCancel={onCancelButtonClick}
+            onClose={onCloseDialog}
+            onConfirm={onOkButtonClick || onCloseDialog}
+            portal_element_id='modal_root'
+            title={title}
+            login={onLogin}
+            dismissable={dismissable}
+            is_closed_on_cancel={is_closed_on_cancel}
+        >
+            {message}
+        </Dialog>
+    );
+});
+
+MainDialog.displayName = 'MainDialog';
+
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
     const store = useStore();
@@ -173,20 +254,8 @@ const AppWrapper = observer(() => {
         setTourDialogVisibility,
     } = dashboard;
     const { dashboard_strategies } = load_modal;
-    const {
-        is_dialog_open,
-        is_drawer_open,
-        dialog_options,
-        onCancelButtonClick,
-        onCloseDialog,
-        onOkButtonClick,
-        stopBot,
-        is_stop_button_visible,
-    } = run_panel;
+    const { is_drawer_open, stopBot } = run_panel;
     const { is_open } = quick_strategy;
-    const { cancel_button_text, ok_button_text, title, message, dismissable, is_closed_on_cancel } = dialog_options as {
-        [key: string]: string;
-    };
     const { clear } = summary_card;
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
@@ -604,9 +673,7 @@ const AppWrapper = observer(() => {
         }
     };
     // [/AI]
-    const activeKind = PLATFORM_TABS[active_tab]?.kind;
-    const showRunControl =
-        (activeKind != null && RUN_CONTROL_KINDS.has(activeKind)) || is_stop_button_visible;
+    const handleSeededToBuilder = React.useCallback(() => handleTabChange(BOT_BUILDER), [handleTabChange, BOT_BUILDER]);
 
     return (
         <React.Fragment>
@@ -645,33 +712,8 @@ const AppWrapper = observer(() => {
                     </div>
                 </div>
             </div>
-            <DesktopWrapper>
-                <div className='main__run-strategy-wrapper'>
-                    {showRunControl && <RunStrategy />}
-                    <RunPanel />
-                </div>
-                <ChartModal />
-                <TradingViewModal />
-            </DesktopWrapper>
-            <MobileWrapper>{!is_open && <RunPanel />}</MobileWrapper>
-            <Dialog
-                cancel_button_text={cancel_button_text || localize('Cancel')}
-                className='dc-dialog__wrapper--fixed'
-                confirm_button_text={ok_button_text || localize('Ok')}
-                has_close_icon
-                is_mobile_full_width={false}
-                is_visible={is_dialog_open}
-                onCancel={onCancelButtonClick}
-                onClose={onCloseDialog}
-                onConfirm={onOkButtonClick || onCloseDialog}
-                portal_element_id='modal_root'
-                title={title}
-                login={handleLoginGeneration}
-                dismissable={dismissable} // Prevents closing on outside clicks
-                is_closed_on_cancel={is_closed_on_cancel}
-            >
-                {message}
-            </Dialog>
+            <MainDesktopChrome onSeededToBuilder={handleSeededToBuilder} />
+            <MainDialog onLogin={handleLoginGeneration} />
 
             {/* Trade Type Confirmation Modal */}
             {(() => {
@@ -687,7 +729,6 @@ const AppWrapper = observer(() => {
                     />
                 );
             })()}
-            <EntryScanner onSeededToBuilder={() => handleTabChange(BOT_BUILDER)} />
         </React.Fragment>
     );
 });
