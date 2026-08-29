@@ -6,6 +6,7 @@ import { DerivWSAccountsService } from '@/services/derivws-accounts.service';
 import { TAuthData } from '@/types/api-types';
 import { clearAuthData } from '@/utils/auth-utils';
 import { handleBackendError, isBackendError } from '@/utils/error-handler';
+import { socketMessageToBalancePayload } from '@/utils/live-balance';
 import { activeSymbolsProcessorService } from '../../../../services/active-symbols-processor.service';
 import { observer as globalObserver } from '../../utils/observer';
 import { doUntilDone, socket_state } from '../tradeEngine/utils/helpers';
@@ -60,6 +61,7 @@ class APIBase {
     is_stopping = false;
     active_symbols: any[] = [];
     current_auth_subscriptions: SubscriptionPromise[] = [];
+    private balance_listener: { unsubscribe: () => void } | null = null;
     is_authorized = false;
     active_symbols_promise: Promise<any[] | undefined> | null = null;
     common_store: CommonStore | undefined;
@@ -79,7 +81,20 @@ class APIBase {
         store?.applyBalanceUpdate?.(payload);
     };
 
+    private observeClientBalance = () => {
+        if (this.balance_listener) return;
+        if (!this.api?.onMessage) return;
+        this.balance_listener = this.api.onMessage().subscribe((res: unknown) => {
+            const store = globalObserver.getState('client.store') as { loginid?: string } | null | undefined;
+            const active_loginid = getAccountId() || store?.loginid || this.account_id;
+            const payload = socketMessageToBalancePayload(res, active_loginid);
+            if (payload) this.applyClientBalance(payload);
+        });
+    };
+
     unsubscribeAllSubscriptions = () => {
+        this.balance_listener?.unsubscribe();
+        this.balance_listener = null;
         this.current_auth_subscriptions?.forEach(subscription_promise => {
             subscription_promise.then(({ subscription }) => {
                 if (subscription?.id) {
@@ -208,9 +223,7 @@ class APIBase {
         this.time_interval = null;
 
         chart_api.init(force_create_connection);
-        if (this.api?.connection?.readyState === 1) {
-            globalObserver.emit('api.connection.ready');
-        }
+        this.observeClientBalance();
     }
 
     getConnectionStatus() {
@@ -268,6 +281,7 @@ class APIBase {
 
         this.account_id = getAccountId() || '';
         setIsAuthorizing(true);
+        this.observeClientBalance();
 
         try {
             const { balance, error } = await this.api.balance();
@@ -404,8 +418,8 @@ class APIBase {
 
         const streamsToSubscribe = ['balance', 'transaction', 'proposal_open_contract'];
 
+        this.observeClientBalance();
         await Promise.all(streamsToSubscribe.map(subscribeToStream));
-        globalObserver.emit('api.connection.ready');
     }
 
     private waitForSocketOpen = (timeout_ms = this.SOCKET_OPEN_TIMEOUT_MS): Promise<void> => {

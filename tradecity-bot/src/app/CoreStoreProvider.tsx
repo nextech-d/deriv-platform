@@ -12,7 +12,7 @@ import { TSocketResponseData } from '@/types/api-types';
 import { getAccountId } from '@/utils/account-helpers';
 import { installActiveLoginidSync } from '@/utils/active-loginid-sync';
 import { clearInvalidTokenParams } from '@/utils/url-utils';
-import { unwrapSocketPayload } from '@/utils/live-balance';
+import { socketMessageToBalancePayload, unwrapSocketPayload } from '@/utils/live-balance';
 import { useTranslations } from '@deriv-com/translations';
 
 type TClientInformation = {
@@ -45,18 +45,15 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
     );
 
     useEffect(() => {
-        if (client && isAuthorized) {
-            const loginid = getAccountId() || activeLoginid;
-            if (loginid) {
-                client.setLoginId(loginid);
-            }
-            client.setAccountList(accountList);
-            client.setIsLoggedIn(true);
+        if (client && activeAccount && isAuthorized) {
+            client?.setLoginId(activeLoginid);
+            client?.setAccountList(accountList);
+            client?.setIsLoggedIn(true);
         } else if (client && !isAuthorized) {
             // Ensure client shows as not logged in until authorization is complete
-            client.setIsLoggedIn(false);
+            client?.setIsLoggedIn(false);
         }
-    }, [accountList, activeLoginid, client, isAuthorized]);
+    }, [accountList, activeAccount, activeLoginid, client, isAuthorized]);
 
     useEffect(() => {
         if (!client) return;
@@ -139,37 +136,27 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
             ) {
                 clearInvalidTokenParams();
                 await client?.logout();
+                return;
+            }
+
+            const active_loginid = getAccountId() || client?.loginid || '';
+            const payload = socketMessageToBalancePayload(res, active_loginid);
+            if (payload) {
+                client?.applyBalanceUpdate(payload);
             }
         },
         [client]
     );
 
     useEffect(() => {
-        if (!client || !isAuthorized) return undefined;
-
-        let subscription: { unsubscribe: () => void } | null = null;
-        let retryTimer: ReturnType<typeof setInterval> | null = null;
-
-        const attach = () => {
-            if (!api_base?.api?.onMessage) return false;
-            subscription?.unsubscribe();
-            subscription = api_base.api.onMessage().subscribe(handleMessages);
-            msg_listener.current = { unsubscribe: subscription.unsubscribe.bind(subscription) };
-            return true;
-        };
-
-        if (!attach()) {
-            retryTimer = setInterval(() => {
-                if (attach() && retryTimer) {
-                    clearInterval(retryTimer);
-                    retryTimer = null;
-                }
-            }, 250);
+        if (!client) return;
+        const subscription = api_base?.api?.onMessage()?.subscribe(handleMessages);
+        if (subscription) {
+            msg_listener.current = { unsubscribe: subscription.unsubscribe };
         }
 
         return () => {
-            if (retryTimer) clearInterval(retryTimer);
-            subscription?.unsubscribe();
+            msg_listener.current?.unsubscribe?.();
             msg_listener.current = null;
         };
     }, [connectionStatus, handleMessages, isAuthorized, client]);

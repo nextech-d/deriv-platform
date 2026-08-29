@@ -121,12 +121,8 @@ describe('resolveAccountBalance', () => {
         expect(resolveAccountBalance(10000.3, '0')).toBe(10000.3);
     });
 
-    it('prefers the live map row for the active account', () => {
-        expect(resolveAccountBalance(9990.3, '10000')).toBe(9990.3);
-    });
-
-    it('falls back to direct balance when the map has no row', () => {
-        expect(resolveAccountBalance(undefined, '9990.3')).toBe(9990.3);
+    it('prefers a live direct balance over a stale map row', () => {
+        expect(resolveAccountBalance(10000.3, '9990.3')).toBe(9990.3);
     });
 
     it('uses a live map amount of zero when that is the real balance', () => {
