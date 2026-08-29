@@ -6,7 +6,6 @@ import { DerivWSAccountsService } from '@/services/derivws-accounts.service';
 import { TAuthData } from '@/types/api-types';
 import { clearAuthData } from '@/utils/auth-utils';
 import { handleBackendError, isBackendError } from '@/utils/error-handler';
-import { socketMessageToBalancePayload } from '@/utils/live-balance';
 import { activeSymbolsProcessorService } from '../../../../services/active-symbols-processor.service';
 import { observer as globalObserver } from '../../utils/observer';
 import { doUntilDone, socket_state } from '../tradeEngine/utils/helpers';
@@ -61,7 +60,6 @@ class APIBase {
     is_stopping = false;
     active_symbols: any[] = [];
     current_auth_subscriptions: SubscriptionPromise[] = [];
-    private balance_listener: { unsubscribe: () => void } | null = null;
     is_authorized = false;
     active_symbols_promise: Promise<any[] | undefined> | null = null;
     common_store: CommonStore | undefined;
@@ -81,20 +79,61 @@ class APIBase {
         store?.applyBalanceUpdate?.(payload);
     };
 
-    private observeClientBalance = () => {
-        if (this.balance_listener) return;
-        if (!this.api?.onMessage) return;
-        this.balance_listener = this.api.onMessage().subscribe((res: unknown) => {
-            const store = globalObserver.getState('client.store') as { loginid?: string } | null | undefined;
-            const active_loginid = getAccountId() || store?.loginid || this.account_id;
-            const payload = socketMessageToBalancePayload(res, active_loginid);
-            if (payload) this.applyClientBalance(payload);
-        });
+    private refreshClientBalance = async () => {
+        const store = globalObserver.getState('client.store') as
+            | { refreshBalanceFromApi?: () => Promise<void> }
+            | null
+            | undefined;
+        if (store?.refreshBalanceFromApi) {
+            await store.refreshBalanceFromApi();
+            return;
+        }
+        if (!this.api) return;
+        try {
+            const { balance, error } = await this.api.balance();
+            if (!error && balance) this.applyClientBalance(balance);
+        } catch {
+            // Keep the last known balance if the poll fails.
+        }
+    };
+
+    private wrapApiSendForTopup = () => {
+        if (!this.api) return;
+        type SendableApi = {
+            send: (request: Record<string, unknown>) => unknown;
+            _topup_send_wrapped?: boolean;
+        };
+        const api = this.api as SendableApi;
+        if (api._topup_send_wrapped) return;
+
+        const originalSend = api.send.bind(api);
+        api.send = (request: Record<string, unknown>) => {
+            const result = originalSend(request);
+            if (request?.topup_virtual !== undefined) {
+                void Promise.resolve(result).then(res => {
+                    const response = res as {
+                        error?: unknown;
+                        topup_virtual?: { amount?: number; currency?: string };
+                    };
+                    if (response?.error) return;
+                    const loginid = getAccountId() || '';
+                    if (response?.topup_virtual) {
+                        this.applyClientBalance({
+                            balance: response.topup_virtual.amount,
+                            currency: response.topup_virtual.currency,
+                            loginid,
+                        });
+                        return;
+                    }
+                    void this.refreshClientBalance();
+                });
+            }
+            return result;
+        };
+        api._topup_send_wrapped = true;
     };
 
     unsubscribeAllSubscriptions = () => {
-        this.balance_listener?.unsubscribe();
-        this.balance_listener = null;
         this.current_auth_subscriptions?.forEach(subscription_promise => {
             subscription_promise.then(({ subscription }) => {
                 if (subscription?.id) {
@@ -211,6 +250,8 @@ class APIBase {
             }
         }
 
+        this.wrapApiSendForTopup();
+
         const hasAccountID = V2GetActiveAccountId();
 
         if (!this.has_active_symbols && !hasAccountID) {
@@ -223,7 +264,6 @@ class APIBase {
         this.time_interval = null;
 
         chart_api.init(force_create_connection);
-        this.observeClientBalance();
     }
 
     getConnectionStatus() {
@@ -281,7 +321,6 @@ class APIBase {
 
         this.account_id = getAccountId() || '';
         setIsAuthorizing(true);
-        this.observeClientBalance();
 
         try {
             const { balance, error } = await this.api.balance();
@@ -418,7 +457,6 @@ class APIBase {
 
         const streamsToSubscribe = ['balance', 'transaction', 'proposal_open_contract'];
 
-        this.observeClientBalance();
         await Promise.all(streamsToSubscribe.map(subscribeToStream));
     }
 
