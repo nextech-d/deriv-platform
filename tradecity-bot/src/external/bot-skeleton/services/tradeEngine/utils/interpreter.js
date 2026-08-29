@@ -172,10 +172,13 @@ const Interpreter = () => {
                     // When user is rate limited, allow them to stop the bot immediately
                     // granted there is no active contract.
                     global_timeouts.forEach(timeout => clearTimeout(global_timeouts[timeout]));
-                    terminateSession().then(() => {
-                        api_base.is_stopping = false;
-                        resolve();
-                    });
+                    terminateSession()
+                        .then(() => {
+                            resolve();
+                        })
+                        .finally(() => {
+                            api_base.is_stopping = false;
+                        });
                 } else if (
                     bot.tradeEngine.isSold === false &&
                     !$scope.is_error_triggered &&
@@ -188,12 +191,16 @@ const Interpreter = () => {
                     });
                 } else {
                     api_base.is_stopping = true;
-                    terminateSession().then(() => {
-                        api_base.is_stopping = false;
-                        resolve();
-                    });
+                    terminateSession()
+                        .then(() => {
+                            resolve();
+                        })
+                        .finally(() => {
+                            api_base.is_stopping = false;
+                        });
                 }
             } catch (e) {
+                api_base.is_stopping = false;
                 reject(e);
             }
         });

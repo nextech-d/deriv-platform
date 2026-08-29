@@ -4,7 +4,7 @@ import { notification_message } from '@/components/bot-notification/bot-notifica
 import { generateOAuthURL, isSafari, mobileOSDetect, standalone_routes } from '@/components/shared';
 import { contract_stages, TContractStage } from '@/constants/contract-stage';
 import { run_panel } from '@/constants/run-panel';
-import { ErrorTypes, MessageTypes, observer, unrecoverable_errors } from '@/external/bot-skeleton';
+import { api_base, ErrorTypes, MessageTypes, observer, unrecoverable_errors } from '@/external/bot-skeleton';
 import { getSelectedTradeType } from '@/external/bot-skeleton/scratch/utils';
 import { handleBackendError, isBackendError } from '@/utils/error-handler';
 // import { journalError, switch_account_notification } from '@/utils/bot-notifications';
@@ -207,6 +207,11 @@ export default class RunPanelStore {
             return;
         }
 
+        if (api_base.is_stopping) {
+            this.unregisterBotListeners();
+            return;
+        }
+
         ui?.setAccountSwitcherDisabledMessage(
             localize(
                 'Account switching is disabled while your bot is running. Please stop your bot before switching accounts.'
@@ -221,6 +226,13 @@ export default class RunPanelStore {
             summary_card.clear();
             this.setContractStage(contract_stages.STARTING);
             this.dbot.runBot();
+            if (!api_base.is_running) {
+                this.setIsRunning(false);
+                this.setContractStage(contract_stages.NOT_RUNNING);
+                ui.setPromptHandler(false);
+                ui.setAccountSwitcherDisabledMessage();
+                this.unregisterBotListeners();
+            }
         });
         this.setShowBotStopMessage(false);
     };
@@ -746,15 +758,21 @@ export default class RunPanelStore {
     };
 
     unregisterBotListeners = () => {
-        observer.unregisterAll('bot.running');
-        observer.unregisterAll('bot.stop');
-        observer.unregisterAll('bot.click_stop');
-        observer.unregisterAll('bot.stop_button_click');
-        observer.unregisterAll('bot.trade_again');
-        observer.unregisterAll('contract.status');
-        observer.unregisterAll('bot.contract');
-        observer.unregisterAll('Error');
-        observer.unregisterAll('bot.setPurchaseInProgress');
+        const { summary_card, transactions } = this.root_store;
+
+        observer.unregister('bot.running', this.onBotRunningEvent);
+        observer.unregister('bot.sell', this.onBotSellEvent);
+        observer.unregister('bot.stop', this.onBotStopEvent);
+        observer.unregister('bot.bot_ready', this.onBotReadyEvent);
+        observer.unregister('bot.click_stop', this.onStopButtonClick);
+        observer.unregister('bot.trade_again', this.onBotTradeAgain);
+        observer.unregister('contract.status', this.onContractStatusEvent);
+        observer.unregister('bot.contract', this.onBotContractEvent);
+        observer.unregister('bot.contract', summary_card.onBotContractEvent);
+        observer.unregister('bot.contract', transactions.onBotContractEvent);
+        observer.unregister('bot.stop_button_click', this.onStopBotClick);
+        observer.unregister('Error', this.onError);
+        observer.unregister('bot.setPurchaseInProgress', this.SetpurchaseInProgress);
     };
 
     setContractStage = (contract_stage: TContractStage) => {

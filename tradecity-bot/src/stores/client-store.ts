@@ -39,12 +39,11 @@ export default class ClientStore {
     private is_regenerating = false;
     private instance_id: string = '';
 
-    private onBotRunning = () => {
-        void this.refreshBalanceFromApi();
-    };
-
     private onBotStop = () => {
-        void this.refreshBalanceFromApi();
+        // Defer so balance poll does not compete with terminateSession WS cleanup.
+        window.setTimeout(() => {
+            void this.refreshBalanceFromApi();
+        }, 0);
     };
 
     // TODO: fix with self exclusion
@@ -95,7 +94,6 @@ export default class ClientStore {
         // Set up visibility change listener to regenerate WebSocket when tab becomes visible
         this.setupVisibilityListener();
 
-        observer.register('bot.running', this.onBotRunning);
         observer.register('bot.stop', this.onBotStop);
 
         makeObservable(this, {
@@ -509,7 +507,6 @@ export default class ClientStore {
     destroy() {
         this.authDataSubscription?.unsubscribe();
         observer.unregister('api.authorize', this.onAuthorizeEvent);
-        observer.unregister('bot.running', this.onBotRunning);
         observer.unregister('bot.stop', this.onBotStop);
         this.removeVisibilityListener();
 
