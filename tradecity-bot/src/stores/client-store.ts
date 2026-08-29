@@ -8,7 +8,7 @@ import { removeCookies } from '@/components/shared/utils/storage/storage';
 import { observer as globalObserver, observer } from '@/external/bot-skeleton';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { ErrorLogger } from '@/utils/error-logger';
-import { mergeLiveBalance, normalizeBalancePayload, toBalanceNumber, type LiveBalancePayload } from '@/utils/live-balance';
+import { mergeLiveBalance, normalizeBalancePayload, socketMessageToBalancePayload, toBalanceNumber, type LiveBalancePayload } from '@/utils/live-balance';
 import type { Balance } from '@deriv/api-types';
 import {
     authData$,
@@ -38,6 +38,15 @@ export default class ClientStore {
     private ws_login_id: string | null = null;
     private is_regenerating = false;
     private instance_id: string = '';
+    private balance_message_subscription: { unsubscribe: () => void } | null = null;
+
+    private onConnectionReady = () => {
+        this.attachBalanceMessageListener();
+    };
+
+    private onBotStop = () => {
+        void this.refreshBalanceFromApi();
+    };
 
     // TODO: fix with self exclusion
 
@@ -86,6 +95,9 @@ export default class ClientStore {
 
         // Set up visibility change listener to regenerate WebSocket when tab becomes visible
         this.setupVisibilityListener();
+
+        observer.register('api.connection.ready', this.onConnectionReady);
+        observer.register('bot.stop', this.onBotStop);
 
         makeObservable(this, {
             accounts: observable,
@@ -269,6 +281,33 @@ export default class ClientStore {
         this.all_accounts_balance = next.all_accounts_balance as Balance | null;
         this.balance_version += 1;
     };
+
+    attachBalanceMessageListener = () => {
+        this.balance_message_subscription?.unsubscribe();
+        this.balance_message_subscription = null;
+        if (!api_base.api?.onMessage) return;
+
+        this.balance_message_subscription = api_base.api.onMessage().subscribe((res: unknown) => {
+            const payload = socketMessageToBalancePayload(res, getAccountId() || this.loginid);
+            if (payload) this.applyBalanceUpdate(payload);
+        });
+    };
+
+    refreshBalanceFromApi = async () => {
+        if (!api_base.api) return;
+        try {
+            const response = (await api_base.api.balance()) as {
+                balance?: LiveBalancePayload;
+                error?: unknown;
+            };
+            if (!response?.error && response.balance) {
+                this.applyBalanceUpdate(response.balance);
+            }
+        } catch {
+            // Balance poll failed; keep the last known amount.
+        }
+    };
+
     setIsAccountRegenerating = (is_loading: boolean) => {
         this.is_account_regenerating = is_loading;
     };
@@ -482,6 +521,10 @@ export default class ClientStore {
     destroy() {
         this.authDataSubscription?.unsubscribe();
         observer.unregister('api.authorize', this.onAuthorizeEvent);
+        observer.unregister('api.connection.ready', this.onConnectionReady);
+        observer.unregister('bot.stop', this.onBotStop);
+        this.balance_message_subscription?.unsubscribe();
+        this.balance_message_subscription = null;
         this.removeVisibilityListener();
 
         // Properly clean up the global observer reference

@@ -133,9 +133,8 @@ export function mergeLiveBalance(state: LiveBalanceState, payload?: LiveBalanceP
 }
 
 export function resolveAccountBalance(liveAmount: number | undefined, directBalance: string | undefined): number {
-    const from_direct = toBalanceNumber(directBalance);
     const from_map = toBalanceNumber(liveAmount);
-    if (from_direct !== undefined && directBalance !== '0') return from_direct;
+    const from_direct = toBalanceNumber(directBalance);
     if (from_map !== undefined) return from_map;
     if (from_direct !== undefined) return from_direct;
     return 0;
