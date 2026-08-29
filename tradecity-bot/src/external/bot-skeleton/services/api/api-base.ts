@@ -81,60 +81,6 @@ class APIBase {
         store?.applyBalanceUpdate?.(payload);
     };
 
-    private refreshClientBalance = async () => {
-        const store = globalObserver.getState('client.store') as
-            | { refreshBalanceFromApi?: () => Promise<void> }
-            | null
-            | undefined;
-        if (store?.refreshBalanceFromApi) {
-            await store.refreshBalanceFromApi();
-            return;
-        }
-        if (!this.api) return;
-        try {
-            const { balance, error } = await this.api.balance();
-            if (!error && balance) this.applyClientBalance(balance);
-        } catch {
-            // Keep the last known balance if the poll fails.
-        }
-    };
-
-    private wrapApiSendForTopup = () => {
-        if (!this.api) return;
-        type SendableApi = {
-            send: (request: Record<string, unknown>) => unknown;
-            _topup_send_wrapped?: boolean;
-        };
-        const api = this.api as SendableApi;
-        if (api._topup_send_wrapped) return;
-
-        const originalSend = api.send.bind(api);
-        api.send = (request: Record<string, unknown>) => {
-            const result = originalSend(request);
-            if (request?.topup_virtual !== undefined) {
-                void Promise.resolve(result).then(res => {
-                    const response = res as {
-                        error?: unknown;
-                        topup_virtual?: { amount?: number; currency?: string };
-                    };
-                    if (response?.error) return;
-                    const loginid = getAccountId() || '';
-                    if (response?.topup_virtual) {
-                        this.applyClientBalance({
-                            balance: response.topup_virtual.amount,
-                            currency: response.topup_virtual.currency,
-                            loginid,
-                        });
-                        return;
-                    }
-                    void this.refreshClientBalance();
-                });
-            }
-            return result;
-        };
-        api._topup_send_wrapped = true;
-    };
-
     private observeClientBalance = () => {
         if (this.balance_listener) return;
         if (!this.api?.onMessage) return;
@@ -264,8 +210,6 @@ class APIBase {
                 }
             }
         }
-
-        this.wrapApiSendForTopup();
 
         const hasAccountID = V2GetActiveAccountId();
 

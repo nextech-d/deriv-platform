@@ -149,31 +149,14 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
     );
 
     useEffect(() => {
-        if (!client || !isAuthorized) return undefined;
-
-        let subscription: { unsubscribe: () => void } | null = null;
-        let retryTimer: ReturnType<typeof setInterval> | null = null;
-
-        const attach = () => {
-            if (!api_base?.api?.onMessage) return false;
-            subscription?.unsubscribe();
-            subscription = api_base.api.onMessage().subscribe(handleMessages);
-            msg_listener.current = { unsubscribe: subscription.unsubscribe.bind(subscription) };
-            return true;
-        };
-
-        if (!attach()) {
-            retryTimer = setInterval(() => {
-                if (attach() && retryTimer) {
-                    clearInterval(retryTimer);
-                    retryTimer = null;
-                }
-            }, 250);
+        if (!client) return;
+        const subscription = api_base?.api?.onMessage()?.subscribe(handleMessages);
+        if (subscription) {
+            msg_listener.current = { unsubscribe: subscription.unsubscribe };
         }
 
         return () => {
-            if (retryTimer) clearInterval(retryTimer);
-            subscription?.unsubscribe();
+            msg_listener.current?.unsubscribe?.();
             msg_listener.current = null;
         };
     }, [connectionStatus, handleMessages, isAuthorized, client]);
