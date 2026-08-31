@@ -56,10 +56,20 @@ function routeMessageToSubscription(data: unknown, storedSub: StoredSubscription
 export function createTransport(): TTransport {
     const subscriptions = new Map<string, StoredSubscription>();
     let messageSubscription: { unsubscribe: () => void } | null = null;
+    // The socket instance the current messageSubscription is bound to. chart_api.api
+    // is swapped for a NEW WebSocket on every reconnect (Deriv drops idle sockets after
+    // ~60s), which orphans both this listener and the server-side tick subscriptions —
+    // the classic "chart goes stale after a minute" bug. Track the instance so we can
+    // detect the swap and rebind + re-issue subscriptions on the live socket.
+    let boundApi: unknown = null;
 
-    const ensureMessageListener = () => {
-        if (messageSubscription || !chart_api.api) return;
-
+    const bindMessageListener = () => {
+        if (!chart_api.api) return;
+        if (messageSubscription) {
+            messageSubscription.unsubscribe();
+            messageSubscription = null;
+        }
+        boundApi = chart_api.api;
         messageSubscription = chart_api.api.onMessage()?.subscribe(({ data }: { data: unknown }) => {
             subscriptions.forEach(storedSub => {
                 routeMessageToSubscription(data, storedSub);
@@ -67,11 +77,91 @@ export function createTransport(): TTransport {
         });
     };
 
+    // Re-send every active subscribe request on the current (new) socket. Called after
+    // a reconnect so the chart keeps receiving ticks without SmartChart having to
+    // re-subscribe. realSubscriptionId is reset so the new server id is captured.
+    const resubscribeAll = () => {
+        if (!chart_api.api) return;
+        subscriptions.forEach(storedSub => {
+            storedSub.realSubscriptionId = null;
+            chart_api.api
+                .send(storedSub.request)
+                .then((response: { subscription?: { id?: string } }) => {
+                    const subscriptionId = response?.subscription?.id;
+                    if (subscriptionId) {
+                        storedSub.realSubscriptionId = subscriptionId;
+                        storedSub.callback(response);
+                    }
+                })
+                .catch((error: unknown) => logger.error('Re-subscribe after reconnect failed:', error));
+        });
+    };
+
+    // True when chart_api.api exists but its underlying socket is closing/closed.
+    const isSocketDead = () => {
+        const rs = (chart_api.api as { connection?: { readyState?: number } })?.connection?.readyState;
+        return typeof rs === 'number' && rs > 1; // CLOSING (2) or CLOSED (3)
+    };
+
+    // If the socket was swapped out from under us — or chart_api.api itself is a dead
+    // instance nobody re-init'd yet — rebind the listener to a live socket and replay
+    // subscriptions. Cheap no-op when the socket is unchanged and healthy.
+    const syncToLiveSocket = () => {
+        if (isSocketDead()) {
+            // Force a fresh instance, then rebind once it resolves.
+            void chart_api.init(true).then(() => {
+                bindMessageListener();
+                if (subscriptions.size > 0) resubscribeAll();
+            });
+            return;
+        }
+        if (!chart_api.api) return;
+        if (boundApi === chart_api.api && messageSubscription) return;
+        const had_subscriptions = subscriptions.size > 0;
+        bindMessageListener();
+        if (had_subscriptions) resubscribeAll();
+    };
+
+    const ensureMessageListener = () => {
+        if (!chart_api.api) return;
+        // Always reconcile against the live socket instead of early-returning on a
+        // truthy (but possibly dead) messageSubscription.
+        syncToLiveSocket();
+    };
+
+    // A silent reconnect swaps chart_api.api without any chart interaction to trigger a
+    // reconcile, so ticks would stop with no rebind. This watchdog reconciles the
+    // listener/subscriptions against the live socket while any subscription is active.
+    // Interval (10s) is well under Deriv's ~60s idle-close window so a swap is picked
+    // up quickly. It also re-arms chart_api's keepalive ping to reduce idle drops.
+    let reconcileTimer: ReturnType<typeof setInterval> | null = null;
+
+    const stopReconcileWatchdog = () => {
+        if (reconcileTimer) {
+            clearInterval(reconcileTimer);
+            reconcileTimer = null;
+        }
+    };
+
+    const startReconcileWatchdog = () => {
+        if (reconcileTimer) return;
+        reconcileTimer = setInterval(() => {
+            if (subscriptions.size === 0) {
+                stopReconcileWatchdog();
+                return;
+            }
+            chart_api.ensureTimePing?.();
+            syncToLiveSocket();
+        }, 10000);
+    };
+
     const teardownMessageListener = () => {
         if (messageSubscription) {
             messageSubscription.unsubscribe();
             messageSubscription = null;
         }
+        boundApi = null;
+        stopReconcileWatchdog();
     };
 
     return {
@@ -111,6 +201,7 @@ export function createTransport(): TTransport {
             });
 
             ensureMessageListener();
+            startReconcileWatchdog();
 
             chart_api.api
                 .send(subscribeRequest)

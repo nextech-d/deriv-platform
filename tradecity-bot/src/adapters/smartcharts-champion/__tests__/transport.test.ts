@@ -36,6 +36,9 @@ describe('Transport Layer', () => {
 
     afterEach(() => {
         chart_api.api = null;
+        // The transport starts a reconnect-reconcile interval while a subscription is
+        // active; clear any timers left by tests that subscribe without unsubscribing.
+        jest.clearAllTimers();
     });
 
     describe('createTransport', () => {
