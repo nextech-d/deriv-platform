@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 /* [AI] - Analytics removed - rudderstack event tracking removed */
 /* [/AI] */
+import { DBOT_TABS } from '@/constants/bot-contents';
 import { DEFAULT_CHART_SYMBOL } from '@/constants/chart-symbols';
 import { getUrlBase } from '@/components/shared';
 import chart_api from '@/external/bot-skeleton/services/api/chart-api';
@@ -35,6 +36,7 @@ type TChartCanvasProps = {
     isMobile: boolean;
     is_drawer_open: boolean;
     is_chart_modal_visible: boolean;
+    is_chart_active: boolean;
     isSafari: boolean;
     settings: {
         assetInformation: boolean;
@@ -68,6 +70,7 @@ const ChartCanvas = memo(
         isMobile,
         is_drawer_open,
         is_chart_modal_visible,
+        is_chart_active,
         isSafari,
         settings,
         activeSymbols,
@@ -125,6 +128,21 @@ const ChartCanvas = memo(
             });
             return () => cancelAnimationFrame(frame);
         }, []);
+
+        // The Charts panel is kept mounted but hidden with display:none when the
+        // user is on another tab (keep_visited_mounted). A display:none element has
+        // zero dimensions, so SmartChart's canvas cannot paint while hidden; on
+        // return it needs a resize to re-measure and catch up on the ticks it kept
+        // receiving. Fire resize across a few frames once the tab is active again.
+        useEffect(() => {
+            if (!is_chart_active) return undefined;
+            const raf1 = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+            const t = window.setTimeout(() => window.dispatchEvent(new Event('resize')), 120);
+            return () => {
+                cancelAnimationFrame(raf1);
+                clearTimeout(t);
+            };
+        }, [is_chart_active]);
 
         return (
             <>
@@ -196,6 +214,8 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     const { isDesktop, isMobile } = useDevice();
     const { is_drawer_open } = run_panel;
     const { is_chart_modal_visible } = dashboard;
+    // Charts panel stays mounted across tab switches; this drives a repaint on return.
+    const is_chart_active = dashboard.active_tab === DBOT_TABS.CHART;
 
     const settings = useMemo(
         () => ({
@@ -277,6 +297,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
             isMobile={isMobile}
             is_drawer_open={is_drawer_open}
             is_chart_modal_visible={is_chart_modal_visible}
+            is_chart_active={is_chart_active}
             isSafari={isSafari}
             settings={settings}
             activeSymbols={activeSymbols}

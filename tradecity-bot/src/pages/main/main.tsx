@@ -636,21 +636,26 @@ const AppWrapper = observer(() => {
                     </DeskSuspense>
                 );
             case 'chart':
+                // Do NOT gate ChartWrapper on active_tab: with keep_visited_mounted
+                // the Tabs panel stays mounted (display:none) when you leave, but an
+                // active_tab check here would still unmount the SmartChart subtree and
+                // tear down its live tick subscriptions — forcing a cold remount and
+                // stale charts on return. The Tabs component already withholds this
+                // panel until the Charts tab is first visited, so leaving it always
+                // rendered keeps the feed alive without eager-initialising the chart.
                 return (
                     <DeskSuspense>
                         <ChartsDesk>
-                            {active_tab === DBOT_TABS.CHART ? (
-                                <ErrorBoundary
-                                    root_store={store}
+                            <ErrorBoundary
+                                root_store={store}
+                                fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
+                            >
+                                <Suspense
                                     fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
                                 >
-                                    <Suspense
-                                        fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
-                                    >
-                                        <ChartWrapper show_digits_stats={false} />
-                                    </Suspense>
-                                </ErrorBoundary>
-                            ) : null}
+                                    <ChartWrapper show_digits_stats={false} />
+                                </Suspense>
+                            </ErrorBoundary>
                         </ChartsDesk>
                     </DeskSuspense>
                 );

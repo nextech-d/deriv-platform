@@ -5,6 +5,7 @@ import { toMoment } from '@/components/shared';
 import { FORM_ERROR_MESSAGES } from '@/components/shared/constants/form-error-messages';
 import { initFormErrorMessages } from '@/components/shared/utils/validation/declarative-validation-rules';
 import { api_base } from '@/external/bot-skeleton';
+import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { useApiBase } from '@/hooks/useApiBase';
 import { useLogout } from '@/hooks/useLogout';
 import { useStore } from '@/hooks/useStore';
@@ -148,16 +149,30 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
         [client]
     );
 
+    // The Deriv balance stream is delivered over the shared api_base.api socket.
+    // That socket is regenerated on reconnect/account-switch (api_base.init swaps
+    // api_base.api for a NEW instance) and isAuthorized briefly flips false while
+    // it re-authorizes. The listener must therefore survive both: we re-attach
+    // whenever the underlying socket INSTANCE changes and never tear the listener
+    // down just because isAuthorized momentarily dropped — otherwise mid-run
+    // ticks are silently lost until the next Stop and the header freezes.
+    const attached_socket = useRef<unknown>(null);
+
     useEffect(() => {
-        if (!client || !isAuthorized) return undefined;
+        if (!client) return undefined;
 
         let subscription: { unsubscribe: () => void } | null = null;
         let retryTimer: ReturnType<typeof setInterval> | null = null;
 
         const attach = () => {
-            if (!api_base?.api?.onMessage) return false;
+            const api = api_base?.api;
+            if (!api?.onMessage) return false;
+            // Same socket instance already wired up — nothing to do.
+            if (attached_socket.current === api && msg_listener.current) return true;
             subscription?.unsubscribe();
-            subscription = api_base.api.onMessage().subscribe(handleMessages);
+            msg_listener.current?.unsubscribe();
+            subscription = api.onMessage().subscribe(handleMessages);
+            attached_socket.current = api;
             msg_listener.current = { unsubscribe: subscription.unsubscribe.bind(subscription) };
             return true;
         };
@@ -174,9 +189,19 @@ const CoreStoreProvider: React.FC<{ children: React.ReactNode }> = observer(({ c
         return () => {
             if (retryTimer) clearInterval(retryTimer);
             subscription?.unsubscribe();
+            attached_socket.current = null;
             msg_listener.current = null;
         };
-    }, [connectionStatus, handleMessages, isAuthorized, client]);
+    }, [connectionStatus, handleMessages, client]);
+
+    // Safety net: when the socket (re)opens, the freshly-subscribed balance
+    // stream may not replay the current amount, so resync once from the API.
+    // One-shot only — the periodic bot.running poll that caused the Run-freeze
+    // regression (d3f23e4) is intentionally NOT reintroduced here.
+    useEffect(() => {
+        if (!client || connectionStatus !== CONNECTION_STATUS.OPENED) return;
+        void client.refreshBalanceFromApi?.();
+    }, [connectionStatus, client]);
 
     useEffect(() => {
         if (!isAuthorizing && isAuthorized && !accountInitialization.current && client) {

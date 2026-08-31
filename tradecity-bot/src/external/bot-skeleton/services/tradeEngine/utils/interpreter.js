@@ -18,6 +18,10 @@ JSInterpreter.prototype.restoreStateSnapshot = function (snapshot) {
     this.initFunc_(this, this.global);
 };
 
+// Upper bound on how long a stop may hold api_base.is_stopping before it is
+// force-cleared, so a hung WS teardown cannot wedge the Run button.
+const STOP_TIMEOUT_MS = 6000;
+
 const botInitialized = bot => bot && bot.tradeEngine.options;
 const botStarted = bot => botInitialized(bot) && bot.tradeEngine.tradeOptions;
 const shouldRestartOnError = (bot, errorName = '') =>
@@ -161,6 +165,25 @@ const Interpreter = () => {
 
     async function stop() {
         return new Promise((resolve, reject) => {
+            // Watchdog: terminateSession() only settles once a WS `forget` round-trip
+            // completes. If the socket is mid-reconnect (Deriv idle timeout / tab
+            // wake), that round-trip can hang and .finally never runs, leaving
+            // api_base.is_stopping stuck true — which silently no-ops every future
+            // Run ("stuck on Bot is starting"). Force-clear the flag after a bound
+            // so a wedged teardown can never disable the Run button.
+            let is_settled = false;
+            const clearStoppingFlag = () => {
+                api_base.is_stopping = false;
+            };
+            const settle = () => {
+                if (is_settled) return;
+                is_settled = true;
+                clearTimeout(stop_watchdog);
+                clearStoppingFlag();
+                resolve();
+            };
+            const stop_watchdog = setTimeout(settle, STOP_TIMEOUT_MS);
+
             try {
                 const global_timeouts = globalObserver.getState('global_timeouts') ?? [];
                 const is_timeouts_cancellable = Object.keys(global_timeouts).every(
@@ -172,35 +195,27 @@ const Interpreter = () => {
                     // When user is rate limited, allow them to stop the bot immediately
                     // granted there is no active contract.
                     global_timeouts.forEach(timeout => clearTimeout(global_timeouts[timeout]));
-                    terminateSession()
-                        .then(() => {
-                            resolve();
-                        })
-                        .finally(() => {
-                            api_base.is_stopping = false;
-                        });
+                    terminateSession().finally(settle);
                 } else if (
                     bot.tradeEngine.isSold === false &&
                     !$scope.is_error_triggered &&
                     isMultiplierContract(bot?.tradeEngine?.data?.contract?.contract_type ?? '')
                 ) {
+                    // Waiting for the open contract to sell: no is_stopping guard is
+                    // set here, so the watchdog just resolves late if the sell stalls.
                     globalObserver.register('contract.status', async contractStatus => {
                         if (contractStatus.id === 'contract.sold') {
-                            terminateSession().then(() => resolve());
+                            terminateSession().finally(settle);
                         }
                     });
                 } else {
                     api_base.is_stopping = true;
-                    terminateSession()
-                        .then(() => {
-                            resolve();
-                        })
-                        .finally(() => {
-                            api_base.is_stopping = false;
-                        });
+                    terminateSession().finally(settle);
                 }
             } catch (e) {
-                api_base.is_stopping = false;
+                clearTimeout(stop_watchdog);
+                clearStoppingFlag();
+                is_settled = true;
                 reject(e);
             }
         });

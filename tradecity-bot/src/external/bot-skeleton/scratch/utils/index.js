@@ -10,6 +10,7 @@ import { observer as globalObserver } from '../../utils/observer';
 import { removeLimitedBlocks } from '../../utils/workspace';
 import BlockConversion from '../backward-compatibility';
 import { api_base } from '../../services/api/api-base';
+import ApiHelpers from '../../services/api/api-helpers';
 import DBotStore from '../dbot-store';
 import { saveAs } from '../shared';
 
@@ -274,7 +275,36 @@ export const loadWorkspace = async (xml, event_group, workspace) => {
         workspace.cleanUp(0, DBotStore.instance?.is_mobile ? 60 : 56);
     } catch (error) {
         console.warn('[Blockly] cleanUp after load failed', error);
+    } finally {
+        // Close the dbot-load group so the next user edit is not misread as a
+        // load event (trade blocks skip value updates while a load group is active).
+        window.Blockly.Events.setGroup(false);
     }
+};
+
+/**
+ * Re-fires BlockCreate on trade_definition_market blocks so trade-parameter
+ * dropdowns (duration/barrier/currency) repopulate from contracts_for. During
+ * the initial mount contracts_for may not be ready yet (its handlers bail out
+ * early); when it is ready this reruns them so Import Open / Reset fill the
+ * dropdowns on the first try without a page refresh. If contracts_for is not
+ * ready, the currency reaction in app-store fires this same rehydration once it
+ * becomes available, so doing nothing here is safe.
+ */
+export const rehydrateTradeParameters = (workspace = window.Blockly?.derivWorkspace) => {
+    if (!workspace) return;
+    const contracts_for = ApiHelpers?.instance?.contracts_for;
+    if (!contracts_for) return;
+
+    workspace
+        .getAllBlocks()
+        .filter(block => block.type === 'trade_definition_market')
+        .forEach(block => {
+            runIrreversibleEvents(() => {
+                const fake_create_event = new window.Blockly.Events.BlockCreate(block);
+                window.Blockly.Events.fire(fake_create_event);
+            });
+        });
 };
 
 /** Shared runtime mount path for Import Open and toolbar Reset (matches post-refresh inject). */
@@ -291,6 +321,7 @@ export const mountStrategyOnWorkspace = async (xml, workspace, { strategy_id } =
     const is_main_workspace = workspace === window.Blockly.derivWorkspace;
     if (is_main_workspace) {
         api_base.toggleRunButton(false);
+        rehydrateTradeParameters(workspace);
         revealLoadedWorkspace(workspace);
     }
 
