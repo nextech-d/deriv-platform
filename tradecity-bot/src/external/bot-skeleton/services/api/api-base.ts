@@ -79,7 +79,10 @@ class APIBase {
         store?.applyBalanceUpdate?.(payload);
     };
 
-    private refreshClientBalance = async () => {
+    // Public: pull the authoritative flat active-account balance and push it to the
+    // client store. Used at contract settlement and top-up so the balance is correct
+    // even when the live account:'all' delta stream drops a tick.
+    refreshClientBalance = async () => {
         const store = globalObserver.getState('client.store') as
             | { refreshBalanceFromApi?: () => Promise<void> }
             | null

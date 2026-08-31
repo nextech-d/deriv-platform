@@ -25,6 +25,12 @@ export default Engine =>
                         this.contractId = '';
                         clearTimeout(this.transaction_recovery_timeout);
                         this.updateTotals(contract);
+                        // A settled contract is when the balance changes. Pull the
+                        // authoritative balance now so the store/header/strategy all
+                        // reflect the win/loss immediately, independent of whether the
+                        // live `balance` delta tick lands (it may be dropped on the
+                        // account:'all' stream or across a reconnect).
+                        void api_base.refreshClientBalance?.();
                         contractStatus({
                             id: 'contract.sold',
                             data: contract.transaction_ids.sell,

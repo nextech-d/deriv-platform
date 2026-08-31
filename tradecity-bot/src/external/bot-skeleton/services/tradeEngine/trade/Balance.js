@@ -1,34 +1,20 @@
 import { getFormattedText } from '@/components/shared';
 import DBotStore from '../../../scratch/dbot-store';
-import { api_base } from '../../api/api-base';
-import { info } from '../utils/broadcast';
-
-let balance_string = '';
 
 export default Engine =>
     class Balance extends Engine {
-        observeBalance() {
-            if (!api_base.api) return;
-            const subscription = api_base.api.onMessage().subscribe(({ data }) => {
-                if (data?.msg_type === 'balance' && data?.balance) {
-                    const {
-                        balance: { balance: b, currency },
-                    } = data;
+        // The balance is owned entirely by the client store (ClientStore), which is
+        // fed by the single WS `balance` listener in CoreStoreProvider and refreshed
+        // at settlement. The engine no longer keeps its own balance subscription:
+        // reading a flat `data.balance.balance` off `account:'all'` delta ticks (which
+        // are keyed under `balance.accounts[loginid]`) left the engine value frozen
+        // after the first snapshot. getBalance() now reads that one source of truth.
+        observeBalance() {}
 
-                    balance_string = getFormattedText(b, currency);
-
-                    if (this.accountInfo) info({ accountID: this.accountInfo.loginid, balance: balance_string });
-                }
-            });
-            api_base.pushSubscription(subscription);
-        }
-
-        // eslint-disable-next-line class-methods-use-this
         getBalance(type) {
             const { client } = DBotStore.instance;
             const balance = (client && client.balance) || 0;
 
-            balance_string = getFormattedText(balance, client.currency, false);
-            return type === 'STR' ? balance_string : balance;
+            return type === 'STR' ? getFormattedText(balance, client?.currency, false) : Number(balance) || 0;
         }
     };
