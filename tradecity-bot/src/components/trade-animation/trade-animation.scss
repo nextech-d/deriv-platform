@@ -21,6 +21,22 @@
     }
 }
 
+// Indeterminate pulse for the RUNNING stage: the bot is live but has not yet
+// bought, so there is no real progress to show — this signals activity.
+@keyframes animate-progress-running {
+    0% {
+        width: 15%;
+    }
+
+    50% {
+        width: 40%;
+    }
+
+    100% {
+        width: 15%;
+    }
+}
+
 @keyframes animate-circle {
     0% {
         transform: scale(0);
@@ -217,6 +233,17 @@
             border-radius: $BORDER_RADIUS;
             width: 0;
             height: 100%;
+        }
+
+        // STARTING: engine spinning up (login, ticks, proposal) — show a small
+        // fill so the user sees the bar is live before the RUNNING pulse begins.
+        &-1 {
+            width: 12%;
+        }
+
+        // RUNNING: bot is live and waiting to buy — indeterminate pulse.
+        &-2 {
+            animation: animate-progress-running 1.4s ease-in-out infinite;
         }
 
         &-4 {

@@ -534,6 +534,16 @@ export default class RunPanelStore {
     onBotRunningEvent = () => {
         this.setHasOpenContract(true);
 
+        // The engine has started its trade loop (tradeEngine.start emitted
+        // 'bot.running'). Advance the progress UI from STARTING to RUNNING so the
+        // animation shows "Bot running" immediately, instead of staying stuck on
+        // "Bot is starting" until the first purchase — which can be many seconds
+        // out while the bot waits on ticks/proposals. Only advance from the pre-run
+        // stages so we never clobber an in-flight purchase/closed stage on restart.
+        if (this.contract_stage <= contract_stages.RUNNING) {
+            this.setContractStage(contract_stages.RUNNING);
+        }
+
         // prevent new version update
         const ignore_new_version = new Event('IgnorePWAUpdate');
         document.dispatchEvent(ignore_new_version);
@@ -628,6 +638,10 @@ export default class RunPanelStore {
                 this.is_sell_requested = false;
                 this.setContractStage(contract_stages.CONTRACT_CLOSED);
                 if (contract_status.contract) GTM.onTransactionClosed(contract_status.contract);
+                // A settled contract is exactly when the balance changes. The WS
+                // balance stream usually pushes this, but pull once too so the nav
+                // balance updates promptly mid-run instead of only after a refresh.
+                void this.core.client?.refreshBalanceFromApi?.();
                 break;
             }
             default:
