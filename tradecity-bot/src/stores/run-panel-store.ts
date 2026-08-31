@@ -98,6 +98,7 @@ export default class RunPanelStore {
         this.core = core;
         this.disposeReactionsFn = this.registerReactions();
         this.timer = null;
+        this.stop_ui_watchdog = null;
     }
 
     active_index = 0;
@@ -121,6 +122,7 @@ export default class RunPanelStore {
     run_id = '';
     onOkButtonClick: (() => void) | null = null;
     onCancelButtonClick: (() => void) | null = null;
+    stop_ui_watchdog: ReturnType<typeof setTimeout> | null = null;
 
     // when error happens, if it is unrecoverable_errors we reset run-panel
     // we activate run-button and clear trade info and set the ContractStage to NOT_RUNNING
@@ -261,10 +263,56 @@ export default class RunPanelStore {
         }
     };
 
+    hasLiveContractOnEngine = (): boolean => {
+        const tradeEngine = this.dbot?.interpreter?.bot?.tradeEngine;
+        return Boolean(tradeEngine?.contractId && !tradeEngine.isSold);
+    };
+
+    clearStopUiWatchdog = () => {
+        if (this.stop_ui_watchdog) {
+            clearTimeout(this.stop_ui_watchdog);
+            this.stop_ui_watchdog = null;
+        }
+    };
+
+    finalizeStopUiIfStuck = () => {
+        if (this.hasLiveContractOnEngine()) {
+            return;
+        }
+
+        const should_finalize =
+            this.contract_stage === contract_stages.IS_STOPPING ||
+            (this.is_running && !api_base.is_running) ||
+            (this.has_open_contract && !api_base.is_running);
+
+        if (!should_finalize) {
+            return;
+        }
+
+        const { ui } = this.core;
+        this.error_type = undefined;
+        this.is_sell_requested = false;
+        this.setIsRunning(false);
+        this.setHasOpenContract(false);
+        this.setContractStage(contract_stages.NOT_RUNNING);
+        ui.setAccountSwitcherDisabledMessage();
+        this.unregisterBotListeners();
+        this.clearStopUiWatchdog();
+    };
+
+    scheduleStopUiWatchdog = () => {
+        this.clearStopUiWatchdog();
+        // Slightly longer than interpreter STOP_TIMEOUT_MS (6000) so we finalize after engine teardown.
+        this.stop_ui_watchdog = setTimeout(() => {
+            this.stop_ui_watchdog = null;
+            this.finalizeStopUiIfStuck();
+        }, 6500);
+    };
+
     stopBot = () => {
         const { ui } = this.core;
 
-        this.dbot.stopBot();
+        const stopPromise = this.dbot.stopBot();
 
         ui.setPromptHandler(false);
 
@@ -273,15 +321,22 @@ export default class RunPanelStore {
             this.setContractStage(contract_stages.NOT_RUNNING);
             ui.setAccountSwitcherDisabledMessage();
             this.setIsRunning(false);
-        } else if (this.has_open_contract) {
-            // when user click stop button when bot is running
+            this.setHasOpenContract(false);
+            this.clearStopUiWatchdog();
+        } else if (this.hasLiveContractOnEngine()) {
+            // Open contract must settle before the session fully ends
             this.setContractStage(contract_stages.IS_STOPPING);
+            this.scheduleStopUiWatchdog();
+            void stopPromise.finally(() => this.finalizeStopUiIfStuck());
         } else {
-            // when user click stop button before bot start running
+            // No live contract — reset UI immediately (engine may still be winding down)
             this.setContractStage(contract_stages.NOT_RUNNING);
             this.unregisterBotListeners();
             ui.setAccountSwitcherDisabledMessage();
             this.setIsRunning(false);
+            this.setHasOpenContract(false);
+            this.clearStopUiWatchdog();
+            void stopPromise.finally(() => this.finalizeStopUiIfStuck());
         }
 
         if (this.error_type) {
@@ -558,6 +613,7 @@ export default class RunPanelStore {
         const { ui } = this.core;
         const indicateBotStopped = () => {
             this.error_type = undefined;
+            this.is_sell_requested = false;
             this.setContractStage(contract_stages.NOT_RUNNING);
             ui.setAccountSwitcherDisabledMessage();
             this.unregisterBotListeners();
@@ -581,16 +637,13 @@ export default class RunPanelStore {
             // - When error happens and it's an unrecoverable error
             this.setIsRunning(false);
             indicateBotStopped();
-        } else if (this.has_open_contract) {
-            // Bot should indicate the contract is closed in below cases:
-            // - When bot was running and an error happens
-            this.error_type = undefined;
-            this.is_sell_requested = false;
-            this.setContractStage(contract_stages.CONTRACT_CLOSED);
-            ui.setAccountSwitcherDisabledMessage();
-            this.unregisterBotListeners();
+        } else {
+            // Normal stop — always finalize so IS_STOPPING cannot linger
+            this.setIsRunning(false);
+            indicateBotStopped();
         }
 
+        this.clearStopUiWatchdog();
         this.setHasOpenContract(false);
 
         summary_card.clearContractUpdateConfigValues();
@@ -642,6 +695,7 @@ export default class RunPanelStore {
                 // balance stream usually pushes this, but pull once too so the nav
                 // balance updates promptly mid-run instead of only after a refresh.
                 void this.core.client?.refreshBalanceFromApi?.();
+                this.finalizeStopUiIfStuck();
                 break;
             }
             default:
