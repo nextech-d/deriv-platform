@@ -22,10 +22,19 @@ type StoredSubscription = {
 
 function routeMessageToSubscription(data: unknown, storedSub: StoredSubscription): boolean {
     const subscriptionId = (data as { subscription?: { id?: string } })?.subscription?.id;
-    if (subscriptionId) {
-        if (!storedSub.realSubscriptionId) {
-            storedSub.realSubscriptionId = subscriptionId;
-        }
+
+    // Once BOTH ids are known the id is authoritative: match routes, mismatch is
+    // somebody else's stream and must not fall through to the symbol check below.
+    //
+    // Never adopt an id from an unmatched frame. api_base shares this socket and
+    // subscribes to balance, transaction and proposal_open_contract, so the first
+    // id to arrive after subscribe() is frequently NOT ours. Adopting it delivered
+    // that foreign frame to the chart as if it were a quote — verified against live
+    // Deriv frames, where a second stream's `history` reached this callback. The
+    // adoption self-corrects once the subscribe response lands, so the damage is
+    // the contaminated frame, not lasting tick starvation. realSubscriptionId is
+    // set from the subscribe response — see subscribe() and resubscribeAll().
+    if (subscriptionId && storedSub.realSubscriptionId) {
         if (subscriptionId === storedSub.realSubscriptionId) {
             storedSub.callback(data);
             return true;
@@ -33,6 +42,9 @@ function routeMessageToSubscription(data: unknown, storedSub: StoredSubscription
         return false;
     }
 
+    // Our id is not known yet (the subscribe response is still in flight), or the
+    // frame carries no subscription.id at all — Deriv omits it on some tick/ohlc
+    // frames. Match on the symbol we asked for.
     const msg = data as {
         tick?: { symbol?: string };
         ohlc?: { symbol?: string };
@@ -219,6 +231,15 @@ export function createTransport(): TTransport {
                     }
                 })
                 .catch((error: unknown) => {
+                    // AlreadySubscribed means the stream IS live on this socket — a
+                    // remounted chart or a second consumer owns the server-side
+                    // subscription. Keep the entry so symbol matching routes those
+                    // frames here. Deleting it tore down the message listener and
+                    // left the chart dead while ticks kept arriving on the wire.
+                    if ((error as { error?: { code?: string } })?.error?.code === 'AlreadySubscribed') {
+                        logger.warn('Already subscribed; routing the existing stream by symbol:', requestedSymbol);
+                        return;
+                    }
                     logger.error('Subscription failed:', error);
                     subscriptions.delete(tempId);
                     if (subscriptions.size === 0) {
