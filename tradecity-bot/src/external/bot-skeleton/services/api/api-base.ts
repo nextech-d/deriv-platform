@@ -442,10 +442,13 @@ class APIBase {
         const subscribeToStream = (streamName: string) => {
             return doUntilDone(
                 () => {
+                    // No `account: 'all'` — the trading/v1 gateway rejects it with
+                    // InputValidationFailed ("Properties not allowed: account"), which
+                    // failed the balance subscribe on every load and, via Promise.all,
+                    // took transaction and proposal_open_contract down with it.
                     const subscription = this.api?.send({
                         [streamName]: 1,
                         subscribe: 1,
-                        ...(streamName === 'balance' ? { account: 'all' } : {}),
                     });
 
                     if (subscription) {
@@ -460,7 +463,16 @@ class APIBase {
 
         const streamsToSubscribe = ['balance', 'transaction', 'proposal_open_contract'];
 
-        await Promise.all(streamsToSubscribe.map(subscribeToStream));
+        // allSettled, not all: one stream failing must not abandon the other two.
+        // The caller does not await subscribe(), so a rejection here would also
+        // surface as an unhandled promise rejection rather than being reported.
+        const results = await Promise.allSettled(streamsToSubscribe.map(subscribeToStream));
+        results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                const code = (result.reason as { error?: { code?: string } })?.error?.code;
+                console.error(`[APIBase] ${streamsToSubscribe[index]} subscription failed:`, code ?? 'unknown');
+            }
+        });
     }
 
     private waitForSocketOpen = (timeout_ms = this.SOCKET_OPEN_TIMEOUT_MS): Promise<void> => {

@@ -52,6 +52,7 @@ describe('transport message routing on a shared socket', () => {
     let mockApi: any;
     let messageCallback: (frame: unknown) => void;
     let resolveSend: (response: unknown) => void;
+    let rejectSend: (reason: unknown) => void;
     let transport: ReturnType<typeof createTransport>;
 
     beforeEach(() => {
@@ -59,8 +60,9 @@ describe('transport message routing on a shared socket', () => {
 
         // Hold the subscribe response open so the test can drive the window between
         // send() and its .then() — the window in which realSubscriptionId is null.
-        const sendResponse = new Promise(resolve => {
+        const sendResponse = new Promise((resolve, reject) => {
             resolveSend = resolve;
+            rejectSend = reject;
         });
 
         mockApi = {
@@ -112,6 +114,25 @@ describe('transport message routing on a shared socket', () => {
 
         expect(mockApi.forget).toHaveBeenCalledWith(TICK_SUBSCRIPTION_ID);
         expect(mockApi.forget).not.toHaveBeenCalledWith(BALANCE_SUBSCRIPTION_ID);
+    });
+
+    it('keeps routing when the server refuses a duplicate subscribe', async () => {
+        const onQuote = jest.fn();
+        transport.subscribe({ ticks_history: TICK_SYMBOL }, onQuote);
+
+        // A remounted chart already owns the server-side stream for this symbol.
+        rejectSend({
+            echo_req: { ticks_history: TICK_SYMBOL, style: 'ticks', subscribe: 1 },
+            error: { code: 'AlreadySubscribed', message: `You are already subscribed to ${TICK_SYMBOL}` },
+            msg_type: 'ticks_history',
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // Ticks from that existing stream must still reach the chart.
+        messageCallback(tickFrame);
+
+        expect(onQuote).toHaveBeenCalledWith(tickFrame.data);
     });
 
     it('ignores a tick for a symbol it did not subscribe to', () => {

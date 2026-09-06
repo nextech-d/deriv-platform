@@ -231,6 +231,15 @@ export function createTransport(): TTransport {
                     }
                 })
                 .catch((error: unknown) => {
+                    // AlreadySubscribed means the stream IS live on this socket — a
+                    // remounted chart or a second consumer owns the server-side
+                    // subscription. Keep the entry so symbol matching routes those
+                    // frames here. Deleting it tore down the message listener and
+                    // left the chart dead while ticks kept arriving on the wire.
+                    if ((error as { error?: { code?: string } })?.error?.code === 'AlreadySubscribed') {
+                        logger.warn('Already subscribed; routing the existing stream by symbol:', requestedSymbol);
+                        return;
+                    }
                     logger.error('Subscription failed:', error);
                     subscriptions.delete(tempId);
                     if (subscriptions.size === 0) {
