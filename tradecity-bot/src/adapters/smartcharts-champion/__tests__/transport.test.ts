@@ -128,6 +128,62 @@ describe('Transport Layer', () => {
             expect(mockMessageObservable.subscribe).toHaveBeenCalled();
         });
 
+        // syncToLiveSocket() replays `subscriptions` whenever it rebinds the listener,
+        // and the first subscribe of a transport always rebinds. Registering the entry
+        // before that call meant resubscribeAll() sent the request and then subscribe()
+        // sent the SAME object again. DerivAPIBasic stamps req_id onto the object it is
+        // given, so the duplicate went out byte-identical with the same req_id and the
+        // gateway answered both with AlreadySubscribed.
+        it('sends the subscribe request exactly once on a first subscribe', () => {
+            const mockMessageObservable = {
+                subscribe: jest.fn().mockReturnValue({ unsubscribe: jest.fn() }),
+            };
+            mockApi.onMessage.mockReturnValue(mockMessageObservable);
+            mockApi.send.mockResolvedValue({ subscription: { id: 'sub-123' } });
+
+            const transport = createTransport();
+            transport.subscribe({ ticks_history: 'R_10', style: 'ticks' }, jest.fn());
+
+            expect(mockApi.send).toHaveBeenCalledTimes(1);
+            expect(mockApi.send).toHaveBeenCalledWith(
+                expect.objectContaining({ ticks_history: 'R_10', subscribe: 1 })
+            );
+        });
+
+        it('does not replay a req_id when re-subscribing on a new socket', async () => {
+            const mockMessageObservable = {
+                subscribe: jest.fn().mockReturnValue({ unsubscribe: jest.fn() }),
+            };
+            mockApi.onMessage.mockReturnValue(mockMessageObservable);
+            // DerivAPIBasic mutates the request it is handed; mimic that here.
+            mockApi.send.mockImplementation((request: any) => {
+                request.req_id = request.req_id || 21;
+                return Promise.resolve({ subscription: { id: 'sub-123' } });
+            });
+
+            const transport = createTransport();
+            transport.subscribe({ ticks_history: 'R_10', style: 'ticks' }, jest.fn());
+            await Promise.resolve();
+
+            expect(mockApi.send.mock.calls[0][0].req_id).toBe(21);
+
+            // Swap the socket so the next reconcile rebinds and replays.
+            const secondApi = {
+                ...mockApi,
+                send: jest.fn().mockResolvedValue({ subscription: { id: 'sub-456' } }),
+                onMessage: jest.fn().mockReturnValue(mockMessageObservable),
+            };
+            chart_api.api = secondApi as any;
+
+            transport.subscribe({ ticks_history: 'R_25', style: 'ticks' }, jest.fn());
+
+            const replayed = secondApi.send.mock.calls.find(
+                (call: any[]) => call[0].ticks_history === 'R_10'
+            );
+            expect(replayed).toBeDefined();
+            expect(replayed![0].req_id).toBeUndefined();
+        });
+
         it('should throw error if API not initialized', () => {
             chart_api.api = null;
 

@@ -96,8 +96,17 @@ export function createTransport(): TTransport {
         if (!chart_api.api) return;
         subscriptions.forEach(storedSub => {
             storedSub.realSubscriptionId = null;
+            // Replay a copy with any stamped req_id stripped. DerivAPIBasic mutates the
+            // request object it is handed (`e.req_id = e.req_id || ++this.reqId`), so the
+            // stored object carries the req_id of the send that first used it — and a
+            // plain shallow copy would carry it too, since it is an own property by then.
+            // Re-sending that across a reconnect reuses the previous socket's req_id while
+            // the new instance's counter restarts at 0, which cross-wires the response to
+            // whatever later request lands on the same slot.
+            const replay_request = { ...storedSub.request };
+            delete replay_request.req_id;
             chart_api.api
-                .send(storedSub.request)
+                .send(replay_request)
                 .then((response: { subscription?: { id?: string } }) => {
                     const subscriptionId = response?.subscription?.id;
                     if (subscriptionId) {
@@ -205,6 +214,16 @@ export function createTransport(): TTransport {
             const subscribeRequest = { ...request, subscribe: 1 };
             const requestedSymbol = (request.ticks_history || request.ticks) as string | undefined;
 
+            // Reconcile against the live socket BEFORE registering this entry.
+            // syncToLiveSocket() replays every entry in `subscriptions` whenever it
+            // (re)binds the listener, and on the first subscribe of a transport it always
+            // rebinds — boundApi is still null. An entry registered ahead of this call was
+            // therefore replayed by resubscribeAll() and then sent again below. Because
+            // DerivAPIBasic stamps req_id onto the object it is given, the second send
+            // reused the first's req_id and put a byte-identical duplicate frame on the
+            // wire, which the gateway answered twice with AlreadySubscribed.
+            ensureMessageListener();
+
             subscriptions.set(tempId, {
                 request: subscribeRequest,
                 callback,
@@ -212,7 +231,6 @@ export function createTransport(): TTransport {
                 requestedSymbol,
             });
 
-            ensureMessageListener();
             startReconcileWatchdog();
 
             chart_api.api
