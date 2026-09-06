@@ -16,16 +16,23 @@ import type {
 } from '@deriv-com/smartcharts-champion';
 
 // Logger utility
+// Resolved at call time, not bound at module load, so the console can be spied on.
 const logger = {
     log: () => {}, // Disabled in production
-    warn: console.warn.bind(console, '[SmartCharts Hook]'),
-    error: console.error.bind(console, '[SmartCharts Hook]'),
+    warn: (...args: unknown[]) => console.warn('[SmartCharts Hook]', ...args),
+    error: (...args: unknown[]) => console.error('[SmartCharts Hook]', ...args),
 };
 
 // Type guard for valid granularity values
 function isValidGranularity(value: unknown): value is TGranularity {
     const validGranularities = [0, 60, 120, 180, 300, 600, 900, 1800, 3600, 7200, 14400, 28800, 86400];
     return typeof value === 'number' && validGranularities.includes(value);
+}
+
+// Must match the key the adapter uses in its own subscription map so the two stay
+// in step (see buildSmartchartsChampionAdapter).
+function subscriptionKey(symbol: string, granularity: TGranularity) {
+    return `${symbol}-${granularity}`;
 }
 
 interface UseSmartChartAdaptorReturn {
@@ -65,6 +72,11 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
     const isMountedRef = useRef(true);
     const cleanupFunctionsRef = useRef<Array<() => void>>([]);
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref to store timeout for cleanup
+    // Mirrors the adapter's own `symbol-granularity` subscription map so a teardown
+    // that finds no matching stream can be reported instead of passing silently. A
+    // miss means the server-side subscription is about to be leaked, which is what
+    // makes the NEXT subscribe for that symbol come back AlreadySubscribed.
+    const activeKeysRef = useRef<Set<string>>(new Set());
 
     // Track mounted state
     useEffect(() => {
@@ -261,10 +273,13 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                 return () => {};
             }
 
+            const granularity = isValidGranularity(params.granularity) ? params.granularity : 0;
+            const key = subscriptionKey(params.symbol, granularity);
+
             const unsubscribe = adapter.subscribeQuotes(
                 {
                     symbol: params.symbol,
-                    granularity: isValidGranularity(params.granularity) ? params.granularity : 0,
+                    granularity,
                 },
                 quote => {
                     if (isMountedRef.current) {
@@ -273,9 +288,12 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                 }
             );
 
+            activeKeysRef.current.add(key);
+
             // Create wrapper BEFORE storing/returning to avoid race condition
             const wrappedUnsubscribe = () => {
                 unsubscribe();
+                activeKeysRef.current.delete(key);
                 const index = cleanupFunctionsRef.current.indexOf(wrappedUnsubscribe);
                 if (index > -1) {
                     cleanupFunctionsRef.current.splice(index, 1);
@@ -291,20 +309,47 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
     );
 
     // Memoized unsubscribeQuotes function
+    //
+    // SmartCharts tears a stream down through BinaryAPI.forget(), which hands us the
+    // request built by BinaryAPI.createGetQuotesRequest(). That builder only copies
+    // `granularity` onto the request when it is truthy — so for a TICK stream
+    // (granularity 0) the field is absent, not zero. Branching on
+    // `typeof request.granularity !== 'undefined'` therefore sent every single tick
+    // teardown down the fallback path, which calls forget_all:['ticks'] on a socket
+    // that api_base, ticks_service and the analysis panels all share, and then wipes
+    // the transport's subscription map and its message listener. One chart symbol
+    // change killed every tick stream in the app; the chart painted history and then
+    // never updated.
+    //
+    // Branch on the symbol alone and treat a missing granularity as 0.
     const unsubscribeQuotes: TUnsubscribeQuotes = useCallback(
         request => {
-            if (adapter) {
-                // If we have request details, use the adapter's unsubscribe method
-                if (request?.symbol && typeof request.granularity !== 'undefined') {
-                    adapter.unsubscribeQuotes({
-                        symbol: request.symbol,
-                        granularity: isValidGranularity(request.granularity) ? request.granularity : 0,
-                    });
-                } else {
-                    // Fallback: unsubscribe all via transport
-                    adapter.transport.unsubscribeAll('ticks');
-                }
+            if (!adapter) return;
+
+            if (!request?.symbol) {
+                // No symbol to act on. Nothing else can be done, but this is not a
+                // path SmartCharts should ever take — forget_all is global.
+                logger.error('unsubscribeQuotes called without a symbol; forgetting ALL tick streams', request);
+                adapter.transport.unsubscribeAll('ticks');
+                return;
             }
+
+            const granularity = isValidGranularity(request.granularity) ? request.granularity : 0;
+            const key = subscriptionKey(request.symbol, granularity);
+
+            if (!activeKeysRef.current.delete(key)) {
+                // The adapter will not find this key either, so nothing gets forgotten
+                // and the server-side stream leaks. Say so loudly rather than letting
+                // the next subscribe fail with AlreadySubscribed for no visible reason.
+                logger.error(
+                    'unsubscribeQuotes: no tracked subscription for',
+                    key,
+                    '- the server-side stream may leak. Known active keys:',
+                    Array.from(activeKeysRef.current)
+                );
+            }
+
+            adapter.unsubscribeQuotes({ symbol: request.symbol, granularity });
         },
         [adapter]
     );
@@ -321,6 +366,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                 }
             });
             cleanupFunctionsRef.current = [];
+            activeKeysRef.current.clear();
 
             if (retryTimeoutRef.current) {
                 clearTimeout(retryTimeoutRef.current);

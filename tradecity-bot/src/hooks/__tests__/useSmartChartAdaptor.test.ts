@@ -468,6 +468,78 @@ describe('useSmartChartAdaptor', () => {
 
             expect(mockAdapter.transport.unsubscribeAll).toHaveBeenCalledWith('ticks');
         });
+
+        // SmartCharts' BinaryAPI.createGetQuotesRequest only copies `granularity` onto
+        // the request when it is truthy, so a tick stream (granularity 0) is torn down
+        // with the field ABSENT. Treating that as "no request details" sent every tick
+        // teardown to forget_all:['ticks'], killing the shared socket's tick streams.
+        it('forgets a single tick stream when SmartCharts omits granularity', async () => {
+            mockAdapter.getChartData.mockResolvedValue({ activeSymbols: [], tradingTimes: {} });
+
+            const { result } = renderHook(() => useSmartChartAdaptor());
+
+            await waitFor(() => {
+                expect(result.current.adapterInitialized).toBe(true);
+            });
+
+            // Exactly what BinaryAPI.forget() hands us for a tick stream.
+            result.current.unsubscribeQuotes({
+                symbol: 'R_10',
+                style: 'ticks',
+                count: 1000,
+                adjust_start_time: 1,
+                subscribe: 1,
+            } as any);
+
+            expect(mockAdapter.unsubscribeQuotes).toHaveBeenCalledWith({
+                symbol: 'R_10',
+                granularity: 0,
+            });
+            expect(mockAdapter.transport.unsubscribeAll).not.toHaveBeenCalled();
+        });
+
+        it('logs an error when tearing down a stream it never tracked', async () => {
+            mockAdapter.getChartData.mockResolvedValue({ activeSymbols: [], tradingTimes: {} });
+            const error_spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+            const { result } = renderHook(() => useSmartChartAdaptor());
+
+            await waitFor(() => {
+                expect(result.current.adapterInitialized).toBe(true);
+            });
+
+            result.current.unsubscribeQuotes({ symbol: 'R_10', granularity: 0 });
+
+            expect(error_spy).toHaveBeenCalledWith(
+                '[SmartCharts Hook]',
+                'unsubscribeQuotes: no tracked subscription for',
+                'R_10-0',
+                expect.stringContaining('may leak'),
+                []
+            );
+
+            error_spy.mockRestore();
+        });
+
+        it('does not warn when the stream it forgets is one it subscribed', async () => {
+            mockAdapter.getChartData.mockResolvedValue({ activeSymbols: [], tradingTimes: {} });
+            mockAdapter.subscribeQuotes.mockReturnValue(jest.fn());
+            const error_spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+            const { result } = renderHook(() => useSmartChartAdaptor());
+
+            await waitFor(() => {
+                expect(result.current.adapterInitialized).toBe(true);
+            });
+
+            result.current.subscribeQuotes({ symbol: 'R_10', granularity: 0 } as any, jest.fn());
+            result.current.unsubscribeQuotes({ symbol: 'R_10', granularity: 0 });
+
+            expect(error_spy).not.toHaveBeenCalled();
+            expect(mockAdapter.unsubscribeQuotes).toHaveBeenCalledWith({ symbol: 'R_10', granularity: 0 });
+
+            error_spy.mockRestore();
+        });
     });
 
     describe('Cleanup', () => {

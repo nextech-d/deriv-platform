@@ -81,9 +81,17 @@ export default class Observer {
     }
 
     unregister(event, f) {
+        // An event nobody registered has no action list, and `undefined.filter` threw
+        // a TypeError out of whichever caller ran first. run-panel's
+        // unregisterBotListeners fires from a MobX reaction on every page load —
+        // before the bot has ever run, so `bot.running` was never registered — and the
+        // throw abandoned the twelve unregisters that follow it, leaking listeners.
+        const action_list = this.eam.get(event);
+        if (!action_list) return;
+
         this.eam = this.eam.set(
             event,
-            this.eam.get(event).filter(r => r.searchBy !== f)
+            action_list.filter(r => r.searchBy !== f)
         );
     }
 
