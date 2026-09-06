@@ -149,7 +149,13 @@ class APIBase {
         this.current_auth_subscriptions = [];
     };
 
-    onsocketopen() {
+    // Bound class properties, not methods: `this.onsocketopen.bind(this)` produced a
+    // fresh function on every init(), so removeEventListener never matched the
+    // listener addEventListener had registered. Handlers piled up and each socket
+    // open re-ran authorizeAndSubscribe(), which is why the second and later balance
+    // and transaction subscribes came back AlreadySubscribed. Same fix chart-api.js
+    // already carries (383edea).
+    onsocketopen = () => {
         setConnectionStatus(CONNECTION_STATUS.OPENED);
 
         // Reset reconnection attempts on successful connection
@@ -161,7 +167,7 @@ class APIBase {
         }
 
         this.handleTokenExchangeIfNeeded();
-    }
+    };
 
     private async handleTokenExchangeIfNeeded() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -211,10 +217,10 @@ class APIBase {
         }
     }
 
-    onsocketclose() {
+    onsocketclose = () => {
         setConnectionStatus(CONNECTION_STATUS.CLOSED);
         this.reconnectIfNotConnected();
-    }
+    };
 
     async init(force_create_connection = false) {
         this.toggleRunButton(true);
@@ -233,14 +239,14 @@ class APIBase {
                 ApiHelpers.disposeInstance();
                 setConnectionStatus(CONNECTION_STATUS.CLOSED);
                 this.api.disconnect();
-                this.api.connection.removeEventListener('open', this.onsocketopen.bind(this));
-                this.api.connection.removeEventListener('close', this.onsocketclose.bind(this));
+                this.api.connection.removeEventListener('open', this.onsocketopen);
+                this.api.connection.removeEventListener('close', this.onsocketclose);
             }
 
             this.api = await generateDerivApiInstance();
 
-            this.api?.connection.addEventListener('open', this.onsocketopen.bind(this));
-            this.api?.connection.addEventListener('close', this.onsocketclose.bind(this));
+            this.api?.connection.addEventListener('open', this.onsocketopen);
+            this.api?.connection.addEventListener('close', this.onsocketclose);
 
             // Store the current account ID used for this WebSocket connection
             // This will be used to check if we need to regenerate the connection when the tab becomes active
@@ -528,13 +534,18 @@ class APIBase {
 
         let apiResult: any;
         try {
-            apiResult = await this.sendActiveSymbols({ active_symbols: 'brief', product_type: 'basic' });
+            // No `product_type` — the trading/v1 gateway rejects it with
+            // InputValidationFailed ("Properties not allowed: product_type"), which
+            // failed active_symbols on every load and left the chart with no symbols.
+            apiResult = await this.sendActiveSymbols({ active_symbols: 'brief' });
             if (apiResult?.error) {
                 throw new Error(apiResult.error.message || 'Active symbols API error');
             }
         } catch (first_error) {
+            // Retry once for transient failures. Surface the retry's own error —
+            // preferring first_error here hid why the retry failed.
             apiResult = await this.sendActiveSymbols({ active_symbols: 'brief' }).catch(retry_error => {
-                throw first_error || retry_error;
+                throw retry_error || first_error;
             });
         }
 
