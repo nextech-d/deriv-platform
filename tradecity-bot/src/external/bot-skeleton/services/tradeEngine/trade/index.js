@@ -1,7 +1,6 @@
 import { applyMiddleware, createStore } from 'redux';
 import { thunk } from 'redux-thunk';
 import { getLocalizedErrorMessage } from '@/constants/backend-error-messages';
-import { RUN_SPEED_EVENT, runSpeedDelayMs } from '@/utils/run-speed';
 import { createError } from '../../../utils/error';
 import { observer as globalObserver } from '../../../utils/observer';
 import { api_base } from '../../api/api-base';
@@ -63,8 +62,10 @@ const watchScope = ({ store, stopScope, passScope, passFlag }) => {
                 return;
             }
             if (!isPass(state)) return;
-            // Fast (and Slow after its 2s proposal delay): if the next tick already
-            // arrived while proposals were in flight, buy now instead of waiting T+2.
+            // A watcher must not resolve twice on the same tick: that spacing is
+            // what stops a rejected buy from being re-sent at interpreter speed.
+            // Note the scope-transition reducers drop `newTick` entirely, so at a
+            // cycle boundary this compares against undefined rather than a tick.
             if (state.newTick === prevTick) return;
             prevTick = state.newTick;
             finish(true);
@@ -88,7 +89,6 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
         this.subscription_id_for_accumulators = null;
         this.is_proposal_requested_for_accumulators = false;
         this.store = createStore(rootReducer, applyMiddleware(thunk));
-        this.bindRunSpeedListener();
     }
 
     init(...args) {
@@ -168,54 +168,16 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
     }
 
     makeDirectPurchaseDecision() {
-        if (this.slow_run_timeout) {
-            clearTimeout(this.slow_run_timeout);
-            this.slow_run_timeout = null;
-        }
+        if (this.$scope?.stopped) return;
 
-        const proceed = () => {
-            if (this.$scope?.stopped) return;
-            const { has_payout_block, is_basis_payout } = checkBlocksForProposalRequest();
-            this.is_proposal_subscription_required = has_payout_block || is_basis_payout;
+        const { has_payout_block, is_basis_payout } = checkBlocksForProposalRequest();
+        this.is_proposal_subscription_required = has_payout_block || is_basis_payout;
 
-            if (this.is_proposal_subscription_required) {
-                this.makeProposals({ ...this.options, ...this.tradeOptions });
-                this.checkProposalReady();
-            } else {
-                this.store.dispatch(proposalsReady());
-            }
-        };
-
-        this.flushSlowRunWait = proceed;
-
-        const delay = runSpeedDelayMs();
-        if (delay > 0) {
-            this.slow_run_timeout = setTimeout(proceed, delay);
-            return;
-        }
-        proceed();
-    }
-
-    bindRunSpeedListener() {
-        if (typeof window === 'undefined' || this.onRunSpeedChange) return;
-        this.onRunSpeedChange = event => {
-            if (this.$scope?.stopped) return;
-            if (event.detail !== 'fast') return;
-            if (!this.slow_run_timeout || !this.flushSlowRunWait) return;
-            clearTimeout(this.slow_run_timeout);
-            this.slow_run_timeout = null;
-            this.flushSlowRunWait();
-        };
-        window.addEventListener(RUN_SPEED_EVENT, this.onRunSpeedChange);
-    }
-
-    unbindRunSpeedListener() {
-        if (typeof window === 'undefined' || !this.onRunSpeedChange) return;
-        window.removeEventListener(RUN_SPEED_EVENT, this.onRunSpeedChange);
-        this.onRunSpeedChange = null;
-        if (this.slow_run_timeout) {
-            clearTimeout(this.slow_run_timeout);
-            this.slow_run_timeout = null;
+        if (this.is_proposal_subscription_required) {
+            this.makeProposals({ ...this.options, ...this.tradeOptions });
+            this.checkProposalReady();
+        } else {
+            this.store.dispatch(proposalsReady());
         }
     }
 }
