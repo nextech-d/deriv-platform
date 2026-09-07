@@ -35,9 +35,16 @@ function subscriptionKey(symbol: string, granularity: TGranularity) {
     return `${symbol}-${granularity}`;
 }
 
+// DIAG: temporary instrumentation. Every line tagged `DIAG:` is diagnostic only and
+// should be removed once the Charts-tab loader hang is understood. Tags each log with
+// a per-mount id so two chart instances can be told apart in one console.
+const DIAG = '[DIAG]';
+
 interface UseSmartChartAdaptorReturn {
     adapter: SmartchartsChampionAdapter | null;
     adapterInitialized: boolean;
+    /** DIAG: per-mount identity for this hook instance. */
+    instanceId: string;
     chartData: {
         activeSymbols: ActiveSymbols;
         tradingTimes: TradingTimesMap;
@@ -77,6 +84,22 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
     // miss means the server-side subscription is about to be leaked, which is what
     // makes the NEXT subscribe for that symbol come back AlreadySubscribed.
     const activeKeysRef = useRef<Set<string>>(new Set());
+    // DIAG: identity of THIS hook instance, and of the Set object it reads/writes.
+    // If subscribe and unsubscribe report the same instance but the set is empty, the
+    // set was cleared behind the reader. If they report different instances, the
+    // component remounted between subscribe and teardown.
+    const instanceIdRef = useRef<string>(`inst-${Math.random().toString(36).slice(2, 8)}`);
+    const setIdRef = useRef<string>(`set-${Math.random().toString(36).slice(2, 8)}`);
+
+    // DIAG: prove whether this instance ever mounts/unmounts across a tab switch.
+    useEffect(() => {
+        // eslint-disable-next-line no-console
+        console.log(DIAG, instanceIdRef.current, 'hook MOUNT');
+        return () => {
+            // eslint-disable-next-line no-console
+            console.log(DIAG, instanceIdRef.current, 'hook UNMOUNT');
+        };
+    }, []);
 
     // Track mounted state
     useEffect(() => {
@@ -235,6 +258,14 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                 return { history: { prices: [], times: [] } };
             }
 
+            // DIAG: getQuotes is reached only from Feed.fetchInitialData, which is
+            // reached only from ChartStore.newChart, which is reached only from the
+            // tradingTimes.initialize().then() callback. Seeing this line proves that
+            // whole segment ran for this instance; NOT seeing it localises the hang to
+            // initialize() or to newChart's `if (!symbolObj) return`.
+            // eslint-disable-next-line no-console
+            console.log(DIAG, instanceIdRef.current, 'getQuotes', params.symbol, 'g=', params.granularity);
+
             const result = await adapter.getQuotes({
                 symbol: params.symbol,
                 granularity: isValidGranularity(params.granularity) ? params.granularity : 0,
@@ -290,6 +321,19 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
 
             activeKeysRef.current.add(key);
 
+            // DIAG: who wrote the key, into which Set object.
+            // eslint-disable-next-line no-console
+            console.log(
+                DIAG,
+                instanceIdRef.current,
+                'subscribeQuotes ADD',
+                key,
+                'set=',
+                setIdRef.current,
+                'keys=',
+                Array.from(activeKeysRef.current)
+            );
+
             // Create wrapper BEFORE storing/returning to avoid race condition
             const wrappedUnsubscribe = () => {
                 unsubscribe();
@@ -337,6 +381,20 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
             const granularity = isValidGranularity(request.granularity) ? request.granularity : 0;
             const key = subscriptionKey(request.symbol, granularity);
 
+            // DIAG: who is reading, and from which Set object. Compare instance and set
+            // ids against the `subscribeQuotes ADD` line for the same key.
+            // eslint-disable-next-line no-console
+            console.log(
+                DIAG,
+                instanceIdRef.current,
+                'unsubscribeQuotes READ',
+                key,
+                'set=',
+                setIdRef.current,
+                'keys=',
+                Array.from(activeKeysRef.current)
+            );
+
             if (!activeKeysRef.current.delete(key)) {
                 // The adapter will not find this key either, so nothing gets forgotten
                 // and the server-side stream leaks. Say so loudly rather than letting
@@ -366,6 +424,20 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
                 }
             });
             cleanupFunctionsRef.current = [];
+            // DIAG: this effect is keyed [adapter], not [], so it also runs on any
+            // adapter identity change — not only unmount. If this line appears between
+            // a `subscribeQuotes ADD` and an `unsubscribeQuotes READ` for the same
+            // instance id, the set was cleared behind the reader.
+            // eslint-disable-next-line no-console
+            console.log(
+                DIAG,
+                instanceIdRef.current,
+                'CLEAR activeKeys (adapter-dep cleanup)',
+                'set=',
+                setIdRef.current,
+                'had=',
+                Array.from(activeKeysRef.current)
+            );
             activeKeysRef.current.clear();
 
             if (retryTimeoutRef.current) {
@@ -379,6 +451,7 @@ export const useSmartChartAdaptor = (): UseSmartChartAdaptorReturn => {
     return {
         adapter,
         adapterInitialized,
+        instanceId: instanceIdRef.current, // DIAG
         chartData,
         getQuotes,
         subscribeQuotes,

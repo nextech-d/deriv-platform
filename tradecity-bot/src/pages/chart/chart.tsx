@@ -28,6 +28,7 @@ setSmartChartsPublicPath(getUrlBase('/js/smartcharts/'));
 const FEED_CALL = { activeSymbols: false, tradingTimes: false } as const;
 
 type TChartCanvasProps = {
+    instanceId: string; // DIAG
     show_digits_stats: boolean;
     symbol: string;
     chart_type: string | undefined;
@@ -62,6 +63,7 @@ type TChartCanvasProps = {
 /** Isolated from MobX observer so tick-driven parent updates do not reset SmartChart subscriptions. */
 const ChartCanvas = memo(
     ({
+        instanceId, // DIAG
         show_digits_stats,
         symbol,
         chart_type,
@@ -87,17 +89,28 @@ const ChartCanvas = memo(
     }: TChartCanvasProps) => {
         const normalizedChartType = normalizeSmartChartType(chart_type);
 
-        const handleStateChange: TStateChangeListener = useCallback((state, _options) => {
-            if (state === 'READY') {
-                window.dispatchEvent(new Event('resize'));
-            }
-        }, []);
+        const handleStateChange: TStateChangeListener = useCallback(
+            (state, _options) => {
+                // eslint-disable-next-line no-console
+                console.log('[DIAG]', instanceId, 'stateChange', state); // DIAG
+                if (state === 'READY') {
+                    window.dispatchEvent(new Event('resize'));
+                }
+            },
+            [instanceId]
+        );
 
         const chartStatusListener = useCallback(
             (v: boolean) => {
+                // DIAG: v is ChartState.isChartReady. `true` is emitted from
+                // ChartStore.onChartLoad (:502) — the same function that calls
+                // loader.hide() at :498. So a `true` here for an instance means its
+                // loader was hidden; never seeing `true` means onChartLoad never ran.
+                // eslint-disable-next-line no-console
+                console.log('[DIAG]', instanceId, 'chartStatus isChartReady=', v);
                 setChartStatus(!v);
             },
-            [setChartStatus]
+            [setChartStatus, instanceId]
         );
 
         const toolbarWidget = useCallback(
@@ -208,7 +221,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     } = chart_store;
 
     // Use the custom hook for SmartChart Adaptor
-    const { chartData, getQuotes, subscribeQuotes, unsubscribeQuotes, adapterInitialized } =
+    const { chartData, getQuotes, subscribeQuotes, unsubscribeQuotes, adapterInitialized, instanceId } =
         useSmartChartAdaptor();
 
     const { isDesktop, isMobile } = useDevice();
@@ -273,6 +286,30 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
     const tradingTimes = chartData.tradingTimes;
     const symbolReady = activeSymbols.some(item => item.symbol === resolvedSymbol);
 
+    // DIAG: the exact inputs ChartStore._initChart uses to build symbolMap (:288-300)
+    // and to pick _symbol (:351). processSymbols maps 1:1, so symbolMap's keys are
+    // these symbols; if resolvedSymbol is present here, symbolMap[_symbol] cannot miss
+    // and the hang is NOT ChartStore:489. Also reports missing submarket_display_name,
+    // which would make processSymbols throw at active-symbols.ts:22.
+    if (adapterInitialized) {
+        const symbols = activeSymbols.map(s => s.symbol);
+        // eslint-disable-next-line no-console
+        console.log(
+            '[DIAG]',
+            instanceId,
+            'chart render symbol=',
+            resolvedSymbol,
+            'inActiveSymbols=',
+            symbols.includes(resolvedSymbol),
+            'count=',
+            symbols.length,
+            'missingSubmarketDisplayName=',
+            activeSymbols.filter(s => !s.submarket_display_name).map(s => s.symbol),
+            'tradingTimesKeys=',
+            Object.keys(tradingTimes).length
+        );
+    }
+
     if (!resolvedSymbol || !adapterInitialized || !symbolReady) {
         return (
             <div
@@ -289,6 +326,7 @@ const Chart = observer(({ show_digits_stats }: { show_digits_stats: boolean }) =
 
     return (
         <ChartCanvas
+            instanceId={instanceId} // DIAG
             show_digits_stats={show_digits_stats}
             symbol={resolvedSymbol}
             chart_type={chart_type}
