@@ -1,6 +1,5 @@
 import { observer as globalObserver } from '../../../utils/observer';
 import { createDetails } from '../utils/helpers';
-import { runSpeedIdleSeconds } from '@/utils/run-speed';
 
 const getBotInterface = tradeEngine => {
     const getDetail = i => createDetails(tradeEngine.data.contract)[i];
@@ -19,7 +18,6 @@ const getBotInterface = tradeEngine => {
         isResult: result => getDetail(10) === result,
         isTradeAgain: result => globalObserver.emit('bot.trade_again', result),
         readDetails: i => getDetail(i - 1),
-        getRunIdleSeconds: () => runSpeedIdleSeconds(),
     };
 };
 

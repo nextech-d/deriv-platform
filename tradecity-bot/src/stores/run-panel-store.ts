@@ -11,7 +11,6 @@ import { handleBackendError, isBackendError } from '@/utils/error-handler';
 import GTM from '@/utils/gtm';
 import { helpers } from '@/utils/store-helpers';
 import { generateUrlWithRedirect } from '@/utils/url-redirect-utils';
-import { readRunSpeed, type RunSpeed, writeRunSpeed } from '@/utils/run-speed';
 import { Buy, ProposalOpenContract } from '@deriv/api-types';
 import { TStores } from '@deriv/stores/types';
 import { localize } from '@deriv-com/translations';
@@ -56,8 +55,6 @@ export default class RunPanelStore {
             setIsRunning: action,
             onRunButtonClick: action,
             is_contract_buying_in_progress: observable,
-            run_speed: observable,
-            setRunSpeed: action,
             SetpurchaseInProgress: action,
             onStopButtonClick: action,
             onClearStatClick: action,
@@ -112,12 +109,6 @@ export default class RunPanelStore {
     is_sell_requested = false;
     show_bot_stop_message = false;
     is_contract_buying_in_progress = false;
-    run_speed: RunSpeed = readRunSpeed();
-
-    setRunSpeed = (speed: RunSpeed) => {
-        this.run_speed = speed;
-        writeRunSpeed(speed);
-    };
 
     run_id = '';
     onOkButtonClick: (() => void) | null = null;
