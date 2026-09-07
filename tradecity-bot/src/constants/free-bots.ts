@@ -2,7 +2,15 @@ export type FreeBotCategory = 'free' | 'premium';
 
 export interface FreeBotStrategy {
     id: string;
+    /**
+     * Runtime name. Feeds `file_name` in loadFreeBotInBuilder (which becomes the
+     * save-modal bot name and the recent-strategies label) and the substring
+     * heuristics in free-bot-seed.ts that pick trade type, purchase side and
+     * barrier. Renaming it changes behaviour — add `displayName` instead.
+     */
     name: string;
+    /** Menu label only. Falls back to `name` when absent. Nothing runtime reads it. */
+    displayName?: string;
     summary: string;
     category: FreeBotCategory;
     markets: string[];
@@ -28,6 +36,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'tradecity-speed-bot',
         name: 'tradecity speed bot',
+        displayName: 'tradecity speed bot ai',
         summary:
             'Advanced Martingale strategy with sophisticated risk management for all synthetic indexes trading. Features price action analysis, custom stop-loss mechanisms, and intelligent stake progression. Advanced Martingale progression with risk management Price action analysis and tracking Custom stop-loss and take-profit mechanisms',
         category: 'free',
@@ -38,6 +47,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'under-8-strategy',
         name: 'Under 8 Strategy',
+        displayName: 'Under 8 Strategy ai',
         summary:
             'Specialized bot for under 9 predictions with advanced analysis and consistent performance. Under 8 predictions Low risk strategy Consistent performance 2-3 minutes low risk',
         category: 'free',
@@ -48,6 +58,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'under-7-manual',
         name: 'Under 7 Manual',
+        displayName: 'Under 7 Manual ai',
         summary: 'Manual-style Under 7 entries with a short confirmation window.',
         category: 'free',
         markets: ['R_75', 'R_100'],
@@ -57,6 +68,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'switching-bot',
         name: 'Switching Bot',
+        displayName: 'Switching Bot ai',
         summary: 'Switches purchase side when the short digit window flips dominance.',
         category: 'free',
         markets: ['R_50', 'R_100'],
@@ -66,6 +78,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'over-1-strategy',
         name: 'Over 1 Strategy',
+        displayName: 'Over 1 Strategy ai',
         summary: 'Over 1 digit entries with a conservative stake profile.',
         category: 'free',
         markets: ['R_10', 'R_25'],
@@ -75,6 +88,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'money8gg-speed',
         name: 'MONEY8GG SPEED BOT',
+        displayName: 'MONEY8GG SPEED BOT ai',
         summary: 'Speed martingale pack for synthetic indices.',
         category: 'free',
         markets: ['1HZ100V'],
@@ -84,6 +98,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'sv-matches',
         name: 'SV Matches BOT',
+        displayName: 'SV Matches BOT ai',
         summary: 'Matches/Differs scanner for last-digit targets on synthetics.',
         category: 'free',
         markets: ['R_100'],
@@ -93,6 +108,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'even-odd-combo',
         name: 'Even Odd { Percentage Pattern Combo}',
+        displayName: 'Even Odd { Percentage Pattern Combo} ai',
         summary: 'Even/Odd entries when one side clears a percentage threshold.',
         category: 'free',
         markets: ['R_10', 'R_100'],
@@ -102,6 +118,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'martingale-bot',
         name: 'Martingale Bot',
+        displayName: 'Martingale Bot ai',
         summary: 'Classic stake doubling after a loss, with a max-stake cap.',
         category: 'free',
         markets: ['R_50'],
@@ -111,6 +128,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'rise-fall-5tick',
         name: 'Test Rise Fall 5TICK',
+        displayName: 'Test Rise Fall 5TICK ai',
         summary: 'Rise/Fall on a 5-tick duration for quick synthetics tests.',
         category: 'free',
         markets: ['1HZ100V'],
@@ -120,6 +138,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'candle-mine-3',
         name: 'Candle Mine Version 3.1',
+        displayName: 'Candle Mine Version 3.1 ai',
         summary: 'Candle-direction miner for Rise/Fall synthetics.',
         category: 'free',
         markets: ['R_100'],
@@ -129,6 +148,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'speedbot-updated',
         name: 'SPEEDBOT updated',
+        displayName: 'SPEEDBOT updated ai',
         summary: 'Updated speed martingale for 1s volatility indices.',
         category: 'free',
         markets: ['1HZ100V', '1HZ10V'],
@@ -147,6 +167,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'sniper-killer-m4',
         name: 'SNIPER KILLER M4BOT',
+        displayName: 'SNIPER KILLER M4BOT ai',
         summary: AI_BLURB,
         category: 'free',
         markets: ['R_75', 'R_100'],
@@ -156,6 +177,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'over-destroyer',
         name: 'Over-Destroyer💀',
+        displayName: 'Over-Destroyer💀 ai',
         summary: 'Aggressive Over entries on last-digit barriers.',
         category: 'free',
         markets: ['R_100'],
@@ -165,6 +187,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'wealth-generator',
         name: 'WEALTH GENERATOR',
+        displayName: 'WEALTH GENERATOR ai',
         summary: AI_BLURB,
         category: 'free',
         markets: ['R_100'],
@@ -174,6 +197,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'mkorean-sv7',
         name: 'Mkorean sv7 bot',
+        displayName: 'Mkorean sv7 bot ai',
         summary: 'SV7 digit pack for matches and barrier lanes.',
         category: 'free',
         markets: ['R_50'],
@@ -183,6 +207,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'even-odd-reverse',
         name: 'Even Odd Reverse psychology',
+        displayName: 'Even Odd Reverse psychology ai',
         summary: 'Takes the opposite parity of the last matching pattern.',
         category: 'free',
         markets: ['R_10', 'R_100'],
@@ -202,6 +227,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'underover-autoswitch',
         name: 'UnderoverAutoswitch poverty cleaner',
+        displayName: 'UnderoverAutoswitch poverty cleaner ai',
         summary: AI_BLURB,
         category: 'free',
         markets: ['R_100', '1HZ100V'],
@@ -211,6 +237,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'recovery-odd-tradecity',
         name: 'Recovery with Odd tradecity',
+        displayName: 'Recovery with Odd tradecity ai',
         summary: AI_BLURB,
         category: 'free',
         markets: ['R_100'],
@@ -247,6 +274,7 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'premium-apex',
         name: 'Apex Switcher Pro',
+        displayName: 'Apex Switcher Pro ai',
         summary: 'Premium switcher with recovery hooks for synthetic indices.',
         category: 'premium',
         markets: ['R_75', 'R_100'],
