@@ -180,6 +180,7 @@ Do not fix these incidentally. Each is its own task.
 - **`transport.ts:122-128`** dead-socket branch is broken.
 - **`stores_context` vendor defect** — report upstream to Deriv. The only route to a real fix.
 - **`@deriv-com/smartcharts-champion: ^1.3.14`** is a floating caret range with no patches directory. It can drift on any `npm install`. Consider pinning.
+- **Load Scan panel copy contradicts what it loads.** The AI panel status line reports the Deep Scan finding as an over/under call (`entry-scanner.tsx:188-192`, from `EntryScanResult.tradeLabel`), but Load Scan seeds Kasongo — an RSI risefall strategy that picks CALL/PUT itself — and deliberately discards `contractType`, `barrier`, `lastDigit` and `mode` (`load-kasongo-scan.ts`). On this path the scan is only a symbol picker. Cosmetic, no trading impact, but it reads as broken: the UI names a trade the bot will not place. Either retitle the copy for this path or surface only the symbol.
 - **No staging domain.** Register one with Deriv so previews can authorize.
 
 ---

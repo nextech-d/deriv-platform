@@ -29,7 +29,7 @@ import {
     writeSavedParams,
     writeSavedScan,
 } from '@/utils/entry-scanner';
-import { loadAnalysisBiasInBuilder } from '@/utils/load-analysis-bias';
+import { loadKasongoScanInBuilder } from '@/utils/load-kasongo-scan';
 import { ultimateStake } from '@/utils/ultimate-bot';
 import './entry-scanner.scss';
 
@@ -251,17 +251,13 @@ const EntryScanner = observer(({ onSeededToBuilder }: TEntryScannerProps) => {
         closeAll();
         try {
             await app.ensureBlocklyWorkspace();
-            const loaded = await loadAnalysisBiasInBuilder({
+            // Kasongo picks CALL/PUT from RSI itself, so the scan's contractType,
+            // barrier, lastDigit and mode have no slot here and are discarded --
+            // for this path the scan is a symbol picker.
+            const loaded = await loadKasongoScanInBuilder({
                 symbol: stored.symbol,
-                mode: 'barrier',
-                side: stored.contractType === 'DIGITOVER' ? 'CALL' : 'PUT',
-                barrier: stored.barrier,
-                digitTarget: stored.lastDigit ?? stored.barrier,
-                label: stored.tradeLabel || stored.label,
                 stake: params.stake,
-                size: params.useMartingale ? params.martingale : 1,
-                profit: params.takeProfit,
-                loss: params.stopLoss,
+                label: stored.tradeLabel || stored.label,
             });
             if (!loaded) {
                 setOpen(true);
