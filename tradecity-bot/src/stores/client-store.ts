@@ -482,6 +482,10 @@ export default class ClientStore {
             // or dispatching an event that UI components can listen to
         } finally {
             this.is_regenerating = false;
+            // onsocketopen is the only other place this clears, so a hang inside
+            // init() -- getSocketURL awaits the OTP fetch with no timeout -- would
+            // otherwise leave the header spinner up for the rest of the session.
+            this.setIsAccountRegenerating(false);
         }
     }
 

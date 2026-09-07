@@ -36,8 +36,24 @@ export const useApiBase = () => {
         });
         const authDataSubscription = authData$.subscribe(authData => {
             setAuthData(authData);
+            // An explicit clear means the session is gone: regenerateWebSocket calls
+            // setAuthData(null) on every account switch, and it leaves active_loginid
+            // in localStorage on purpose. Without clearing here, activeLoginid stays
+            // truthy from the moment of the click while accountList is [], so the
+            // header matches neither its signed-in branch nor its signed-out one and
+            // the spinner becomes terminal when the re-authorize does not land.
+            if (!authData) {
+                setActiveLoginid('');
+                // activeLoginid$ is a BehaviorSubject with exactly one subscriber
+                // (below). Reset its retained value too, or a remount during the
+                // switch re-reads the stale id and undoes the clear.
+                notifyActiveLoginidChange('');
+                return;
+            }
+            // Live session: localStorage still wins, so balance ticks follow the
+            // account the switcher selected before the socket has caught up.
             const stored = localStorage.getItem('active_loginid');
-            const loginid = stored || authData?.loginid || '';
+            const loginid = stored || authData.loginid || '';
             setActiveLoginid(loginid);
             if (loginid) notifyActiveLoginidChange(loginid);
         });

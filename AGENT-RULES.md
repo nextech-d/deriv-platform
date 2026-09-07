@@ -181,6 +181,10 @@ Do not fix these incidentally. Each is its own task.
 - **`stores_context` vendor defect** — report upstream to Deriv. The only route to a real fix.
 - **`@deriv-com/smartcharts-champion: ^1.3.14`** is a floating caret range with no patches directory. It can drift on any `npm install`. Consider pinning.
 - **Load Scan panel copy contradicts what it loads.** The AI panel status line reports the Deep Scan finding as an over/under call (`entry-scanner.tsx:188-192`, from `EntryScanResult.tradeLabel`), but Load Scan seeds Kasongo — an RSI risefall strategy that picks CALL/PUT itself — and deliberately discards `contractType`, `barrier`, `lastDigit` and `mode` (`load-kasongo-scan.ts`). On this path the scan is only a symbol picker. Cosmetic, no trading impact, but it reads as broken: the UI names a trade the bot will not place. Either retitle the copy for this path or surface only the symbol.
+- **`active-loginid-sync.ts` monkey-patches `localStorage.setItem`** at module level (`installActiveLoginidSync`, guarded by a module `let installed`) and never uninstalls, so every write to `active_loginid` anywhere in the app becomes a UI state transition. §3 hazard: global mutable state with no ownership and no teardown. Introduced by `f2221af`.
+- **`observeClientBalance()` is called from `api-base.init()`** (added by `ad7a621`), so every `init(true)` — one per account switch — attaches another `balance_listener` to the shared socket, with no removal of the previous one. Same accumulation class as the `onsocketopen` pile-up fixed in `4c77830`. Likely cause of stale or duplicated balances after several switches.
+- **`config.ts:73-76`** swallows any OTP failure in `getSocketURL` and returns `getDefaultServerURL()`, so an auth failure becomes a socket that opens and then does nothing — the hardest state to diagnose. Should surface the failure instead.
+- **`appId.js:66`** awaits `getSocketURL()` with no timeout, and that call chains to the OTP fetch in `derivws-accounts.service.ts:272`. A hang there means `init()` never returns and `onsocketopen` never fires.
 - **No staging domain.** Register one with Deriv so previews can authorize.
 
 ---
