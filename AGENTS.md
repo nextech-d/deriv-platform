@@ -1,5 +1,7 @@
 @AGENT-RULES.md
 
+> Scope: the block below applies to the root Next.js app only, which is not what tradecity.trade serves — see §1 of [AGENT-RULES.md](AGENT-RULES.md).
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

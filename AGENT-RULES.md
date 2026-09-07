@@ -1,4 +1,4 @@
-# CLAUDE.md — Agent Operating Rules
+# AGENT-RULES.md — Agent Operating Rules
 
 Production trading application executing real financial transactions against the Deriv API. A bug here loses a user's money. Read this file in full before your first edit in any session.
 
