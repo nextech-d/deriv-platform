@@ -636,13 +636,26 @@ const AppWrapper = observer(() => {
                     </DeskSuspense>
                 );
             case 'chart':
-                // Do NOT gate ChartWrapper on active_tab: with keep_visited_mounted
-                // the Tabs panel stays mounted (display:none) when you leave, but an
-                // active_tab check here would still unmount the SmartChart subtree and
-                // tear down its live tick subscriptions — forcing a cold remount and
-                // stale charts on return. The Tabs component already withholds this
-                // panel until the Charts tab is first visited, so leaving it always
-                // rendered keeps the feed alive without eager-initialising the chart.
+                // This used to say "do NOT gate ChartWrapper on active_tab", because a
+                // raw active_tab check unmounts the SmartChart subtree and tears down
+                // its live tick subscriptions, forcing a cold remount and a stale chart
+                // on return. That reasoning still holds and this is NOT that check.
+                //
+                // ChartWrapper now gates on OWNERSHIP instead. Two SmartCharts can not
+                // coexist: SmartCharts keeps its root store behind a module-level
+                // context that every <SmartChart> replaces during render, so the second
+                // chart to mount orphans the first — the first keeps painting ticks
+                // while its loader hangs on "Retrieving Trading Times..." forever, and
+                // the second chart's teardown frees the first chart's stream. See the
+                // comment in chart-wrapper.tsx.
+                //
+                // Ownership is the visible chart site, and when the user is on a tab
+                // with no chart at all the incumbent KEEPS its mount. So the case the
+                // old comment protected — leave the Charts tab, come back — still costs
+                // nothing. Only a real chart-to-chart switch (Charts <-> D-trader <->
+                // modal) remounts, which is exactly when the two would have collided.
+                //
+                // keep_visited_mounted is unchanged: the Tabs panel still stays mounted.
                 return (
                     <DeskSuspense>
                         <ChartsDesk>
@@ -653,7 +666,7 @@ const AppWrapper = observer(() => {
                                 <Suspense
                                     fallback={<ChunkLoader message={localize('Please wait, loading chart...')} />}
                                 >
-                                    <ChartWrapper show_digits_stats={false} />
+                                    <ChartWrapper prefix='chart' show_digits_stats={false} />
                                 </Suspense>
                             </ErrorBoundary>
                         </ChartsDesk>
