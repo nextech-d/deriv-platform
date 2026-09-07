@@ -57,6 +57,9 @@ const FreeBotsDesk = ({ onLoadInBuilder, initialTier = 'free' }: TFreeBotsDeskPr
             if (!q) return true;
             return (
                 bot.name.toLowerCase().includes(q) ||
+                // The card shows displayName, so search it too or a visible word
+                // finds no row.
+                (bot.displayName?.toLowerCase().includes(q) ?? false) ||
                 bot.summary.toLowerCase().includes(q) ||
                 bot.tags.some(tag => tag.toLowerCase().includes(q))
             );
@@ -127,7 +130,7 @@ const FreeBotsDesk = ({ onLoadInBuilder, initialTier = 'free' }: TFreeBotsDeskPr
                         >
                             <span className='free-bots-card-icon' aria-hidden />
                             <header className='free-bots-card-top'>
-                                <h2>{sentenceCase(bot.name)}</h2>
+                                <h2>{sentenceCase(bot.displayName ?? bot.name)}</h2>
                                 <div className='free-bots-card-marks'>
                                     {bot.isNew ? <span className='free-bots-new'>New</span> : null}
                                     <span className='free-bots-diff'>{DIFFICULTY[bot.difficulty]}</span>
