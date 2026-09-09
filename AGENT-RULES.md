@@ -109,6 +109,11 @@ This codebase has repeatedly defeated code-reading alone. Runtime evidence wins.
 - If two attempted fixes fail, stop and report what was learned.
 - **MUST** check git history for a regression trigger before reading code. Most bugs here arrived with a specific commit.
 
+**Command-line hygiene when gathering evidence:**
+
+- **`timeout` does not exist on macOS.** There is no `timeout` or `gtimeout` on this machine. **MUST NOT** use it to bound a command — the shell fails with `command not found` and you get no reading at all, which is easily misread as the command itself failing. Bound long commands by running them in the background and waiting instead.
+- **MUST NOT** swallow command errors with `2>/dev/null` in a verification step. It hides the failure that makes the number wrong and turns a broken check into a passing one — a count of zero from a command that never ran looks exactly like a clean result.
+
 **Diagnostic instrumentation:** tag every added line `DIAG:` / `[DIAG]`, commit it as one revertible commit, and never merge it to `main` without explicit instruction. Remove by reverting the whole commit, not by stripping tags.
 
 ---
@@ -179,7 +184,7 @@ Do not fix these incidentally. Each is its own task.
 - **`newTick` is dropped on every scope transition** — `tradeEngine/trade/state/reducers/index.js:11-15` (`START`), `:26-31` (`PURCHASE_SUCCESSFUL`), `:32-37` (`OPEN_CONTRACT`), `:38-42` (`SELL`) each rebuild state without `...state`, so only `NEW_TICK` and the proposal actions preserve it. This weakens the one-decision-per-tick guard at `trade/index.js:69`: at a transition `prevTick` can be set to `undefined`, after which any real tick differs and the watcher passes. It is also why the shared `prevTick` is **not** the cause of inter-trade latency — measured, the before-watch needs zero fresh ticks in steady state. Fix the reducers before touching `prevTick`; a per-watcher split alone changes behaviour and buys nothing.
 - **`transport.ts:122-128`** dead-socket branch is broken.
 - **`stores_context` vendor defect** — report upstream to Deriv. The only route to a real fix.
-- **`@deriv-com/smartcharts-champion: ^1.3.14`** is a floating caret range with no patches directory. It can drift on any `npm install`. Consider pinning.
+- **`@deriv-com/smartcharts-champion` is pinned to an exact `1.3.14`** (no caret). It was previously the floating range `^1.3.14`, which by then resolved as far as `1.12.0` — nine minor versions of undeclared drift on any `npm install`, with no patches directory to hold behaviour steady. Keep it exact; changing it is its own task with its own verification.
 - **Load Scan panel copy contradicts what it loads.** The AI panel status line reports the Deep Scan finding as an over/under call (`entry-scanner.tsx:188-192`, from `EntryScanResult.tradeLabel`), but Load Scan seeds Kasongo — an RSI risefall strategy that picks CALL/PUT itself — and deliberately discards `contractType`, `barrier`, `lastDigit` and `mode` (`load-kasongo-scan.ts`). On this path the scan is only a symbol picker. Cosmetic, no trading impact, but it reads as broken: the UI names a trade the bot will not place. Either retitle the copy for this path or surface only the symbol.
 - **`active-loginid-sync.ts` monkey-patches `localStorage.setItem`** at module level (`installActiveLoginidSync`, guarded by a module `let installed`) and never uninstalls, so every write to `active_loginid` anywhere in the app becomes a UI state transition. §3 hazard: global mutable state with no ownership and no teardown. Introduced by `f2221af`.
 - **`observeClientBalance()` is called from `api-base.init()`** (added by `ad7a621`), so every `init(true)` — one per account switch — attaches another `balance_listener` to the shared socket, with no removal of the previous one. Same accumulation class as the `onsocketopen` pile-up fixed in `4c77830`. Likely cause of stale or duplicated balances after several switches.
