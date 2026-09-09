@@ -30,7 +30,7 @@ Read this before touching anything. Every one of these has already cost a day.
 | Deployment | Vercel, production branch `main`, live at tradecity.trade. Pushing to `main` deploys. |
 | Preview deploys | Build fine, but **Deriv OAuth denies login on preview domains**, so the socket never authorizes and nothing is testable. Until a registered staging domain exists, previews cannot verify anything requiring an authorized session. |
 | Local dev | Deriv blocks localhost OAuth. Local runs die on WebSocket open timeout at `api-base.ts:498`. Local cannot verify socket behaviour. |
-| `tsc` baseline | **558 errors** from `tradecity-bot/`. Not 762 — that is the repo root including the Next app. Count with `npx tsc --noEmit 2>&1 \| grep -c "error TS"`, not `wc -l`. |
+| `tsc` baseline | **559 errors** from `tradecity-bot/`. Not 762 — that is the repo root including the Next app. Count with `npx tsc --noEmit 2>&1 \| grep -c "error TS"`, not `wc -l`. Four of the 559 are `TS2307` on static `.xml` imports — see §8. |
 | Test baseline | 4 pre-existing failures: two `SmartCharts Champion Adapter › getQuotes` cases, `useSmartChartAdaptor › Cleanup › should cleanup subscriptions on unmount` (it asserts the global-kill behaviour that was removed — it encodes a bug), and `AccountSwitcher › shows the account mark and balance`. |
 | `scripts/dev-stop.mjs` | Scans ports 3000–3010 only. A no-op against `npm run dev`, which runs rsbuild on 8443. It reports success without stopping anything. |
 
@@ -146,7 +146,10 @@ This codebase has repeatedly defeated code-reading alone. Runtime evidence wins.
 
 A task is not complete until all pass. **Report actual observed results — never assert success you did not observe.**
 
-- [ ] `npx tsc --noEmit 2>&1 | grep -c "error TS"` from `tradecity-bot/` → **558**. Any increase must be explained.
+- [ ] `npx tsc --noEmit 2>&1 | grep -c "error TS"` from `tradecity-bot/` → **559**. Any increase must be explained.
+  - Four of these are the same `TS2307` on static `.xml` imports, which have no type declaration: `accumulator-helper-functions.ts:5`, `load-free-bot.ts:6`, `load-free-bot.ts:7`, and `load-kasongo-scan.ts:209`. Each new `.xml` import adds one.
+  - The baseline was **558** until `7839235` added the fourth of those. Verified by set-diffing the full error list at `7839235^` against `HEAD`: 558 vs 559, with `load-kasongo-scan.ts:209` the single net addition and nothing else changed. Normalise the absolute paths tsc embeds before diffing, or a worktree's own path shows up as spurious churn.
+  - An `xml.d.ts` would clear all four at once. It has not been added, deliberately — that is its own task, not something to fold into an unrelated change.
 - [ ] Test suite: the same **4 pre-existing failures**, no new ones. Confirm by stashing if uncertain — and note that untracked files are not stashed.
 - [ ] Production build exits 0.
 - [ ] Every new async gateway call has a timeout, a `catch`, and a mapped error.
