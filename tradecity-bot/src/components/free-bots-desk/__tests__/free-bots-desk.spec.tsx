@@ -12,16 +12,16 @@ describe('FreeBotsDesk search', () => {
     it('shows the display name on the card', () => {
         renderDesk();
 
-        expect(screen.getByText('Tradecity speed bot ai')).toBeInTheDocument();
+        expect(screen.getByText('Tradecity ai')).toBeInTheDocument();
     });
 
     it('finds a row by a token that exists only in the display name', () => {
         renderDesk();
 
-        // "speed bot ai" is in displayName; the runtime name stops at "speed bot".
-        fireEvent.change(search(), { target: { value: 'speed bot ai' } });
+        // "tradecity ai" is the displayName; the runtime name is "tradecity speed bot".
+        fireEvent.change(search(), { target: { value: 'tradecity ai' } });
 
-        expect(screen.getByText('Tradecity speed bot ai')).toBeInTheDocument();
+        expect(screen.getByText('Tradecity ai')).toBeInTheDocument();
     });
 
     it('still finds a row by the runtime name', () => {
@@ -29,7 +29,7 @@ describe('FreeBotsDesk search', () => {
 
         fireEvent.change(search(), { target: { value: 'tradecity speed bot' } });
 
-        expect(screen.getByText('Tradecity speed bot ai')).toBeInTheDocument();
+        expect(screen.getByText('Tradecity ai')).toBeInTheDocument();
     });
 
     it('returns nothing for a token in neither name', () => {
@@ -37,6 +37,6 @@ describe('FreeBotsDesk search', () => {
 
         fireEvent.change(search(), { target: { value: 'zzzznotabot' } });
 
-        expect(screen.queryByText('Tradecity speed bot ai')).not.toBeInTheDocument();
+        expect(screen.queryByText('Tradecity ai')).not.toBeInTheDocument();
     });
 });

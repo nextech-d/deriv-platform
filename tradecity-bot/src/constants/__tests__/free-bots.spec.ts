@@ -65,12 +65,26 @@ describe('Trading Bots menu labels', () => {
     });
 });
 
+/** Display names that are not `name + ' ai'`, each for its own reason. */
+const REWRITTEN: Record<string, string> = {
+    // Menu shows the shorter "Tradecity ai"; name stays so file_name and the seed heuristics do not move.
+    'tradecity-speed-bot': 'shortened menu label',
+};
+
 describe('the rename is display-only', () => {
-    it('only ever appends to name, never rewrites it', () => {
+    it('only ever appends to name, never rewrites it, bar the documented exceptions', () => {
         FREE_BOT_STRATEGIES.forEach(bot => {
-            if (!bot.displayName) return;
+            if (!bot.displayName || bot.id in REWRITTEN) return;
             expect(bot.displayName).toBe(`${bot.name} ai`);
         });
+    });
+
+    it('has no stale rewrite exceptions, so a new rewritten label fails rather than hides', () => {
+        const rewritten = FREE_BOT_STRATEGIES.filter(
+            bot => bot.displayName && bot.displayName !== `${bot.name} ai`
+        ).map(bot => bot.id);
+
+        expect(rewritten.sort()).toEqual(Object.keys(REWRITTEN).sort());
     });
 
     it('leaves no runtime name ending in ai that did not already', () => {
@@ -93,7 +107,7 @@ describe('the rename is display-only', () => {
     it('keeps sourceLabel on the runtime name', () => {
         const bot = FREE_BOT_STRATEGIES.find(entry => entry.id === 'tradecity-speed-bot')!;
 
-        expect(bot.displayName).toBe('tradecity speed bot ai');
+        expect(bot.displayName).toBe('tradecity ai');
         expect(freeBotToSeed(bot).sourceLabel).toBe('Free bots · tradecity speed bot');
     });
 });

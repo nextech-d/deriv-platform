@@ -36,13 +36,22 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'tradecity-speed-bot',
         name: 'tradecity speed bot',
-        displayName: 'tradecity speed bot ai',
+        displayName: 'tradecity ai',
         summary:
             'Advanced Martingale strategy with sophisticated risk management for all synthetic indexes trading. Features price action analysis, custom stop-loss mechanisms, and intelligent stake progression. Advanced Martingale progression with risk management Price action analysis and tracking Custom stop-loss and take-profit mechanisms',
         category: 'free',
         markets: ['R_100', '1HZ100V'],
         difficulty: 'advanced',
         tags: ['Martingale', 'Speed'],
+    },
+    {
+        id: 'poverty-x-ai',
+        name: 'poverty x ai',
+        summary: AI_BLURB,
+        category: 'free',
+        markets: ['R_100'],
+        difficulty: 'starter',
+        tags: ['AI'],
     },
     {
         id: 'under-8-strategy',
@@ -247,15 +256,6 @@ export const FREE_BOT_STRATEGIES: FreeBotStrategy[] = [
     {
         id: 'money-maker-ai',
         name: 'money maker ai',
-        summary: AI_BLURB,
-        category: 'free',
-        markets: ['R_100'],
-        difficulty: 'starter',
-        tags: ['AI'],
-    },
-    {
-        id: 'poverty-x-ai',
-        name: 'poverty x ai',
         summary: AI_BLURB,
         category: 'free',
         markets: ['R_100'],
