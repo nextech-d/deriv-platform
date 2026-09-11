@@ -7,6 +7,16 @@ const TIER_XML = {
     premium: () => import('../xml/trading-bots/premium.xml'),
 } as const;
 
+/**
+ * Per-entry overrides, keyed by catalog id. Every other entry in a tier shares
+ * that tier's pack above; an id listed here loads its own strategy instead.
+ * Kept here rather than on FreeBotStrategy so the catalog stays import-free.
+ */
+const STRATEGY_XML: Partial<Record<string, () => Promise<unknown>>> = {
+    // JD100 digit-differs on 2 ticks, not the shared standard pack.
+    'poverty-x-ai': () => import('../xml/trading-bots/poverty_x.xml'),
+};
+
 const xmlFromModule = (mod: { default?: string } | string): string => {
     if (typeof mod === 'string') return mod;
     if (typeof mod.default === 'string') return mod.default;
@@ -22,10 +32,10 @@ export async function loadFreeBotInBuilder(strategy: FreeBotStrategy): Promise<b
     }
 
     const tier = strategy.category === 'premium' ? 'premium' : 'free';
-    const xml_module = await TIER_XML[tier]();
-    const block_string = xmlFromModule(xml_module);
+    const xml_module = await (STRATEGY_XML[strategy.id] ?? TIER_XML[tier])();
+    const block_string = xmlFromModule(xml_module as { default?: string } | string);
     if (!block_string.trim()) {
-        console.warn('[TradingBots] Empty strategy XML for', tier);
+        console.warn('[TradingBots] Empty strategy XML for', strategy.id, tier);
         return false;
     }
 
